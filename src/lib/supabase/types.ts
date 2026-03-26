@@ -14,6 +14,7 @@ export interface Database {
           full_name: string
           role: UserRole
           avatar_url: string | null
+          stripe_customer_id: string | null
           created_at: string
           updated_at: string
         }
@@ -23,6 +24,7 @@ export interface Database {
           full_name?: string
           role?: UserRole
           avatar_url?: string | null
+          stripe_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -31,6 +33,7 @@ export interface Database {
           full_name?: string
           role?: UserRole
           avatar_url?: string | null
+          stripe_customer_id?: string | null
           updated_at?: string
         }
       }
@@ -67,6 +70,9 @@ export interface Database {
           essays_limit: number
           started_at: string
           expires_at: string | null
+          stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
           created_at: string
         }
         Insert: {
@@ -78,9 +84,19 @@ export interface Database {
           essays_limit: number
           started_at?: string
           expires_at?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           created_at?: string
         }
-        Update: { status?: SubscriptionStatus; essays_used?: number; expires_at?: string | null }
+        Update: {
+          status?: SubscriptionStatus
+          essays_used?: number
+          expires_at?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+        }
       }
       themes: {
         Row: {

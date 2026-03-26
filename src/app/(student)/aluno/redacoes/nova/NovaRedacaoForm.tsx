@@ -184,8 +184,8 @@ export default function NovaRedacaoForm({
           <div>
             <p className="text-sm font-semibold text-red-300 mb-0.5">Créditos esgotados</p>
             <p className="text-xs text-red-400/70 mb-3">Você usou todos os créditos do plano atual. Faça upgrade para continuar enviando redações.</p>
-            <Link href="/#planos" className="text-xs font-semibold text-red-300 border border-red-400/30 bg-red-500/10 rounded-lg px-3 py-1.5 hover:bg-red-500/20 transition-colors">
-              Ver planos →
+            <Link href="/aluno/upgrade" className="text-xs font-semibold text-red-300 border border-red-400/30 bg-red-500/10 rounded-lg px-3 py-1.5 hover:bg-red-500/20 transition-colors">
+              Fazer upgrade →
             </Link>
           </div>
         </div>

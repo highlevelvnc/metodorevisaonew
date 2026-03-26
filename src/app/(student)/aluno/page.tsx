@@ -378,7 +378,7 @@ export default async function AlunoDashboardPage() {
             {creditsLeft === 0 ? (
               <span className="text-red-400 font-medium">
                 Créditos esgotados —{' '}
-                <Link href="/#planos" className="underline hover:text-red-300">fazer upgrade</Link>
+                <Link href="/aluno/upgrade" className="underline hover:text-red-300">fazer upgrade</Link>
               </span>
             ) : (
               <span className={creditsLeft === 1 ? 'text-amber-400' : 'text-gray-400'}>
@@ -398,7 +398,7 @@ export default async function AlunoDashboardPage() {
             Enviar próxima redação
           </Link>
         ) : (
-          <Link href="/#planos" className="self-start sm:self-auto inline-flex items-center gap-2 text-sm font-bold px-5 py-3 rounded-xl transition-colors text-red-300 bg-red-500/10 border border-red-500/25 hover:bg-red-500/20">
+          <Link href="/aluno/upgrade" className="self-start sm:self-auto inline-flex items-center gap-2 text-sm font-bold px-5 py-3 rounded-xl transition-colors text-red-300 bg-red-500/10 border border-red-500/25 hover:bg-red-500/20">
             Fazer upgrade →
           </Link>
         )}
@@ -430,7 +430,7 @@ export default async function AlunoDashboardPage() {
                 </Link>
               ) : (
                 <Link
-                  href="/#planos"
+                  href="/aluno/upgrade"
                   className="flex-shrink-0 inline-flex items-center gap-2 text-red-300 bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 font-bold px-5 py-3 rounded-xl transition-colors text-sm"
                 >
                   Créditos esgotados — fazer upgrade →
@@ -456,7 +456,7 @@ export default async function AlunoDashboardPage() {
             </Link>
           ) : (
             <Link
-              href="/#planos"
+              href="/aluno/upgrade"
               className="inline-flex items-center gap-2 text-red-300 bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 font-bold px-5 py-3 rounded-xl transition-colors text-sm"
             >
               Fazer upgrade para continuar →
@@ -544,7 +544,7 @@ export default async function AlunoDashboardPage() {
             <p className="text-[11px] font-semibold text-amber-400 mt-2">Última redação do ciclo</p>
           )}
           {creditsLeft === 0 && planTier.nextPlan && (
-            <Link href="/#planos" className="inline-flex items-center gap-1 mt-2 text-[11px] font-medium text-red-400 hover:text-red-300 transition-colors">
+            <Link href="/aluno/upgrade" className="inline-flex items-center gap-1 mt-2 text-[11px] font-medium text-red-400 hover:text-red-300 transition-colors">
               → {planTier.nextPlan}: {planTier.nextEssays} redações
             </Link>
           )}
@@ -702,7 +702,7 @@ export default async function AlunoDashboardPage() {
               )}
             </div>
             <Link
-              href="/#planos"
+              href="/aluno/upgrade"
               className="flex-shrink-0 self-start sm:self-center inline-flex items-center gap-2 text-sm font-bold text-purple-400 bg-purple-600/10 border border-purple-500/20 rounded-xl px-4 py-2.5 hover:bg-purple-600/20 transition-colors whitespace-nowrap"
             >
               Ver planos →
@@ -718,7 +718,7 @@ export default async function AlunoDashboardPage() {
               : <><span className="text-purple-400 font-semibold">{cycleEssays.length} redações enviadas este ciclo.</span> Com o plano {planTier.nextPlan} você teria {planTier.nextEssays} disponíveis — {(planTier.nextEssays ?? 0) - creditsTotal} a mais para continuar evoluindo.</>
             }
           </p>
-          <Link href="/#planos" className="flex-shrink-0 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap">
+          <Link href="/aluno/upgrade" className="flex-shrink-0 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap">
             Ver planos →
           </Link>
         </div>
