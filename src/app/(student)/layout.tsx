@@ -16,10 +16,10 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { label: 'Dashboard',  href: '/aluno',           icon: LayoutDashboard },
-  { label: 'Redações',   href: '/aluno/redacoes',  icon: FileText },
-  { label: 'Evolução',   href: '/aluno/evolucao',  icon: TrendingUp },
-  { label: 'Meu Perfil', href: '/aluno/conta',     icon: User },
+  { label: 'Sua evolução', href: '/aluno',           icon: LayoutDashboard },
+  { label: 'Redações',     href: '/aluno/redacoes',  icon: FileText },
+  { label: 'Evolução',     href: '/aluno/evolucao',  icon: TrendingUp },
+  { label: 'Meu Perfil',   href: '/aluno/conta',     icon: User },
 ]
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {

@@ -71,6 +71,7 @@ export default async function AdminRedacoesPage() {
       corrections(total_score)
     `)
     .order('submitted_at', { ascending: false })
+    .limit(300)
 
   const essays: AdminEssay[] = essaysRaw ?? []
 
@@ -153,12 +154,22 @@ export default async function AdminRedacoesPage() {
             {essays.length} total · {pending.length + review.length} aguardando
           </p>
         </div>
-        {pending.length > 0 && (
-          <div className="flex items-center gap-2 text-sm font-medium text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-2">
-            <AlertCircle size={15} />
-            {pending.length} pendente{pending.length !== 1 ? 's' : ''}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {pending.length > 0 && (
+            <div className="flex items-center gap-2 text-sm font-medium text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-2">
+              <AlertCircle size={15} />
+              {pending.length} pendente{pending.length !== 1 ? 's' : ''}
+            </div>
+          )}
+          {(pending.length > 0 || review.length > 0) && (
+            <Link
+              href={`/admin/redacoes/${pending[0]?.id ?? review[0]?.id}`}
+              className="btn-primary text-sm py-2 px-4"
+            >
+              Corrigir próxima →
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* ── Aguardando correção ─────────────────────────────────── */}

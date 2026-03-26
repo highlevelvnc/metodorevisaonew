@@ -57,7 +57,7 @@ export default async function AdminCorrigirPage({ params }: { params: { id: stri
 
     // Next oldest pending/in_review essay (for "próxima" navigation)
     db.from('essays')
-      .select('id')
+      .select('id, student:users!essays_student_id_fkey(full_name)')
       .in('status', ['pending', 'in_review'])
       .neq('id', params.id)
       .order('submitted_at', { ascending: true })
@@ -71,9 +71,11 @@ export default async function AdminCorrigirPage({ params }: { params: { id: stri
       .neq('id', params.id),
   ])
 
-  const planName    = (subRaw as { plans: { name: string } | null } | null)?.plans?.name ?? 'Trial'
-  const nextEssayId = (nextRaw as { id: string } | null)?.id ?? undefined
-  const queueCount  = pendingCount ?? 0
+  const planName        = (subRaw as { plans: { name: string } | null } | null)?.plans?.name ?? 'Trial'
+  const nextRawTyped    = nextRaw as { id: string; student: { full_name: string } | null } | null
+  const nextEssayId     = nextRawTyped?.id ?? undefined
+  const nextStudentName = nextRawTyped?.student?.full_name ?? undefined
+  const queueCount      = pendingCount ?? 0
 
   const existingCorrection = raw.corrections?.[0] ?? null
 
@@ -97,5 +99,5 @@ export default async function AdminCorrigirPage({ params }: { params: { id: stri
       : null,
   }
 
-  return <CorrectionForm essay={essay} nextEssayId={nextEssayId} queueCount={queueCount} />
+  return <CorrectionForm essay={essay} nextEssayId={nextEssayId} queueCount={queueCount} nextStudentName={nextStudentName} />
 }

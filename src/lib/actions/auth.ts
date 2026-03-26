@@ -103,7 +103,12 @@ export async function signUp(
     const msg = error.message.toLowerCase()
     if (msg.includes('already registered') || msg.includes('already exists'))
       return { error: 'Este e-mail já está cadastrado. Tente entrar.' }
-    return { error: error.message }
+    if (msg.includes('invalid email'))
+      return { error: 'E-mail inválido. Verifique o formato.' }
+    if (msg.includes('password'))
+      return { error: 'Senha muito fraca. Use pelo menos 6 caracteres.' }
+    // Never expose raw Supabase/Postgres errors to the client
+    return { error: 'Erro ao criar conta. Tente novamente.' }
   }
 
   // Supabase exige confirmação de e-mail → session é null

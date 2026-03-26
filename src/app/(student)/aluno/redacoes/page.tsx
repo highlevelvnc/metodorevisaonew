@@ -125,6 +125,7 @@ export default async function RedacoesPage() {
     .select('id, theme_title, status, submitted_at, corrections(total_score, c1_score, c2_score, c3_score, c4_score, c5_score)')
     .eq('student_id', user.id)
     .order('submitted_at', { ascending: false })
+    .limit(200)
 
   const essays: Essay[] = essaysRaw ?? []
   const correctedEssays = essays.filter(e => e.status === 'corrected' && e.corrections.length > 0)
@@ -141,7 +142,7 @@ export default async function RedacoesPage() {
         </div>
         <Link href="/aluno/redacoes/nova" className="btn-primary text-sm py-2 px-4">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
-          Nova redação
+          Enviar próxima redação
         </Link>
       </div>
 

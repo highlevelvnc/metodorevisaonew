@@ -43,6 +43,7 @@ export default async function AdminDashboardPage() {
     { count: correctedThisMonth },
     { data: pendingEssaysRaw },
     { data: correctionsRaw },
+    { count: inReviewCount },
   ] = await Promise.all([
     db.from('essays').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     db.from('users').select('*', { count: 'exact', head: true }).eq('role', 'student'),
@@ -54,6 +55,7 @@ export default async function AdminDashboardPage() {
       .order('submitted_at', { ascending: true })
       .limit(3),
     db.from('corrections').select('total_score, c5_score'),
+    db.from('essays').select('*', { count: 'exact', head: true }).eq('status', 'in_review'),
   ])
 
   const pendingEssays: PendingEssay[] = pendingEssaysRaw ?? []
@@ -75,18 +77,24 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* ── Alerta de pendências ────────────────────────────────── */}
-      {(pendingCount ?? 0) > 0 && (
-        <Link href="/admin/redacoes" className="block mb-6">
+      {((pendingCount ?? 0) > 0 || (inReviewCount ?? 0) > 0) && (
+        <Link
+          href={pendingEssays[0] ? `/admin/redacoes/${pendingEssays[0].id}` : '/admin/redacoes'}
+          className="block mb-6"
+        >
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-4 flex items-center gap-4 hover:border-amber-500/50 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center flex-shrink-0">
               <AlertCircle size={18} className="text-amber-400" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-amber-300">
-                {pendingCount} redaç{pendingCount !== 1 ? 'ões' : 'ão'} aguardando correção
+                {pendingCount ?? 0} pendente{(pendingCount ?? 0) !== 1 ? 's' : ''}
+                {(inReviewCount ?? 0) > 0 && ` · ${inReviewCount} em revisão`}
               </p>
               <p className="text-xs text-amber-400/60 mt-0.5">
-                Clique para ver a fila de correções
+                {pendingEssays[0]
+                  ? `mais antiga: ${Math.floor(msAgo(pendingEssays[0].submitted_at) / 3_600_000)}h aguardando — clique para corrigir`
+                  : 'Clique para ver a fila de correções'}
               </p>
             </div>
             <ArrowRight size={16} className="text-amber-400 flex-shrink-0" />

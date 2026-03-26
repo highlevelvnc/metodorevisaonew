@@ -32,7 +32,8 @@ export default async function NovaRedacaoPage() {
 
   const themes = (themesRaw as { id: string; title: string }[]) ?? []
   const sub    = subRaw as { essays_used: number; essays_limit: number } | null
-  const creditsLeft = sub ? sub.essays_limit - sub.essays_used : 0
+  // Clamp to 0 — essays_used can exceed essays_limit in edge cases (concurrent submits, admin overrides)
+  const creditsLeft = sub ? Math.max(0, sub.essays_limit - sub.essays_used) : 0
 
   return <NovaRedacaoForm themes={themes} creditsLeft={creditsLeft} />
 }

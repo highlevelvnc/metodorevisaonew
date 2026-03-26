@@ -30,8 +30,8 @@ export default function NovaRedacaoForm({
 }) {
   const router = useRouter()
 
-  // Theme
-  const [themeMode, setThemeMode]           = useState<'list' | 'free'>('list')
+  // Theme — default to 'free' if no themes are available from the server
+  const [themeMode, setThemeMode]           = useState<'list' | 'free'>(themes.length === 0 ? 'free' : 'list')
   const [selectedThemeId, setSelectedThemeId] = useState('')
   const [freeTheme, setFreeTheme]           = useState('')
 
@@ -121,16 +121,31 @@ export default function NovaRedacaoForm({
       if (imageFile) formData.set('essay_image', imageFile)
     }
 
-    const result = await submitEssay(null, formData)
+    try {
+      const result = await submitEssay(null, formData)
 
-    if (result?.error) {
-      setError(result.error)
+      if (result?.error) {
+        // Credit exhausted at the DB level (race condition — creditsLeft was stale).
+        // Refresh the server component so the page re-reads the subscription and shows
+        // the no-credits banner instead of leaving the form in a confusing half-state.
+        if (result.code === 'CREDIT_LIMIT_REACHED') {
+          setError(result.error)
+          setSubmitting(false)
+          router.refresh()
+          return
+        }
+        setError(result.error)
+        setSubmitting(false)
+        return
+      }
+
+      // Success: server action redirects internally; router.push is fallback
+      router.push('/aluno/redacoes')
+    } catch {
+      // Network error or unexpected server failure
+      setError('Erro de conexão. Verifique sua internet e tente novamente.')
       setSubmitting(false)
-      return
     }
-
-    // Success: server action redirects internally
-    router.push('/aluno/redacoes')
   }
 
   return (
@@ -437,7 +452,7 @@ export default function NovaRedacaoForm({
               </>
             ) : (
               <>
-                Enviar para correção
+                Receber minha correção
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>

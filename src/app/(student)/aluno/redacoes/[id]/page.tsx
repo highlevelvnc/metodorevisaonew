@@ -10,20 +10,73 @@ export const metadata: Metadata = {
 }
 
 const COMPETENCIES = [
-  { key: 'c1_score' as const, label: 'C1', name: 'Domínio da Norma Culta',    desc: 'Ortografia, acentuação, gramática e vocabulário' },
-  { key: 'c2_score' as const, label: 'C2', name: 'Compreensão da Proposta',   desc: 'Adequação ao tema e ao tipo textual' },
-  { key: 'c3_score' as const, label: 'C3', name: 'Seleção de Argumentos',     desc: 'Autoria, repertório e defesa de ponto de vista' },
-  { key: 'c4_score' as const, label: 'C4', name: 'Mecanismos de Coesão',      desc: 'Coerência, coesão e conectivos' },
-  { key: 'c5_score' as const, label: 'C5', name: 'Proposta de Intervenção',   desc: 'Agente, ação, modo e finalidade' },
+  { key: 'c1_score' as const, label: 'C1', name: 'Domínio da Norma Culta',  desc: 'Ortografia, acentuação, gramática e vocabulário' },
+  { key: 'c2_score' as const, label: 'C2', name: 'Compreensão da Proposta', desc: 'Adequação ao tema e ao tipo textual' },
+  { key: 'c3_score' as const, label: 'C3', name: 'Seleção de Argumentos',   desc: 'Autoria, repertório e defesa de ponto de vista' },
+  { key: 'c4_score' as const, label: 'C4', name: 'Mecanismos de Coesão',    desc: 'Coerência, coesão e conectivos' },
+  { key: 'c5_score' as const, label: 'C5', name: 'Proposta de Intervenção', desc: 'Agente, ação, modo e finalidade' },
 ]
 
-// Actionable coaching tip per competency shown in "Plano para a próxima" section
-const NEXT_STEP_TIPS: Record<string, string> = {
-  c1_score: 'Releia em voz alta antes de entregar — ajuda a capturar erros de concordância, pontuação e ortografia que passam despercebidos na leitura silenciosa.',
-  c2_score: 'Sublinhe as palavras-chave do tema e escreva sua tese em uma frase antes de escrever. Garante que cada parágrafo sirva essa ideia central.',
-  c3_score: 'Pesquise 2-3 dados, estudos ou referências históricas antes de escrever. Argumentos sem repertório raramente passam de 80/200.',
-  c4_score: 'Varie os conectivos: "Ademais", "Nesse sentido", "Por outro lado", "Desse modo". Evite repetir "porém" e "mas" — isso limita a C4.',
-  c5_score: 'Use a estrutura completa: Quem age (agente)? O quê (ação)? Como (modo/meio)? Para quê (finalidade)? Todos os 4 precisam aparecer explicitamente.',
+// 3 specific actions per competency — shown in "Plano para a próxima"
+const PLAN_ACTIONS: Record<string, { weekFocus: string; actions: string[] }> = {
+  c1_score: {
+    weekFocus: 'Domínio da Norma Culta',
+    actions: [
+      'Releia em voz alta antes de entregar — o ouvido detecta erros que o olho ignora',
+      'Revise concordância verbal e nominal em cada parágrafo separadamente',
+      'Use vírgula apenas onde há pausa natural — evite excesso ou falta',
+    ],
+  },
+  c2_score: {
+    weekFocus: 'Compreensão da Proposta',
+    actions: [
+      'Escreva sua tese em uma frase antes de começar — ela deve responder exatamente ao tema',
+      'A cada novo parágrafo, pergunte: isso ainda serve à minha tese?',
+      'Releia o enunciado na metade da escrita para verificar que ainda está no foco',
+    ],
+  },
+  c3_score: {
+    weekFocus: 'Seleção de Argumentos',
+    actions: [
+      'Pesquise 2–3 dados, estudos ou referências históricas antes de escrever',
+      'Estruture cada argumento: afirmação → repertório → análise → conexão com a tese',
+      'Argumentos sem embasamento raramente passam de 80/200 — sempre fundamente',
+    ],
+  },
+  c4_score: {
+    weekFocus: 'Mecanismos de Coesão',
+    actions: [
+      'Varie os conectivos: "Ademais", "Nesse sentido", "Por outro lado", "Desse modo"',
+      'Releia a última frase de cada parágrafo — ela deve conectar com o próximo',
+      'Substitua "porém" e "mas" repetidos por "todavia", "entretanto", "contudo"',
+    ],
+  },
+  c5_score: {
+    weekFocus: 'Proposta de Intervenção',
+    actions: [
+      'Use a estrutura: Quem age (agente)? O quê (ação)? Como (modo/meio)? Para quê (finalidade)?',
+      'Todos os 4 elementos precisam aparecer de forma explícita — não subentendidos',
+      'Evite propostas genéricas como "o governo deve agir" — seja específico',
+    ],
+  },
+}
+
+// Maintenance tip per competency when score >= 140 — "O que manter"
+const MAINTAIN_TIPS: Record<string, string> = {
+  c1_score: 'Domínio consistente da norma culta — continue revisando antes de entregar.',
+  c2_score: 'Você mantém o foco no tema com clareza — essa disciplina é rara e valiosa.',
+  c3_score: 'Argumentação sólida com repertório — continue embasando com dados e referências.',
+  c4_score: 'Boa coesão textual — a variedade de conectivos já é parte do seu estilo.',
+  c5_score: 'Proposta de intervenção completa e específica — mantenha os 4 elementos sempre explícitos.',
+}
+
+// Most urgent fix for weakest competency — "O que corrigir imediatamente"
+const FIX_QUICKLY: Record<string, string> = {
+  c1_score: 'Revise cada parágrafo em busca de erros de concordância e pontuação antes de entregar. Um erro evitado já vale pontos.',
+  c2_score: 'Escreva sua tese em uma frase antes de começar e releia o enunciado na metade do texto. Tangência é o erro mais caro do ENEM.',
+  c3_score: 'Escolha um dado concreto ou referência para cada argumento. Sem embasamento, dificilmente você passa de 80/200 nesta competência.',
+  c4_score: 'Substitua conectivos repetidos por variações — "todavia", "ademais", "nesse sentido". A variedade demonstra domínio linguístico.',
+  c5_score: 'Verifique explicitamente: agente, ação, modo e finalidade estão todos presentes na proposta? A falta de um elemento já reduz a nota.',
 }
 
 type PrevCorrection = {
@@ -44,13 +97,59 @@ function formatDate(iso: string) {
   })
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS before markdown transforms.
+ * Must be called on raw text BEFORE any dangerouslySetInnerHTML rendering.
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * Renders the reviewer's markdown feedback with visual cues:
+ * - ✅ lines → green callout box (positive points)
+ * - ⚠️ lines → amber callout box (improvement areas)
+ * - --- → visual divider
+ * - **bold** → <strong>
+ * - single \n → <br />
+ *
+ * HTML is escaped first to prevent XSS from reviewer-controlled content.
+ */
 function renderFeedback(text: string) {
-  // Split on one or more blank lines to get paragraphs
-  return text.split(/\n{2,}/).map((para, i) => {
-    const html = para
-      // Bold: **text**
+  const paragraphs = text.split(/\n{2,}/)
+  return paragraphs.map((para, i) => {
+    // Escape HTML entities first, then apply safe markdown transforms
+    const trimmed = escapeHtml(para.trim())
+
+    // Section headers with special styling
+    if (trimmed.startsWith('✅') || trimmed.toLowerCase().startsWith('✅')) {
+      const html = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-green-300">$1</strong>')
+      return (
+        <div key={i} className="rounded-xl bg-green-500/[0.06] border border-green-500/15 px-4 py-3 mb-4">
+          <p className="text-sm text-green-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: html }} />
+        </div>
+      )
+    }
+
+    if (trimmed.startsWith('⚠️') || trimmed.startsWith('⚠')) {
+      const html = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-amber-300">$1</strong>')
+      return (
+        <div key={i} className="rounded-xl bg-amber-500/[0.06] border border-amber-500/15 px-4 py-3 mb-4">
+          <p className="text-sm text-amber-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: html }} />
+        </div>
+      )
+    }
+
+    if (trimmed === '---' || trimmed === '—') {
+      return <hr key={i} className="border-white/[0.06] my-4" />
+    }
+
+    const html = trimmed
       .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
-      // Single line breaks → <br>
       .replace(/\n/g, '<br />')
       .replace(/⭐/g, '<span class="text-amber-400">⭐</span>')
     return (
@@ -125,7 +224,6 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
           <p className="text-gray-600 text-sm">Sua devolutiva estará pronta em até 48h a partir do envio.</p>
         </div>
 
-        {/* Texto / imagem da redação */}
         {essay.content_text && (() => {
           const isImage = essay.content_text!.startsWith('[IMAGEM] ')
           const imageUrl = isImage ? essay.content_text!.slice('[IMAGEM] '.length) : null
@@ -138,6 +236,7 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
                 )}
               </div>
               {isImage && imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt="Sua redação" className="w-full rounded-xl border border-white/[0.08] object-contain" />
               ) : (
                 <div className="text-sm text-gray-300 leading-[1.9] whitespace-pre-wrap border-l-2 border-white/[0.06] pl-4">
@@ -167,6 +266,11 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
     ? positiveDeltas.reduce((a, b) => a.delta! >= b.delta! ? a : b)
     : null
 
+  const plan       = PLAN_ACTIONS[weakest.key]
+  const keepComps  = compData.filter(c => c.score >= 140)
+  const fixComp    = weakest
+  const nextTarget = correction.total_score + 40
+
   return (
     <div className="max-w-4xl">
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -191,13 +295,14 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
           </div>
         </div>
         <Link href="/aluno/redacoes/nova" className="btn-primary self-start sm:self-auto text-sm py-2 px-4 flex-shrink-0">
-          + Nova redação
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+          Enviar próxima redação
         </Link>
       </div>
 
-      {/* ── Score hero + C1-C5 ─────────────────────────────────── */}
+      {/* ── 1. Score hero + Comparação ─────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-        {/* Total */}
+        {/* Total + delta */}
         <div className="card-dark rounded-2xl p-6 flex flex-col justify-between">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Pontuação total</p>
           <div>
@@ -222,7 +327,7 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* C1-C5 */}
+        {/* 2. Competências com delta ─────────────────────────────── */}
         <div className="sm:col-span-2 card-dark rounded-2xl p-6">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Por competência</p>
           <div className="space-y-3.5">
@@ -236,7 +341,7 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
                       <span className="text-xs font-semibold text-gray-500 w-5">{c.label}</span>
                       <span className="text-xs text-gray-400">{c.name}</span>
                       {c.key === weakest.key && (
-                        <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">foco</span>
+                        <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">🎯 foco</span>
                       )}
                       {mostImproved && c.key === mostImproved.key && (
                         <span className="text-[10px] text-green-400 bg-green-500/10 border border-green-500/20 rounded-full px-1.5 py-0.5">↑ evoluiu</span>
@@ -263,8 +368,57 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      {/* ── Feedback da corretora ───────────────────────────────── */}
-      <div className="card-dark rounded-2xl p-6 mb-5">
+      {/* ── 3. Resumo desta devolutiva ─────────────────────────── */}
+      <div className="card-dark rounded-2xl p-5 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-base">📋</span>
+          <h2 className="text-sm font-bold text-white">Resumo desta devolutiva</h2>
+        </div>
+
+        {/* O que manter */}
+        {keepComps.length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-green-400 mb-2">✅ O que manter</p>
+            <div className="space-y-2">
+              {keepComps.map(c => (
+                <div key={c.key} className="flex items-center gap-3 rounded-xl bg-green-500/[0.04] border border-green-500/10 px-4 py-3">
+                  <span className="text-xs font-bold text-green-400 flex-shrink-0 w-5">{c.label}</span>
+                  <p className="text-xs text-gray-300 leading-relaxed flex-1">{MAINTAIN_TIPS[c.key]}</p>
+                  <span className="text-xs font-bold text-green-400 tabular-nums flex-shrink-0">{c.score}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* O que corrigir imediatamente */}
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-amber-400 mb-2">🔧 O que corrigir imediatamente</p>
+          <div className="rounded-xl bg-amber-500/[0.05] border border-amber-500/15 px-4 py-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xs font-bold text-amber-400">{fixComp.label} — {fixComp.name}</span>
+              <span className="ml-auto text-xs font-bold text-amber-400 tabular-nums">{fixComp.score}/200</span>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed">{FIX_QUICKLY[fixComp.key]}</p>
+          </div>
+        </div>
+
+        {/* Meta para a próxima */}
+        <div>
+          <p className="text-xs font-semibold text-purple-400 mb-2">🏆 Meta para a próxima</p>
+          <div className="rounded-xl bg-purple-500/[0.06] border border-purple-500/15 px-4 py-3">
+            <p className="text-sm font-bold text-white mb-1">
+              Atingir <span className="text-purple-300">{nextTarget} pontos</span>
+            </p>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              +40 pts em relação a esta redação. Foco em {fixComp.label} é o caminho mais direto.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. Feedback da corretora ────────────────────────────── */}
+      <div className="card-dark rounded-2xl p-6 mb-6">
         <div className="flex items-center gap-3 mb-5 pb-5 border-b border-white/[0.06]">
           <div className="w-9 h-9 rounded-full bg-purple-600/20 border border-purple-500/25 flex items-center justify-center text-sm font-bold text-purple-300 flex-shrink-0">
             {correction.reviewer_name.charAt(0).toUpperCase()}
@@ -279,12 +433,65 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      {/* ── Texto / imagem da redação ──────────────────────────── */}
+      {/* ── 5. Plano para a próxima ─────────────────────────────── */}
+      <div className="card-dark rounded-2xl p-5 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-base">🎯</span>
+          <h2 className="text-sm font-bold text-white">Plano para a próxima redação</h2>
+        </div>
+
+        {/* Week focus */}
+        <div className="rounded-xl bg-amber-500/[0.05] border border-amber-500/15 p-4 mb-4">
+          <p className="text-xs font-semibold text-amber-400 mb-1">Foco da semana</p>
+          <p className="text-sm font-bold text-white">
+            {weakest.label} — {plan.weekFocus}
+          </p>
+          <p className="text-xs text-amber-400/70 mt-0.5">
+            Sua maior oportunidade de ganho de pontos agora.
+          </p>
+        </div>
+
+        {/* 3 specific actions */}
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">3 ações práticas</p>
+        <div className="space-y-2.5 mb-5">
+          {plan.actions.map((action, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-purple-600/15 border border-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-[10px] font-bold text-purple-400">{i + 1}</span>
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed">{action}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Most improved — positive reinforcement */}
+        {mostImproved && (
+          <div className="rounded-xl bg-green-500/[0.05] border border-green-500/15 p-4 mb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp size={13} className="text-green-400" />
+              <p className="text-xs font-semibold text-green-400">
+                {mostImproved.label} evoluiu +{mostImproved.delta} pontos
+              </p>
+            </div>
+            <p className="text-xs text-green-400/70">
+              Continue com essa estratégia — você está no caminho certo.
+            </p>
+          </div>
+        )}
+
+        {/* CTA */}
+        <Link href="/aluno/redacoes/nova" className="btn-primary w-full justify-center">
+          Aplicar e enviar próxima redação
+          <ChevronRight size={14} />
+        </Link>
+      </div>
+
+      {/* ── 6. Texto / imagem da redação (contexto) ─────────────── */}
       {essay.content_text && (() => {
         const isImage = essay.content_text!.startsWith('[IMAGEM] ')
         const imageUrl = isImage ? essay.content_text!.slice('[IMAGEM] '.length) : null
         return (
-          <div className="card-dark rounded-2xl p-6 mb-6">
+          <div className="card-dark rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-white">Sua redação</h2>
               {!isImage && (
@@ -292,6 +499,7 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
               )}
             </div>
             {isImage && imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={imageUrl} alt="Sua redação" className="w-full rounded-xl border border-white/[0.08] object-contain" />
             ) : (
               <div className="text-sm text-gray-300 leading-[1.9] whitespace-pre-wrap border-l-2 border-white/[0.06] pl-4">
@@ -301,46 +509,6 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
           </div>
         )
       })()}
-
-      {/* ── Plano para a próxima ────────────────────────────────── */}
-      <div className="card-dark rounded-2xl p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-white">🎯 Plano para a próxima redação</h2>
-
-        {/* Weakest comp — specific actionable coaching tip */}
-        <div className="flex items-start gap-3 rounded-xl bg-amber-500/[0.05] border border-amber-500/15 p-4">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-400">
-              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-amber-300">{weakest.label} – {weakest.name}</p>
-            <p className="text-xs text-amber-400/80 mt-0.5 leading-relaxed">{NEXT_STEP_TIPS[weakest.key]}</p>
-          </div>
-        </div>
-
-        {/* Most improved — positive reinforcement (only if comparing to a previous essay) */}
-        {mostImproved && (
-          <div className="flex items-start gap-3 rounded-xl bg-green-500/[0.05] border border-green-500/15 p-4">
-            <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <TrendingUp size={14} className="text-green-400" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-green-300">
-                {mostImproved.label} evoluiu +{mostImproved.delta} pontos
-              </p>
-              <p className="text-xs text-green-400/75 mt-0.5">
-                Continue com essa estratégia — você está no caminho certo.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <Link href="/aluno/redacoes/nova" className="btn-primary w-full justify-center">
-          Aplicar e enviar próxima redação
-          <ChevronRight size={14} />
-        </Link>
-      </div>
     </div>
   )
 }

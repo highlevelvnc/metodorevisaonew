@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
-export type EssayState = { error: string } | null
+export type EssayState = { error: string; code?: string } | null
 
 const MIN_CHARS = 300  // ~7 linhas
 const MAX_CHARS = 4200 // ~30 linhas + margem
@@ -24,11 +24,19 @@ export async function submitEssay(
   if (!themeTitle || themeTitle.length < 3)
     return { error: 'Informe o tema da redação.' }
 
-  // ── Validação por modo ───────────────────────────────────────────────────────
+  // ── Auth (single client para toda a action) ──────────────────────────────
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  // Use untyped client to avoid Supabase overload resolution errors
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any
+
+  // ── Validação e preparação do conteúdo ───────────────────────────────────
   let contentText: string
 
   if (inputMode === 'image') {
-    // Validate and upload the actual image file to Supabase Storage
     const imageFile = formData.get('essay_image') as File | null
     if (!imageFile || imageFile.size === 0)
       return { error: 'Selecione um arquivo para envio.' }
@@ -40,15 +48,15 @@ export async function submitEssay(
     if (imageFile.size > 8 * 1024 * 1024)
       return { error: 'Arquivo muito grande. Máximo de 8 MB.' }
 
-    // Auth required before storage upload
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
-
     // Path: essays/{userId}/{timestamp}-{random}.{ext}
-    const ext    = imageFile.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-    const rand   = Math.random().toString(36).slice(2, 8)
-    const path   = `essays/${user.id}/${Date.now()}-${rand}.${ext}`
+    // Derive extension from validated MIME type — never from user-controlled filename
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/jpeg': 'jpg', 'image/png': 'png',
+      'image/webp': 'webp', 'application/pdf': 'pdf',
+    }
+    const ext  = MIME_TO_EXT[imageFile.type] ?? 'jpg'
+    const rand = Math.random().toString(36).slice(2, 8)
+    const path = `essays/${user.id}/${Date.now()}-${rand}.${ext}`
 
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
@@ -67,7 +75,6 @@ export async function submitEssay(
     contentText = `[IMAGEM] ${urlData.publicUrl}`
 
   } else {
-    // Text mode: validate length
     const rawContent = (formData.get('content') as string)?.trim()
     if (!rawContent || rawContent.length < MIN_CHARS)
       return { error: 'Redação muito curta. Mínimo de 7 linhas.' }
@@ -76,51 +83,37 @@ export async function submitEssay(
     contentText = rawContent
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  // ── Débito atômico + inserção (uma única transação no Postgres) ──────────
+  //
+  // A função submit_essay_atomic faz tudo dentro de uma transação com
+  // SELECT … FOR UPDATE, garantindo que:
+  //   1. O crédito disponível é verificado com row-level lock
+  //   2. Nenhuma transação concorrente consegue passar pelo check ao mesmo tempo
+  //   3. O débito e a inserção da redação são atômicos — ou ambos persistem,
+  //      ou nenhum (ex: CHECK constraint violado = rollback automático)
+  //
+  // Nota sobre o upload de imagem: se o RPC falhar após o upload bem-sucedido,
+  // o arquivo ficará órfão no Storage (sem essay_id associado). Isso é aceitável —
+  // nenhum crédito é cobrado e o aluno pode tentar novamente.
+  const { data: essayId, error: rpcErr } = await db.rpc('submit_essay_atomic', {
+    p_user_id:      user.id,
+    p_theme_title:  themeTitle,
+    p_content_text: contentText,
+    p_theme_id:     themeId,
+    p_notes:        notes,
+  })
 
-  // Use untyped client to avoid Supabase overload resolution errors with enum columns
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any
-
-  // ── Verificar créditos ──────────────────────────────────────────────────────
-  const { data: sub } = await db
-    .from('subscriptions')
-    .select('id, essays_used, essays_limit')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle() as { data: { id: string; essays_used: number; essays_limit: number } | null }
-
-  if (!sub)
-    return { error: 'Nenhum plano ativo. Adquira um plano para enviar redações.' }
-  if (sub.essays_used >= sub.essays_limit)
-    return { error: 'Créditos esgotados. Faça upgrade do seu plano para continuar.' }
-
-  // ── Inserir redação ─────────────────────────────────────────────────────────
-  const { data: essay, error: essayErr } = await db
-    .from('essays')
-    .insert({
-      student_id:   user.id,
-      theme_title:  themeTitle,
-      theme_id:     themeId || null,
-      content_text: contentText,
-      notes,
-      status:       'pending',
-    })
-    .select('id')
-    .single() as { data: { id: string } | null; error: { message: string } | null }
-
-  if (essayErr || !essay)
+  if (rpcErr) {
+    console.error('[submitEssay] RPC error:', rpcErr.message)
+    if (rpcErr.message?.includes('NO_ACTIVE_PLAN'))
+      return { error: 'Nenhum plano ativo. Adquira um plano para enviar redações.' }
+    if (rpcErr.message?.includes('CREDIT_LIMIT_REACHED'))
+      return { error: 'Créditos esgotados. Faça upgrade do seu plano para continuar.', code: 'CREDIT_LIMIT_REACHED' }
     return { error: 'Erro ao salvar redação. Tente novamente.' }
+  }
 
-  // ── Debitar crédito ─────────────────────────────────────────────────────────
-  await db
-    .from('subscriptions')
-    .update({ essays_used: sub.essays_used + 1 })
-    .eq('id', sub.id)
+  if (!essayId)
+    return { error: 'Erro ao salvar redação. Tente novamente.' }
 
   revalidatePath('/aluno')
   revalidatePath('/aluno/redacoes')
@@ -128,5 +121,5 @@ export async function submitEssay(
   revalidatePath('/admin')
   revalidatePath('/admin/redacoes')
 
-  redirect(`/aluno/redacoes/${essay.id}`)
+  redirect(`/aluno/redacoes/${essayId}`)
 }

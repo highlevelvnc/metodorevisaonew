@@ -248,6 +248,85 @@ create policy "storage: student read own"
     and (storage.foldername(name))[2] = auth.uid()::text
   );
 
+-- ─── CHECK constraint: defesa final contra débito excessivo ──────────────────
+-- Impede qualquer UPDATE que leve essays_used acima de essays_limit.
+-- Complementa a função atômica como última linha de defesa no banco.
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'subs_essays_used_lte_limit'
+  ) then
+    alter table public.subscriptions
+      add constraint subs_essays_used_lte_limit
+      check (essays_used >= 0 and essays_used <= essays_limit)
+      not valid;
+  end if;
+end $$;
+
+-- ─── Função atômica: submit_essay_atomic ──────────────────────────────────────
+-- Garante que o check de crédito, o débito e a inserção da redação
+-- aconteçam em uma única transação com row-level lock (SELECT … FOR UPDATE).
+-- Elimina race conditions em envios simultâneos.
+create or replace function public.submit_essay_atomic(
+  p_user_id      uuid,
+  p_theme_title  text,
+  p_content_text text,
+  p_theme_id     uuid  default null,
+  p_notes        text  default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_sub_id   uuid;
+  v_used     int;
+  v_limit    int;
+  v_essay_id uuid;
+begin
+  if auth.uid() is distinct from p_user_id then
+    raise exception 'UNAUTHORIZED'
+      using hint = 'Acesso não autorizado.';
+  end if;
+
+  select id, essays_used, essays_limit
+    into v_sub_id, v_used, v_limit
+    from public.subscriptions
+   where user_id  = p_user_id
+     and status   = 'active'
+     and (expires_at is null or expires_at > now())
+   order by created_at desc
+   limit 1
+     for update;
+
+  if v_sub_id is null then
+    raise exception 'NO_ACTIVE_PLAN'
+      using hint = 'Nenhum plano ativo. Adquira um plano para enviar redações.';
+  end if;
+
+  if v_used >= v_limit then
+    raise exception 'CREDIT_LIMIT_REACHED'
+      using hint = 'Créditos esgotados. Faça upgrade do seu plano para continuar.';
+  end if;
+
+  update public.subscriptions
+     set essays_used = essays_used + 1
+   where id = v_sub_id;
+
+  insert into public.essays (
+    student_id, theme_title, theme_id, content_text, notes, status
+  ) values (
+    p_user_id, p_theme_title, p_theme_id, p_content_text, p_notes, 'pending'
+  )
+  returning id into v_essay_id;
+
+  return v_essay_id;
+end;
+$$;
+
+revoke all    on function public.submit_essay_atomic from public;
+grant execute on function public.submit_essay_atomic to authenticated;
+
 -- ─── Seed data ────────────────────────────────────────────────────────────────
 insert into public.plans (name, slug, price_brl, essay_count, features) values
   ('Trial',     'trial',     0,      1, '["1 redação gratuita", "Devolutiva completa C1-C5"]'::jsonb),

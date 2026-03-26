@@ -94,7 +94,14 @@ export async function saveCorrection(
 
   // ── Atualizar status da redação ─────────────────────────────────────────────
   const newStatus = isDraft ? 'in_review' : 'corrected'
-  await db.from('essays').update({ status: newStatus }).eq('id', essayId)
+  const { error: statusErr } = await db
+    .from('essays').update({ status: newStatus }).eq('id', essayId)
+
+  if (statusErr) {
+    console.error('[saveCorrection] Failed to update essay status:', statusErr.message)
+    // Correction was saved — only the status update failed. Return error so reviewer is aware.
+    if (!isDraft) return { error: 'Correção salva, mas erro ao atualizar status. Recarregue e tente enviar novamente.' }
+  }
 
   // Revalidar caches das páginas afetadas
   revalidatePath('/admin/redacoes')

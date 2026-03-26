@@ -44,7 +44,15 @@ const COMPETENCIES = [
 ] as const
 
 const SCORE_OPTIONS = [0, 40, 80, 120, 160, 200]
-const AUTOSAVE_DELAY = 25_000 // 25 seconds
+const SCORE_LABELS: Record<number, string> = {
+  0:   'Ausente',
+  40:  'Insufic.',
+  80:  'Parcial',
+  120: 'Adequado',
+  160: 'Bom',
+  200: 'Excelente',
+}
+const AUTOSAVE_DELAY = 8_000 // 8 seconds
 
 // ── Feedback templates per competency per score ──────────────────────────────
 const COMP_PHRASES: Record<string, Record<number, string>> = {
@@ -100,10 +108,35 @@ const COMP_LABELS = [
 
 function generateTemplate(scores: Scores): string {
   const keys = ['c1', 'c2', 'c3', 'c4', 'c5'] as const
-  return keys.map((key, i) => {
+
+  // Separate competencies into positive (≥120) and needs-work (<120)
+  const positives  = keys.filter(k => scores[k] >= 120)
+  const needsWork  = keys.filter(k => scores[k] <  120)
+
+  const posSection = positives.length > 0
+    ? `✅ **O que você fez bem nessa redação:**\n${positives.map(k => {
+        const idx = keys.indexOf(k)
+        return `${COMP_LABELS[idx]} (${scores[k]}/200)`
+      }).join(', ')}`
+    : null
+
+  const workSection = needsWork.length > 0
+    ? `⚠️ **Para desenvolver na próxima redação:**\n${needsWork.map(k => {
+        const idx = keys.indexOf(k)
+        return `${COMP_LABELS[idx]} (${scores[k]}/200)`
+      }).join(', ')}`
+    : null
+
+  const sections = [posSection, workSection].filter(Boolean).join('\n\n')
+  const divider = '---'
+
+  // Per-competency detailed feedback
+  const compBlocks = keys.map((key, i) => {
     const phrase = COMP_PHRASES[key][scores[key]] ?? '...'
     return `**${COMP_LABELS[i]} (${scores[key]}/200)**\n${phrase}`
   }).join('\n\n')
+
+  return [sections, divider, compBlocks].filter(Boolean).join('\n\n')
 }
 
 function ScoreSelector({
@@ -122,13 +155,14 @@ function ScoreSelector({
           key={opt}
           type="button"
           onClick={() => onChange(opt)}
-          className={`w-10 h-9 rounded-lg text-sm font-semibold transition-all ${
+          className={`w-11 py-1.5 rounded-lg flex flex-col items-center transition-all ${
             touched && value === opt
               ? 'bg-purple-700 text-white border border-purple-500 shadow-sm shadow-purple-900/50'
               : 'bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/20'
           }`}
         >
-          {opt}
+          <span className="text-sm font-semibold leading-none">{opt}</span>
+          <span className="text-[9px] leading-none mt-0.5 opacity-70">{SCORE_LABELS[opt]}</span>
         </button>
       ))}
     </div>
@@ -159,10 +193,12 @@ export default function CorrectionForm({
   essay,
   nextEssayId,
   queueCount = 0,
+  nextStudentName,
 }: {
   essay: EssayForCorrection
   nextEssayId?: string
   queueCount?: number
+  nextStudentName?: string
 }) {
   const existing = essay.existingCorrection
 
@@ -329,8 +365,14 @@ export default function CorrectionForm({
 
   function handleInsertTemplate() {
     const template = generateTemplate(scores)
-    setFeedback(prev => prev.trim() ? prev + '\n\n' + template : template)
+    if (feedback.trim()) {
+      if (!confirm('Substituir o feedback atual pela nova estrutura?')) return
+      setFeedback(template)
+    } else {
+      setFeedback(template)
+    }
     markDirty()
+    setTimeout(() => feedbackRef.current?.focus(), 0)
   }
 
   function insertPhrase(key: keyof Scores) {
@@ -454,6 +496,42 @@ export default function CorrectionForm({
 
       {/* ── Coluna direita: painel de correção ─────────────────────────────── */}
       <div className="w-full lg:w-[45%] space-y-4">
+        {/* Queue progress header */}
+        {(nextEssayId || queueCount > 0) && (
+          <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              {queueCount > 0 ? (
+                <>
+                  {Array.from({ length: Math.min(queueCount, 8) }).map((_, i) => (
+                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-purple-500/50" />
+                  ))}
+                  {queueCount > 8 && (
+                    <span className="text-[10px] text-gray-600 ml-0.5">+{queueCount - 8}</span>
+                  )}
+                  <span className="text-[10px] text-gray-500 ml-1">
+                    {queueCount} na fila
+                  </span>
+                </>
+              ) : (
+                <span className="text-[10px] text-gray-600">Última redação na fila</span>
+              )}
+            </div>
+            {nextEssayId && (
+              <Link
+                href={`/admin/redacoes/${nextEssayId}`}
+                onClick={e => {
+                  if (isDirty && !confirm('Você tem alterações não salvas. Ir para a próxima redação mesmo assim?')) {
+                    e.preventDefault()
+                  }
+                }}
+                className="flex items-center gap-1 text-[10px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Próxima <ArrowRight size={10} />
+              </Link>
+            )}
+          </div>
+        )}
+
         {/* Status bar */}
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-3">
@@ -578,10 +656,10 @@ export default function CorrectionForm({
                   <button
                     type="button"
                     onClick={() => insertPhrase(c.key)}
-                    className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-600 hover:text-purple-400 transition-colors"
+                    className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-purple-400 border border-purple-500/20 bg-purple-600/[0.06] rounded-md px-2.5 py-1 hover:bg-purple-600/15 transition-colors"
                   >
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M12 5v14M5 12h14" />
                     </svg>
                     Inserir frase sugerida no feedback
                   </button>
@@ -623,7 +701,7 @@ export default function CorrectionForm({
                 title="Gerar estrutura com frases sugeridas para cada competência"
               >
                 <Wand2 size={10} />
-                Gerar estrutura
+                {feedback.trim() ? 'Regenerar estrutura' : 'Gerar estrutura'}
               </button>
               <span className={`text-xs tabular-nums ${
                 feedback.length === 0  ? 'text-gray-700' :
@@ -659,6 +737,13 @@ export default function CorrectionForm({
                   style={{ width: `${Math.min((feedback.length / 400) * 100, 100)}%` }}
                 />
               </div>
+            )}
+            {allScored && feedback.length > 0 && (
+              <p className={`mt-1 text-[10px] font-medium ${canSend ? 'text-green-500' : 'text-gray-600'}`}>
+                {canSend
+                  ? '✓ Pronto para enviar'
+                  : `Mais ${50 - feedback.trim().length} chars para enviar`}
+              </p>
             )}
           </div>
         </div>
@@ -709,11 +794,18 @@ export default function CorrectionForm({
         {/* ── Fila: próxima redação ──────────────────────────────────────────── */}
         {nextEssayId && (
           <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-            <span className="text-xs text-gray-600">
-              {queueCount > 0
-                ? `${queueCount} redaç${queueCount !== 1 ? 'ões' : 'ão'} aguardando na fila`
-                : 'Última na fila'}
-            </span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-gray-600">
+                {queueCount > 0
+                  ? `${queueCount} redaç${queueCount !== 1 ? 'ões' : 'ão'} aguardando na fila`
+                  : 'Última na fila'}
+              </span>
+              {nextStudentName && (
+                <span className="text-[10px] text-gray-700">
+                  Próxima: {nextStudentName}
+                </span>
+              )}
+            </div>
             <Link
               href={`/admin/redacoes/${nextEssayId}`}
               onClick={e => {
