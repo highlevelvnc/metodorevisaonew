@@ -1,9 +1,7 @@
 'use client'
 import Image from 'next/image'
+import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
-
-const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
 
 const credentials = [
   {
@@ -106,10 +104,8 @@ export default function Especialista() {
               ))}
             </ul>
 
-            <a
-              href={WA_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/#planos"
               className="btn-primary"
               onClick={() => trackEvent('cta_click', { source: 'especialista' })}
             >
@@ -117,7 +113,7 @@ export default function Especialista() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

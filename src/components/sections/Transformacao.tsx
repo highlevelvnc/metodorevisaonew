@@ -1,8 +1,6 @@
 'use client'
+import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
-
-const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
 
 const semMetodo = [
   'Escreve a redação e não sabe se está boa',
@@ -102,18 +100,16 @@ export default function Transformacao() {
         {/* CTA at peak emotional moment */}
         <div className="mt-10 text-center">
           <p className="text-gray-400 text-sm mb-5">Sua evolução começa na próxima redação.</p>
-          <a
-            href={WA_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/cadastro?next=/aluno/upgrade"
             className="btn-primary-lg"
-            onClick={() => trackEvent('cta_click', { source: 'transformacao' })}
+            onClick={() => trackEvent('checkout_started', { plan: 'transformacao' })}
           >
-            Quero começar minha evolução
+            Começar minha evolução
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </a>
+          </Link>
           <p className="text-xs text-gray-700 mt-3">Sem fidelidade · Cancele quando quiser</p>
         </div>
       </div>

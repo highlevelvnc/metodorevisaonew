@@ -1,9 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
-
-const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
 
 export default function FloatingCTA() {
   const [visible, setVisible] = useState(false)
@@ -34,15 +32,13 @@ export default function FloatingCTA() {
           <p className="text-white font-bold text-sm leading-tight">Começar minha evolução</p>
           <p className="text-purple-200 text-xs mt-0.5">Devolutiva em até 48h · Sem fidelidade</p>
         </div>
-        <a
-          href={WA_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/cadastro?next=/aluno/upgrade"
           className="bg-white text-purple-700 font-bold text-sm px-5 py-2.5 rounded-xl flex-shrink-0 active:scale-95 transition-transform"
-          onClick={() => trackEvent('cta_click', { source: 'floating_mobile' })}
+          onClick={() => trackEvent('checkout_started', { plan: 'floating_mobile' })}
         >
           Assinar
-        </a>
+        </Link>
         <button
           onClick={() => { setDismissed(true); setVisible(false) }}
           className="text-purple-300/60 hover:text-purple-200 transition-colors flex-shrink-0 p-0.5"

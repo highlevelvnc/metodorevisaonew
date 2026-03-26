@@ -1,9 +1,7 @@
 'use client'
 import Image from 'next/image'
+import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
-
-const WA_LINK    = 'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
-const WA_DUVIDAS = 'https://wa.me/5522992682207?text=Ol%C3%A1!%20Tenho%20d%C3%BAvidas%20sobre%20a%20M%C3%A9todo%20Revis%C3%A3o.%20Pode%20me%20ajudar%3F'
 
 export default function CTAFinal() {
   return (
@@ -50,8 +48,8 @@ export default function CTAFinal() {
         {/* Headline + CTAs */}
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-5">
-            O ENEM não espera.{' '}
-            <span className="gradient-text">Sua evolução começa agora.</span>
+            Você não precisa estudar mais.{' '}
+            <span className="gradient-text">Precisa corrigir melhor.</span>
           </h2>
           <p className="text-lg text-gray-400 mb-10 leading-relaxed">
             Cada semana sem acompanhamento estratégico é uma semana repetindo os mesmos erros. Sua próxima redação pode ser a primeira com direção de verdade.
@@ -64,26 +62,22 @@ export default function CTAFinal() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <a
-              href={WA_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/cadastro?next=/aluno/upgrade"
               className="btn-primary-lg"
-              onClick={() => trackEvent('cta_click', { source: 'cta_final' })}
+              onClick={() => trackEvent('checkout_started', { plan: 'cta_final' })}
             >
-              Quero começar minha evolução
+              Começar minha evolução
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
             <a
-              href={WA_DUVIDAS}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#planos"
               className="btn-secondary-lg"
-              onClick={() => trackEvent('cta_click', { source: 'cta_final_duvidas' })}
+              onClick={() => trackEvent('cta_click', { source: 'cta_final_ver_planos' })}
             >
-              Ainda tem dúvidas?
+              Ver planos e preços
             </a>
           </div>
 

@@ -5,8 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { trackEvent } from './Analytics'
 
-const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
 
 const navLinks = [
   { label: 'Método', href: '/#como-funciona' },
@@ -67,18 +65,16 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <a
-          href={WA_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/cadastro?next=/aluno/upgrade"
           className="hidden lg:inline-flex btn-primary text-sm py-2.5 px-5"
-          onClick={() => trackEvent('cta_click', { source: 'navbar' })}
+          onClick={() => trackEvent('checkout_started', { plan: 'navbar' })}
         >
           Começar agora
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
-        </a>
+        </Link>
 
         {/* Mobile hamburger */}
         <button
@@ -112,18 +108,16 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <a
-            href={WA_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/cadastro?next=/aluno/upgrade"
             className="btn-primary w-full mt-4 text-sm"
-            onClick={() => trackEvent('cta_click', { source: 'navbar_mobile' })}
+            onClick={() => { setOpen(false); trackEvent('checkout_started', { plan: 'navbar_mobile' }) }}
           >
             Começar agora
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </a>
+          </Link>
         </div>
       )}
     </header>

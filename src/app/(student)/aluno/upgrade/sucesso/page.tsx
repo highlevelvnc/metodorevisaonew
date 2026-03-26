@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
+import { AutoRedirect } from './AutoRedirect'
 
 export const metadata = { title: 'Pagamento confirmado | Método Revisão' }
 
@@ -19,6 +20,7 @@ export default async function SucessoPage({
 
   /* ── Verify session with Stripe (server-to-server) ──────────────────────── */
   let planName   = 'Plano'
+  let planSlug   = ''
   let essayCount = 0
   let paymentOk  = false
 
@@ -27,6 +29,7 @@ export default async function SucessoPage({
       expand: ['line_items'],
     })
     paymentOk  = session.payment_status === 'paid'
+    planSlug   = (session.metadata?.planSlug as string) ?? ''
     planName   = session.line_items?.data[0]?.description?.replace('Método Revisão — ', '') ?? 'Plano'
     // Extract essay count from the product description if available
     const desc = session.line_items?.data[0]?.description ?? ''
@@ -151,6 +154,9 @@ export default async function SucessoPage({
             Ir para o painel
           </Link>
         </div>
+
+        {/* Auto-redirect countdown */}
+        <AutoRedirect planSlug={planSlug || undefined} delay={5} />
       </div>
 
       {/* Reassurance */}

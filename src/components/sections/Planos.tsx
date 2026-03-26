@@ -1,11 +1,10 @@
 'use client'
-import { trackEvent } from '@/components/Analytics'
-
-const WA_BASE = 'https://wa.me/5522992682207?text='
+import { LandingCheckoutButton } from '@/components/LandingCheckoutButton'
 
 const planos = [
   {
     name: 'Evolução',
+    slug: 'evolucao',
     tagline: 'Para quem está começando a levar a redação a sério',
     price: 97,
     pricePerDay: '3,23',
@@ -24,10 +23,10 @@ const planos = [
     ],
     cta: 'Começar com o Evolução',
     sub: 'Uma redação por semana, com feedback real.',
-    waText: encodeURIComponent('Olá! Quero assinar o plano Evolução da Método Revisão.'),
   },
   {
     name: 'Estratégia',
+    slug: 'estrategia',
     tagline: 'Para quem quer resultado consistente e visível',
     price: 167,
     pricePerDay: '5,57',
@@ -45,10 +44,10 @@ const planos = [
     ],
     cta: 'Quero o plano Estratégia',
     sub: 'O plano que mais gera resultado.',
-    waText: encodeURIComponent('Olá! Quero assinar o plano Estratégia da Método Revisão.'),
   },
   {
     name: 'Intensivo',
+    slug: 'intensivo',
     tagline: 'Para quem está a poucos meses do ENEM',
     price: 227,
     pricePerDay: '7,57',
@@ -67,7 +66,6 @@ const planos = [
     ],
     cta: 'Quero o Intensivo',
     sub: 'Aceleração máxima antes da prova.',
-    waText: encodeURIComponent('Olá! Quero assinar o plano Intensivo da Método Revisão.'),
   },
 ]
 
@@ -165,19 +163,11 @@ export default function Planos() {
                 </ul>
 
                 {/* CTA */}
-                <a
-                  href={`${WA_BASE}${p.waText}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`w-full text-center rounded-xl font-semibold py-3.5 text-sm transition-all duration-200 ${
-                    p.popular
-                      ? 'bg-purple-600 text-white hover:bg-purple-500 shadow-btn-primary hover:shadow-btn-primary-lg'
-                      : 'bg-white/[0.05] border border-white/[0.09] text-gray-400 hover:bg-white/[0.08] hover:text-white hover:border-white/[0.15]'
-                  }`}
-                  onClick={() => trackEvent('plan_click', { plan: p.name })}
-                >
-                  {p.cta}
-                </a>
+                <LandingCheckoutButton
+                  planSlug={p.slug}
+                  label={p.cta}
+                  variant={p.popular ? 'primary' : 'secondary'}
+                />
                 <p className="text-xs text-gray-700 mt-3 text-center">{p.sub}</p>
               </div>
             </div>

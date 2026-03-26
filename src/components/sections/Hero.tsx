@@ -1,9 +1,7 @@
 'use client'
 import Image from 'next/image'
+import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
-
-const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
 
 export default function Hero() {
   return (
@@ -72,20 +70,23 @@ export default function Hero() {
             acompanha até sua nota subir de verdade.
           </p>
 
+          {/* Urgency line */}
+          <p className="text-sm text-amber-400/80 mb-6">
+            Comece hoje e receba sua primeira correção em até 48h
+          </p>
+
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
-            <a
-              href={WA_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/cadastro?next=/aluno/upgrade"
               className="btn-primary-lg animate-glow-pulse"
-              onClick={() => trackEvent('cta_click', { source: 'hero' })}
+              onClick={() => trackEvent('checkout_started', { plan: 'hero' })}
             >
-              Quero começar minha evolução
+              Começar minha evolução
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
             <a href="#como-funciona" className="btn-secondary-lg">
               Ver como funciona
             </a>
