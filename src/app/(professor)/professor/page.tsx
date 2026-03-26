@@ -62,6 +62,16 @@ export default async function ProfessorDashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Belt-and-suspenders role check (middleware is primary guard; this protects
+  // against DEV_BYPASS_AUTH in development and any edge cases in production)
+  const { data: profileRaw } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  const roleProfile = profileRaw as { role: string } | null
+  if (!roleProfile || !['admin', 'reviewer'].includes(roleProfile.role)) redirect('/aluno')
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 

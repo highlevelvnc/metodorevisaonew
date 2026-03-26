@@ -1,12 +1,26 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'Professor — Perfil do Aluno',
   robots: { index: false, follow: false },
 }
 
-export default function ProfessorAlunoPage({ params }: { params: { id: string } }) {
+export default async function ProfessorAlunoPage({ params }: { params: { id: string } }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profileRaw } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  const profile = profileRaw as { role: string } | null
+  if (!profile || !['admin', 'reviewer'].includes(profile.role)) redirect('/aluno')
+
   return (
     <div>
       <div className="mb-8 flex items-center gap-3">

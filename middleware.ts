@@ -86,18 +86,37 @@ export async function middleware(request: NextRequest) {
       const safePath =
         rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
           ? rawNext
-          : '/aluno'
+          : null
+
       const dest = request.nextUrl.clone()
-      // Parse safePath safely in case it contains query params (e.g. /checkout/estrategia?cancelado=1)
-      try {
-        const parsed = new URL(safePath, request.url)
-        dest.pathname = parsed.pathname
-        dest.search   = parsed.search
-        dest.hash     = ''
-      } catch {
-        dest.pathname = '/aluno'
+
+      if (safePath) {
+        // Explicit ?next= present — honour it (works for both students and professors)
+        try {
+          const parsed = new URL(safePath, request.url)
+          dest.pathname = parsed.pathname
+          dest.search   = parsed.search
+          dest.hash     = ''
+        } catch {
+          dest.pathname = '/aluno'
+          dest.search   = ''
+        }
+      } else {
+        // No ?next= — use role to decide the correct default landing page so
+        // professors who visit /login while already signed-in land on /professor,
+        // not the student dashboard.
+        const { data: loginProfile } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        const isProfessor =
+          loginProfile?.role === 'admin' || loginProfile?.role === 'reviewer'
+        dest.pathname = isProfessor ? '/professor' : '/aluno'
         dest.search   = ''
+        dest.hash     = ''
       }
+
       return NextResponse.redirect(dest)
     }
   }
