@@ -17,8 +17,10 @@ import {
   Flame,
   ChevronUp,
   ChevronDown,
+  Banknote,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { RATE_ESSAY, formatBRL } from '@/lib/professor/rates'
 
 export const dynamic = 'force-dynamic'
 
@@ -182,6 +184,16 @@ export default async function ProfessorDashboardPage() {
   const levelPct     = nextLevel
     ? Math.min(100, Math.round(((estimatedPoints - currentLevel.pts) / (nextLevel.pts - currentLevel.pts)) * 100))
     : 100
+
+  // ── Financial cockpit ──────────────────────────────────────────────────────
+  const ganhoDoMes          = correctedThisMonth * RATE_ESSAY
+  const dayOfMonth          = now.getDate()
+  const daysInMonth         = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const diasRestantes       = daysInMonth - dayOfMonth
+  const avgPerDayMonth      = dayOfMonth > 0 ? correctedThisMonth / dayOfMonth : 0
+  const projectedEssays     = Math.round(avgPerDayMonth * daysInMonth)
+  const projecaoFechamento  = projectedEssays * RATE_ESSAY
+  const progressMes         = daysInMonth > 0 ? Math.round((dayOfMonth / daysInMonth) * 100) : 0
 
   // ── Dynamic insight
   const insight = pending > 10
@@ -374,6 +386,67 @@ export default async function ProfessorDashboardPage() {
           <p className="text-xs text-gray-600">por correção · {avgPerDay}/dia</p>
         </div>
 
+      </div>
+
+      {/* ── Financial cockpit ─────────────────────────────────────── */}
+      <div className="card-dark rounded-2xl p-5 border border-green-500/[0.10] relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-500/30 to-transparent" />
+
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+              <Banknote size={13} className="text-green-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-white">Ganhos do mês</h2>
+            <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+              Em aberto
+            </span>
+          </div>
+          <Link href="/professor/ganhos" className="text-xs text-green-400 hover:text-green-300 transition-colors flex items-center gap-1">
+            Detalhes <ArrowRight size={11} />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div>
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Ganho parcial</p>
+            <p className="text-xl font-bold text-green-400">{formatBRL(ganhoDoMes)}</p>
+            <p className="text-[11px] text-gray-700 mt-0.5">{correctedThisMonth} correções</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Projeção</p>
+            <p className="text-xl font-bold text-white">
+              {projecaoFechamento > 0 ? formatBRL(projecaoFechamento) : '—'}
+            </p>
+            <p className="text-[11px] text-gray-700 mt-0.5">
+              {projectedEssays > 0 ? `~${projectedEssays} correções` : 'poucos dados'}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Dias restantes</p>
+            <p className="text-xl font-bold text-white">{diasRestantes}</p>
+            <p className="text-[11px] text-gray-700 mt-0.5">de {daysInMonth} no ciclo</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Taxa/correção</p>
+            <p className="text-xl font-bold text-amber-400">{formatBRL(RATE_ESSAY)}</p>
+            <p className="text-[11px] text-gray-700 mt-0.5">vigente</p>
+          </div>
+        </div>
+
+        {/* Month progress bar */}
+        <div className="pt-4 border-t border-white/[0.04]">
+          <div className="flex justify-between text-[10px] text-gray-700 mb-1.5">
+            <span>Dia {dayOfMonth} de {daysInMonth}</span>
+            <span>{progressMes}% do ciclo concluído</span>
+          </div>
+          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-green-700 to-green-500 rounded-full transition-all duration-700"
+              style={{ width: `${progressMes}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Main grid: correction queue + right column ───────────── */}

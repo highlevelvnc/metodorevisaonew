@@ -6,9 +6,16 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
-  FileText,
+  Inbox,
+  Video,
+  CalendarDays,
   Users,
+  BarChart3,
+  Banknote,
+  FileCheck2,
   BookOpen,
+  HelpCircle,
+  UserCircle2,
   LogOut,
   Menu,
   X,
@@ -17,14 +24,40 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-const navItems = [
-  { label: 'Dashboard',    href: '/professor',             icon: LayoutDashboard },
-  { label: 'Redações',     href: '/professor/redacoes',   icon: FileText },
-  { label: 'Alunos',       href: '/professor/alunos',     icon: Users },
-  { label: 'Temas',        href: '/professor/temas',      icon: BookOpen },
+// ── Nav structure ──────────────────────────────────────────────────────────────
+type NavItem    = { label: string; href: string; icon: React.ElementType }
+type NavSection = { label: string; items: NavItem[] }
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    label: 'OPERAÇÃO',
+    items: [
+      { label: 'Dashboard',         href: '/professor',           icon: LayoutDashboard },
+      { label: 'Fila de Correções', href: '/professor/redacoes',  icon: Inbox           },
+      { label: 'Aulas',             href: '/professor/aulas',     icon: Video           },
+      { label: 'Agenda',            href: '/professor/agenda',    icon: CalendarDays    },
+    ],
+  },
+  {
+    label: 'GESTÃO',
+    items: [
+      { label: 'Alunos',            href: '/professor/alunos',     icon: Users      },
+      { label: 'Desempenho',        href: '/professor/desempenho', icon: BarChart3  },
+      { label: 'Ganhos',            href: '/professor/ganhos',     icon: Banknote   },
+      { label: 'Fechamento Mensal', href: '/professor/fechamento', icon: FileCheck2 },
+    ],
+  },
+  {
+    label: 'CONTA',
+    items: [
+      { label: 'Materiais de Apoio', href: '/professor/materiais', icon: BookOpen    },
+      { label: 'Suporte',            href: '/professor/suporte',   icon: HelpCircle  },
+      { label: 'Perfil',             href: '/professor/perfil',    icon: UserCircle2 },
+    ],
+  },
 ]
 
-// ── Professor identity strip (bottom of sidebar) ─────────────────────────────
+// ── Professor identity strip ───────────────────────────────────────────────────
 function ProfessorIdentityStrip() {
   const [email, setEmail] = useState<string | null>(null)
 
@@ -56,112 +89,137 @@ function ProfessorIdentityStrip() {
   )
 }
 
+// ── Layout ─────────────────────────────────────────────────────────────────────
 export default function ProfessorLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const pathname    = usePathname()
+  const [open, setOpen] = useState(false)
+
+  // Exact match for /professor (dashboard), prefix match for everything else
+  const isActive = (href: string) => {
+    if (href === '/professor') return pathname === '/professor'
+    return pathname === href || pathname.startsWith(href + '/')
+  }
 
   return (
     <div className="min-h-screen bg-[#070c14] flex">
+
       {/* Mobile overlay */}
-      {sidebarOpen && (
+      {open && (
         <div
           className="fixed inset-0 bg-black/60 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed top-0 left-0 h-full w-64 bg-slate-950 border-r border-white/[0.06] z-40
-          flex flex-col transition-transform duration-300
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 lg:static lg:z-auto
-        `}
-      >
-        {/* Logo + Professor badge */}
-        <div className="h-16 flex items-center px-5 border-b border-white/[0.06] gap-3">
+      {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
+      <aside className={`
+        fixed top-0 left-0 h-full w-[232px] bg-slate-950 border-r border-white/[0.06] z-40
+        flex flex-col transition-transform duration-300
+        ${open ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:static lg:z-auto
+      `}>
+
+        {/* Logo row */}
+        <div className="h-14 flex items-center px-4 border-b border-white/[0.06] gap-2 flex-shrink-0">
           <Link href="/" className="transition-opacity hover:opacity-80">
-            <div style={{ position: 'relative', width: '110px', height: '35px', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '106px', height: '34px', overflow: 'hidden' }}>
               <Image
                 src="/logo.png"
                 alt="Método Revisão"
                 fill
-                sizes="110px"
+                sizes="106px"
                 style={{ objectFit: 'cover', objectPosition: '50% 52%' }}
                 priority
               />
             </div>
           </Link>
-          <span className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">
-            <ShieldCheck size={10} />
+          <span className="ml-auto flex-shrink-0 flex items-center gap-1 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+            <ShieldCheck size={9} />
             PROF
           </span>
           <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 hover:text-white"
+            onClick={() => setOpen(false)}
+            className="lg:hidden text-gray-500 hover:text-white ml-0.5 flex-shrink-0"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 py-5 px-3 space-y-1">
-          {navItems.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href || (href !== '/professor' && pathname.startsWith(href))
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setSidebarOpen(false)}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                  ${active
-                    ? 'bg-amber-500/10 text-amber-300 border border-amber-500/25 shadow-[inset_3px_0_0_0_rgba(245,158,11,0.7)]'
-                    : 'text-gray-400 hover:text-white hover:bg-white/[0.05] border border-transparent'}
-                `}
-              >
-                <Icon size={16} className="flex-shrink-0" />
+        {/* Nav sections */}
+        <nav className="flex-1 overflow-y-auto py-4 px-2.5 scrollbar-thin scrollbar-thumb-white/10">
+          {NAV_SECTIONS.map(({ label, items }, idx) => (
+            <div key={label} className={idx > 0 ? 'mt-1 pt-4 border-t border-white/[0.05]' : ''}>
+              {/* Section label */}
+              <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest px-2.5 mb-1.5">
                 {label}
-                {active && <ChevronRight size={13} className="ml-auto opacity-60" />}
-              </Link>
-            )
-          })}
+              </p>
+              {/* Items */}
+              <div className="space-y-0.5">
+                {items.map(({ label: itemLabel, href, icon: Icon }) => {
+                  const active = isActive(href)
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setOpen(false)}
+                      className={`
+                        flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-medium transition-all duration-150
+                        ${active
+                          ? 'bg-amber-500/[0.12] text-amber-300 border border-amber-500/20 shadow-[inset_3px_0_0_0_rgba(245,158,11,0.55)]'
+                          : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.04] border border-transparent'}
+                      `}
+                    >
+                      <Icon
+                        size={13}
+                        className={`flex-shrink-0 ${active ? 'text-amber-400' : 'text-gray-600'}`}
+                      />
+                      <span className="truncate">{itemLabel}</span>
+                      {active && (
+                        <ChevronRight size={11} className="ml-auto opacity-40 flex-shrink-0" />
+                      )}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-        {/* Account footer */}
-        <div className="p-3 border-t border-white/[0.06] space-y-0.5">
+        {/* Footer: identity + sign-out */}
+        <div className="p-2.5 border-t border-white/[0.06] space-y-px flex-shrink-0">
           <ProfessorIdentityStrip />
           <form action="/api/auth/signout" method="POST">
             <button
               type="submit"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] transition-all border border-transparent"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-medium text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] transition-all border border-transparent"
             >
-              <LogOut size={16} />
+              <LogOut size={13} />
               Sair da conta
             </button>
           </form>
         </div>
+
       </aside>
 
-      {/* Main content */}
+      {/* ── Main area ────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
+
         {/* Mobile topbar */}
-        <header className="lg:hidden h-14 bg-slate-950 border-b border-white/[0.06] flex items-center px-4 gap-3">
+        <header className="lg:hidden h-14 bg-slate-950 border-b border-white/[0.06] flex items-center px-4 gap-3 flex-shrink-0">
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setOpen(true)}
             className="text-gray-400 hover:text-white"
             aria-label="Abrir menu"
           >
             <Menu size={20} />
           </button>
           <Link href="/" className="transition-opacity hover:opacity-75">
-            <div style={{ position: 'relative', width: '108px', height: '34px', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '106px', height: '34px', overflow: 'hidden' }}>
               <Image
                 src="/logo.png"
                 alt="Método Revisão"
                 fill
-                sizes="108px"
+                sizes="106px"
                 style={{ objectFit: 'cover', objectPosition: '50% 52%' }}
               />
             </div>
@@ -176,6 +234,7 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
         <main className="flex-1 p-5 sm:p-7 lg:p-8">
           {children}
         </main>
+
       </div>
     </div>
   )
