@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
 
 interface Props {
@@ -130,15 +129,17 @@ export function ProceedButton({
         ))}
       </div>
 
-      {/* Switch account */}
+      {/* Switch account — plain <a> tag prevents Next.js Link prefetch,
+          which would otherwise trigger GET /api/auth/signout at render time
+          (causing accidental signout + CORS errors on the preflight). */}
       <p className="text-center text-xs text-gray-700 mt-5 pt-4 border-t border-white/[0.05]">
         Não é você?{' '}
-        <Link
+        <a
           href={`/api/auth/signout?next=/checkout/${planSlug}`}
           className="text-gray-500 hover:text-gray-300 transition-colors underline"
         >
           Usar outra conta
-        </Link>
+        </a>
       </p>
     </div>
   )

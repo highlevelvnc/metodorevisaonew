@@ -2,34 +2,63 @@
  * GET /auth/callback
  *
  * Supabase Auth PKCE callback handler.
- * Triggered in two scenarios:
- *   1. Email confirmation after sign-up  → redirects to ?next= (e.g. /checkout/estrategia)
- *   2. Password reset link               → redirects to /auth/atualizar-senha
+ * Handles two flows:
+ *   1. Email confirmation after sign-up  → redirect to ?next= (e.g. /checkout/estrategia)
+ *   2. Password reset / magic link       → redirect to /auth/atualizar-senha
  *
- * ⚠️  IMPORTANT — why we use getSiteUrl() and NOT `request.url` origin:
+ * ── Why we use createServerClient directly (not createClient from server.ts) ──
  *
- *     If the emailRedirectTo was accidentally built with the preview/deployment
- *     URL (e.g. myapp-abc123.vercel.app), this callback will receive the request
- *     on that preview domain. Using `new URL(request.url).origin` as the redirect
- *     target would keep the user on the preview domain — where their session cookie
- *     (scoped to the production domain) doesn't work and they appear logged-out.
+ * server.ts's createClient() uses `cookies()` from `next/headers`.
+ * In Next.js route handlers, next/headers cookies are READ-ONLY — calling
+ * cookieStore.set() silently throws (caught by the try/catch in setAll).
+ * This means supabase.auth.exchangeCodeForSession() exchanges the code
+ * successfully with Supabase's API, but the resulting session tokens are
+ * NEVER written as HTTP cookies in the browser.
  *
- *     By always redirecting to getSiteUrl() (NEXT_PUBLIC_SITE_URL), we guarantee
- *     the user lands on the correct production domain regardless of which domain
- *     received the auth callback request.
+ * The fix: create the Supabase client with a `setAll` that writes cookies
+ * directly onto the NextResponse object being returned. This way the HTTP
+ * Set-Cookie headers ARE included in the response and the browser stores them.
  *
- * Supabase Dashboard → Authentication → URL Configuration must include:
- *   https://metodorevisao.com/auth/callback
- *   http://localhost:3000/auth/callback
+ * ── Why we use getSiteUrl() for redirects, NOT new URL(request.url).origin ──
+ *
+ * request.url may be a Vercel preview URL. Always redirect to the canonical
+ * production domain to keep session cookies on the correct domain.
  */
 
 export const runtime = 'nodejs'
 
-import { NextResponse }  from 'next/server'
-import { createClient }  from '@/lib/supabase/server'
-import { getSiteUrl }    from '@/lib/get-site-url'
+import { NextRequest, NextResponse }  from 'next/server'
+import { createServerClient }         from '@supabase/ssr'
+import { getSiteUrl }                 from '@/lib/get-site-url'
 
-export async function GET(request: Request) {
+// ─── Helper: Supabase client that writes cookies to a response object ─────────
+
+function makeSupabaseClient(request: NextRequest, response: NextResponse) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = (
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+  )
+
+  return createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      // Read from the incoming request's cookies
+      getAll() {
+        return request.cookies.getAll()
+      },
+      // Write to the outgoing response — this is what actually sets browser cookies
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options)
+        })
+      },
+    },
+  })
+}
+
+// ─── Route handler ────────────────────────────────────────────────────────────
+
+export async function GET(request: NextRequest) {
   const { searchParams, origin: requestOrigin } = new URL(request.url)
 
   const code       = searchParams.get('code')
@@ -45,29 +74,24 @@ export async function GET(request: Request) {
       ? rawNext
       : '/aluno'
 
-  // ⚠️  Use canonical URL, NOT requestOrigin.
-  // requestOrigin may be a Vercel preview URL if the email link was built wrong.
   const canonical = getSiteUrl()
 
   const tag = `[auth/callback]`
   console.log(
     `${tag} requestOrigin="${requestOrigin}" canonical="${canonical}" ` +
-    `code=${code ? 'yes' : 'no'} token_hash=${tokenHash ? 'yes' : 'no'} ` +
-    `type="${type}" next="${next}"`
+    `code=${code ? 'present' : 'absent'} ` +
+    `token_hash=${tokenHash ? 'present' : 'absent'} ` +
+    `type="${type ?? 'n/a'}" next="${next}"`
   )
 
   if (requestOrigin !== canonical) {
     console.warn(
-      `${tag} ⚠️  requestOrigin (${requestOrigin}) ≠ canonical (${canonical}). ` +
-      `This means the email link was built with the wrong domain. ` +
-      `Redirecting to canonical URL after session exchange. ` +
-      `Fix: ensure NEXT_PUBLIC_SITE_URL is set on ALL Vercel environments (Production + Preview + Development).`
+      `${tag} ⚠️  requestOrigin ≠ canonical — email link was built with wrong domain. ` +
+      `Ensure NEXT_PUBLIC_SITE_URL is set on ALL Vercel environments.`
     )
   }
 
-  const supabase = await createClient()
-
-  /* ── Supabase-side error (e.g. expired link) ──────────────────────────── */
+  /* ── Supabase-side error (expired link etc.) ─────────────────────────────── */
   if (errorParam) {
     console.error(`${tag} Supabase error: "${errorParam}" — ${errorDesc}`)
     return NextResponse.redirect(
@@ -75,9 +99,16 @@ export async function GET(request: Request) {
     )
   }
 
-  /* ── PKCE code exchange ────────────────────────────────────────────────── */
+  /* ── PKCE code exchange ──────────────────────────────────────────────────── */
   if (code) {
-    console.log(`${tag} exchanging PKCE code for session`)
+    console.log(`${tag} exchanging PKCE code → session`)
+
+    // Create the redirect response FIRST so we can attach cookies to it
+    const successResponse = NextResponse.redirect(`${canonical}${next}`)
+
+    // Build Supabase client that writes to successResponse's cookies
+    const supabase = makeSupabaseClient(request, successResponse)
+
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
@@ -87,14 +118,23 @@ export async function GET(request: Request) {
       )
     }
 
-    console.log(`${tag} ✓ session established — user=${data.session?.user?.id ?? 'unknown'}`)
+    const userId = data.session?.user?.id ?? 'unknown'
+    console.log(`${tag} ✓ session exchanged — user=${userId}`)
     console.log(`${tag} → redirecting to ${canonical}${next}`)
-    return NextResponse.redirect(`${canonical}${next}`)
+
+    // successResponse already has Set-Cookie headers from setAll() above
+    return successResponse
   }
 
-  /* ── Token hash flow (magic link / recovery) ──────────────────────────── */
+  /* ── Token hash flow (magic link / password reset) ──────────────────────── */
   if (tokenHash && type) {
     console.log(`${tag} verifying token_hash type="${type}"`)
+
+    const targetPath = type === 'recovery' ? '/auth/atualizar-senha' : next
+    const tokenResponse = NextResponse.redirect(`${canonical}${targetPath}`)
+
+    const supabase = makeSupabaseClient(request, tokenResponse)
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
 
@@ -105,18 +145,13 @@ export async function GET(request: Request) {
       )
     }
 
-    console.log(`${tag} ✓ OTP verified — user=${data.session?.user?.id ?? 'unknown'}`)
+    const userId = data.session?.user?.id ?? 'unknown'
+    console.log(`${tag} ✓ OTP verified — user=${userId} → ${canonical}${targetPath}`)
 
-    if (type === 'recovery') {
-      console.log(`${tag} recovery flow → /auth/atualizar-senha`)
-      return NextResponse.redirect(`${canonical}/auth/atualizar-senha`)
-    }
-
-    console.log(`${tag} → redirecting to ${canonical}${next}`)
-    return NextResponse.redirect(`${canonical}${next}`)
+    return tokenResponse
   }
 
-  /* ── Neither code nor token_hash ─────────────────────────────────────── */
-  console.warn(`${tag} no code or token_hash present → /login`)
+  /* ── No code and no token_hash ───────────────────────────────────────────── */
+  console.warn(`${tag} no code or token_hash — redirecting to login`)
   return NextResponse.redirect(`${canonical}/login?error=link_invalido`)
 }

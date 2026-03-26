@@ -5,25 +5,67 @@
  * Returns { url } — client redirects to Stripe hosted page.
  *
  * ⚠️  MUST run in Node.js runtime.
- *    Stripe SDK uses node:http / node:https which are unavailable in Edge Runtime.
- *    Supabase getUser() also makes a network call that can silently fail in Edge.
+ *    Stripe SDK uses node:http / node:https — unavailable in Edge Runtime.
+ *    Supabase getUser() makes a network call — also unreliable in Edge.
  */
 export const runtime = 'nodejs'
 
-import { NextResponse }       from 'next/server'
-import { createClient }       from '@/lib/supabase/server'
-import { buildStripeSession } from '@/lib/stripe-session'
+import { NextRequest, NextResponse }  from 'next/server'
+import { createServerClient }         from '@supabase/ssr'
+import { buildStripeSession }         from '@/lib/stripe-session'
 
-export async function POST(req: Request) {
+// ─── Supabase client scoped to the incoming request (read-only cookies OK) ───
+// Route handlers can read cookies but not set them via next/headers.
+// For this endpoint we only READ the session, so that's fine.
+
+function makeSupabaseClient(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = (
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+  )
+
+  return createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
+      },
+      // We don't need to set cookies here (read-only is fine for auth check)
+      setAll() {},
+    },
+  })
+}
+
+// ─── Handler ─────────────────────────────────────────────────────────────────
+
+export async function POST(request: NextRequest) {
   const reqId = Math.random().toString(36).slice(2, 8)
   const tag   = `[api/checkout id=${reqId}]`
 
-  console.log(`${tag} ── request received ──`)
+  console.log(`${tag} ── POST received ──`)
+  console.log(`${tag} host="${request.headers.get('host')}" origin="${request.headers.get('origin')}"`)
+  console.log(`${tag} url="${request.url}"`)
 
-  // ── 1. Parse body ───────────────────────────────────────────────────────────
+  // ── Cookie diagnostics ────────────────────────────────────────────────────
+  const allCookies  = request.cookies.getAll()
+  const cookieNames = allCookies.map((c) => c.name)
+  const sbCookies   = cookieNames.filter((n) => n.startsWith('sb-'))
+  console.log(`${tag} cookies total=${cookieNames.length} supabase=${sbCookies.length} names=[${sbCookies.join(', ')}]`)
+
+  if (sbCookies.length === 0) {
+    console.warn(
+      `${tag} ⚠️  No Supabase cookies found in request.\n` +
+      `  This means the browser did not send session cookies with this POST request.\n` +
+      `  Likely cause: session was never written to cookies (e.g. auth/callback did not set them),\n` +
+      `  or cookies are on a different domain than this request.\n` +
+      `  All cookie names received: [${cookieNames.join(', ')}]`
+    )
+  }
+
+  // ── 1. Parse body ────────────────────────────────────────────────────────
   let planSlug: string | undefined
   try {
-    const body = await req.json() as { planSlug?: string }
+    const body = await request.json() as { planSlug?: string }
     planSlug   = body.planSlug?.trim()
   } catch {
     console.error(`${tag} body parse failed`)
@@ -42,27 +84,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Plano trial não requer pagamento.' }, { status: 400 })
   }
 
-  // ── 2. Authenticate ─────────────────────────────────────────────────────────
-  let user: Awaited<ReturnType<Awaited<ReturnType<typeof createClient>>['auth']['getUser']>>['data']['user']
+  // ── 2. Authenticate ──────────────────────────────────────────────────────
+  const supabase = makeSupabaseClient(request)
 
-  try {
-    const supabase = await createClient()
-    const { data, error: authErr } = await supabase.auth.getUser()
+  // getSession() reads JWT locally (no network call) — fast sanity check
+  const { data: sessionData } = await supabase.auth.getSession()
+  console.log(
+    `${tag} getSession() → ` +
+    (sessionData.session
+      ? `session present, user=${sessionData.session.user.id}, expires=${new Date((sessionData.session.expires_at ?? 0) * 1000).toISOString()}`
+      : 'null (no session in cookies)')
+  )
 
-    if (authErr) {
-      // Supabase returns an error when the session is absent or expired
-      console.warn(`${tag} getUser() error: code=${authErr.status} msg=${authErr.message}`)
-    }
+  // getUser() verifies the JWT with Supabase's API (authoritative)
+  const { data: userData, error: authErr } = await supabase.auth.getUser()
+  console.log(
+    `${tag} getUser() → ` +
+    (userData.user
+      ? `user=${userData.user.id} email=${userData.user.email}`
+      : `null${authErr ? ` error=${authErr.message}` : ''}`)
+  )
 
-    user = data.user
-    console.log(`${tag} auth: user=${user?.id ?? 'null'} email=${user?.email ?? 'n/a'}`)
-  } catch (err) {
-    console.error(`${tag} getUser() threw unexpectedly:`, err)
-    return NextResponse.json(
-      { error: 'Erro ao verificar sessão. Recarregue a página e tente novamente.' },
-      { status: 500 },
-    )
+  if (authErr) {
+    console.warn(`${tag} getUser() error code=${authErr.status} msg=${authErr.message}`)
   }
+
+  const user = userData.user
 
   if (!user) {
     console.log(`${tag} → 401 unauthenticated`)
@@ -72,12 +119,11 @@ export async function POST(req: Request) {
     )
   }
 
-  // ── 3. Fetch user profile (name for Stripe customer) ────────────────────────
+  // ── 3. Fetch user profile ────────────────────────────────────────────────
   let email    = user.email ?? ''
   let fullName = ''
 
   try {
-    const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any
     const { data: profile, error: profileErr } = await db
@@ -89,36 +135,31 @@ export async function POST(req: Request) {
     if (profileErr) {
       console.warn(`${tag} profile fetch error (non-fatal):`, profileErr.message)
     } else if (profile) {
-      email    = profile.email    || email
+      email    = profile.email     || email
       fullName = profile.full_name || ''
       console.log(`${tag} profile: name="${fullName}" email=${email}`)
     } else {
-      console.warn(`${tag} no profile row found for user ${user.id} (new user, proceeding)`)
+      console.warn(`${tag} no profile row for user ${user.id}`)
     }
   } catch (err) {
     console.warn(`${tag} profile fetch threw (non-fatal):`, err)
   }
 
-  // ── 4. Build Stripe session ──────────────────────────────────────────────────
+  // ── 4. Build Stripe session ──────────────────────────────────────────────
   console.log(`${tag} calling buildStripeSession`)
 
   let stripeUrl: string
   try {
-    stripeUrl = await buildStripeSession({
-      userId:   user.id,
-      email,
-      name:     fullName,
-      planSlug,
-    })
+    stripeUrl = await buildStripeSession({ userId: user.id, email, name: fullName, planSlug })
   } catch (err) {
-    const raw     = err instanceof Error ? err.message : String(err)
+    const raw      = err instanceof Error ? err.message : String(err)
     const isStripe = raw.toLowerCase().includes('stripe') ||
                      raw.toLowerCase().includes('connection') ||
                      raw.toLowerCase().includes('network')
 
-    console.error(`${tag} buildStripeSession threw:`, raw)
+    console.error(`${tag} buildStripeSession threw: ${raw}`)
     if (err instanceof Error && err.stack) {
-      console.error(`${tag} stack:`, err.stack.split('\n').slice(0, 5).join(' | '))
+      console.error(`${tag} stack: ${err.stack.split('\n').slice(0, 4).join(' | ')}`)
     }
 
     if (raw.includes('não encontrado') || raw.includes('inativo')) {
@@ -126,16 +167,13 @@ export async function POST(req: Request) {
     }
     if (isStripe) {
       return NextResponse.json(
-        { error: 'Não foi possível conectar ao sistema de pagamento. Tente novamente em alguns instantes.' },
+        { error: 'Não foi possível conectar ao sistema de pagamento. Tente novamente.' },
         { status: 502 },
       )
     }
-    return NextResponse.json(
-      { error: `Erro ao iniciar pagamento: ${raw}` },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: `Erro ao iniciar pagamento: ${raw}` }, { status: 500 })
   }
 
-  console.log(`${tag} ✓ returning Stripe URL`)
+  console.log(`${tag} ✓ Stripe URL ready`)
   return NextResponse.json({ url: stripeUrl })
 }
