@@ -27,34 +27,79 @@ import { createClient } from '@/lib/supabase/client'
 type NavItem = { label: string; href: string; icon: React.ElementType; badge?: string }
 type NavSection = { label?: string; items: NavItem[] }
 
+// ── Plan badge colours (mirrors DashboardHero PLAN_CONFIG) ───────────────────
+const PLAN_PILL: Record<string, string> = {
+  Trial:      'text-gray-400 bg-white/[0.05] border-white/[0.10]',
+  Evolução:   'text-blue-400 bg-blue-500/10 border-blue-500/25',
+  Estratégia: 'text-purple-400 bg-purple-500/10 border-purple-500/25',
+  Intensivo:  'text-amber-400 bg-amber-500/10 border-amber-500/25',
+}
+
 // ── User identity strip (bottom of sidebar) ──────────────────────────────────
 function UserInfoStrip() {
-  const [email, setEmail] = useState<string | null>(null)
+  const [email,    setEmail]    = useState<string | null>(null)
+  const [planName, setPlanName] = useState<string | null>(null)
+  const pathname = usePathname()
+  const isActive = pathname === '/aluno/conta' || pathname.startsWith('/aluno/conta/')
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setEmail(data.user.email)
+      const u = data.user
+      if (!u?.email) return
+      setEmail(u.email)
+      // Lazily fetch active plan name
+      ;(supabase as any)
+        .from('subscriptions')
+        .select('plans(name)')
+        .eq('user_id', u.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: sub }: any) => {
+          if (sub?.plans?.name) setPlanName(sub.plans.name)
+        })
     })
   }, [])
 
   const initial     = email ? email[0].toUpperCase() : '?'
   const displayName = email ? email.split('@')[0] : null
+  const pillClass   = planName ? (PLAN_PILL[planName] ?? PLAN_PILL['Evolução']) : null
 
   return (
     <Link
       href="/aluno/conta"
-      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-colors group"
+      className={`
+        flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all group
+        ${isActive
+          ? 'bg-purple-700/20 text-purple-300 border border-purple-600/25 shadow-[inset_3px_0_0_0_rgba(168,85,247,0.7)]'
+          : 'hover:bg-white/[0.04] border border-transparent'}
+      `}
     >
-      <div className="w-7 h-7 rounded-full bg-purple-600/20 border border-purple-500/30 flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-purple-300 select-none">
+      <div className={`
+        w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center
+        text-[11px] font-bold select-none border transition-colors
+        ${isActive
+          ? 'bg-purple-600/30 border-purple-500/40 text-purple-200'
+          : 'bg-purple-600/20 border-purple-500/30 text-purple-300'}
+      `}>
         {initial}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-medium text-gray-400 group-hover:text-gray-200 transition-colors truncate leading-none">
+        <p className={`text-[12px] font-medium transition-colors truncate leading-none ${
+          isActive ? 'text-purple-200' : 'text-gray-400 group-hover:text-gray-200'
+        }`}>
           {displayName ?? 'Minha conta'}
         </p>
-        {email && (
-          <p className="text-[10px] text-gray-700 truncate mt-0.5">{email}</p>
+        {pillClass && planName ? (
+          <span className={`inline-flex items-center mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded border ${pillClass}`}>
+            {planName}
+          </span>
+        ) : (
+          <p className="text-[10px] text-gray-700 truncate mt-0.5 leading-none">
+            {email ?? 'carregando…'}
+          </p>
         )}
       </div>
     </Link>
@@ -169,7 +214,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                         ${active
-                          ? 'bg-purple-700/20 text-purple-300 border border-purple-600/25'
+                          ? 'bg-purple-700/20 text-purple-300 border border-purple-600/25 shadow-[inset_3px_0_0_0_rgba(168,85,247,0.7)]'
                           : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.04] border border-transparent'}
                       `}
                     >

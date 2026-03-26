@@ -91,14 +91,20 @@ function WeeklyFocusBar({
         <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
           <Calendar size={14} className="text-blue-400" />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Esta semana</p>
-          <p className="text-sm font-bold text-white leading-none">
-            {weeklyCount}{' '}
-            <span className="font-normal text-gray-600 text-xs">
-              redaç{weeklyCount !== 1 ? 'ões' : 'ão'}
-            </span>
-          </p>
+          {weeklyCount > 0 ? (
+            <p className="text-sm font-bold text-white leading-none">
+              {weeklyCount}{' '}
+              <span className="font-normal text-gray-600 text-xs">
+                redaç{weeklyCount !== 1 ? 'ões' : 'ão'}
+              </span>
+            </p>
+          ) : (
+            <Link href="/aluno/redacoes/nova" className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors">
+              Enviar agora →
+            </Link>
+          )}
         </div>
       </div>
 
@@ -115,8 +121,10 @@ function WeeklyFocusBar({
               : daysSinceLastCorrection === 0
                 ? 'Hoje'
                 : daysSinceLastCorrection === 1
-                  ? '1 dia atrás'
-                  : `${daysSinceLastCorrection}d atrás`
+                  ? 'Ontem'
+                  : daysSinceLastCorrection <= 7
+                    ? `${daysSinceLastCorrection} dias atrás`
+                    : `há ${daysSinceLastCorrection}d`
             }
           </p>
         </div>
@@ -221,11 +229,12 @@ export default async function AlunoDashboardPage() {
     : []
 
   // Weekly activity
-  const oneWeekAgo             = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const weeklyCount            = essays.filter(e => e.submitted_at >= oneWeekAgo).length
+  const oneWeekAgo              = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const weeklyCount             = essays.filter(e => e.submitted_at >= oneWeekAgo).length
   const daysSinceLastCorrection = lastCorrection?.corrected_at
     ? Math.floor((Date.now() - new Date(lastCorrection.corrected_at).getTime()) / (1000 * 60 * 60 * 24))
     : null
+  const lastCorrectedEssayId    = correctedEssays[0]?.id ?? null
 
   // Upgrade signal
   const creditsPct       = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
@@ -261,6 +270,7 @@ export default async function AlunoDashboardPage() {
         overallDelta={overallDelta}
         pendingCount={pendingCount}
         weeklyCount={weeklyCount}
+        lastCorrectedEssayId={lastCorrectedEssayId}
         upgradeSignal={upgradeSignal}
         planTierNextPlan={planTier.nextPlan}
       />
@@ -305,7 +315,7 @@ export default async function AlunoDashboardPage() {
         lastCorrectionDate={lastCorrection?.corrected_at ?? null}
       />
 
-      {/* ── 5. Resources ────────────────────────────────────────────────────── */}
+      {/* ── 6. Resources ────────────────────────────────────────────────────── */}
       <SectionLabel>Recursos de estudo</SectionLabel>
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
         <ThemesSection />

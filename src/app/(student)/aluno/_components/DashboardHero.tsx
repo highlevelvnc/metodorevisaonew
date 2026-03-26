@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, MessageCircle, Sparkles, TrendingUp, Flame, Zap } from 'lucide-react'
+import { ArrowRight, BookOpen, MessageCircle, Sparkles, TrendingUp, Flame, Zap } from 'lucide-react'
 
 interface DashboardHeroProps {
   firstName: string
@@ -10,6 +10,7 @@ interface DashboardHeroProps {
   overallDelta: number | null
   pendingCount: number
   weeklyCount: number
+  lastCorrectedEssayId: string | null
   upgradeSignal: 'last_credit_evolving' | 'exhausted' | 'halfway_evolving' | null
   planTierNextPlan: string | null
 }
@@ -62,6 +63,7 @@ export function DashboardHero({
   overallDelta,
   pendingCount,
   weeklyCount,
+  lastCorrectedEssayId,
   upgradeSignal,
   planTierNextPlan,
 }: DashboardHeroProps) {
@@ -139,7 +141,7 @@ export function DashboardHero({
             </h1>
 
             {/* Motivation line */}
-            <p className="text-sm text-gray-500 leading-relaxed max-w-md">
+            <p className="text-sm text-gray-500 leading-relaxed">
               {'text' in motivation
                 ? motivation.text
                 : (
@@ -179,7 +181,7 @@ export function DashboardHero({
                   style={{ width: `${creditsPct}%` }}
                 />
               </div>
-              <p className="mt-1.5 text-[10px] text-gray-700">
+              <p className="mt-1.5 text-[10px] text-gray-600">
                 {creditsLeft} de {creditsTotal} neste ciclo
               </p>
             </div>
@@ -226,16 +228,30 @@ export function DashboardHero({
               Falar com Biia
             </Link>
 
-            {upgradeSignal && planTierNextPlan && (
-              <Link
-                href={`/checkout/${planTierNextPlan.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`}
-                className="flex items-center gap-1.5 text-[11px] font-medium text-amber-400/80 hover:text-amber-300 transition-colors"
-              >
-                <Zap size={11} />
-                Upgrade para {planTierNextPlan}
-                <ArrowRight size={10} />
-              </Link>
-            )}
+            {/* Contextual micro-links */}
+            <div className="flex flex-col gap-1.5 sm:items-end">
+              {lastCorrectedEssayId && (
+                <Link
+                  href={`/aluno/redacoes/${lastCorrectedEssayId}`}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  <BookOpen size={11} />
+                  Última devolutiva
+                  <ArrowRight size={10} />
+                </Link>
+              )}
+
+              {upgradeSignal && planTierNextPlan && (
+                <Link
+                  href={`/checkout/${planTierNextPlan.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-amber-400/80 hover:text-amber-300 transition-colors"
+                >
+                  <Zap size={11} />
+                  Upgrade para {planTierNextPlan}
+                  <ArrowRight size={10} />
+                </Link>
+              )}
+            </div>
           </div>
 
         </div>
