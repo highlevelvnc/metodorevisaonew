@@ -244,7 +244,7 @@ export default function LoginForm() {
         <p className="text-center mt-5 text-sm text-gray-600">
           Não tem conta?{' '}
           <Link
-            href="/cadastro"
+            href={nextPath ? `/cadastro?next=${encodeURIComponent(nextPath)}` : '/cadastro'}
             className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
           >
             Criar conta grátis

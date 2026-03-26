@@ -75,9 +75,15 @@ export default async function ContaPage() {
       <div className="card-dark rounded-2xl p-5 mb-4">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs font-bold text-white">Plano atual</p>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-            Ativo
-          </span>
+          {subRaw ? (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              Ativo
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.10] text-gray-500">
+              Gratuito
+            </span>
+          )}
         </div>
 
         {/* Plan name + price */}
@@ -124,10 +130,10 @@ export default async function ContaPage() {
               <p className="text-xs font-bold text-purple-300">Fazer upgrade</p>
               <p className="text-[11px] text-gray-600 mt-0.5">
                 {planSlug === 'trial'
-                  ? 'Desbloqueie até 8 redações por ciclo'
+                  ? 'Comece com 4 correções por ciclo no plano Evolução'
                   : planSlug === 'evolucao'
-                  ? 'Passe para Estratégia — 5 redações + prioridade'
-                  : 'Passe para Intensivo — 8 redações + correção em 24h'}
+                  ? 'Passe para Estratégia — 8 redações + prioridade na fila'
+                  : 'Passe para Intensivo — 12 redações + correção em 24h'}
               </p>
             </div>
             <svg
