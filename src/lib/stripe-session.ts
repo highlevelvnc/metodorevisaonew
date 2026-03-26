@@ -38,8 +38,14 @@ function getStripe(): Stripe {
   }
 
   return new Stripe(key, {
-    apiVersion: '2026-03-25.dahlia' as Stripe.LatestApiVersion,
-    typescript:  true,
+    apiVersion:        '2026-03-25.dahlia' as Stripe.LatestApiVersion,
+    typescript:        true,
+    // Serverless-friendly settings:
+    // - maxNetworkRetries 1 (default is 2) keeps total retry window short
+    //   so Vercel hobby (10s timeout) / Pro (60s) doesn't get exhausted
+    // - timeout 8000ms leaves a buffer before Vercel's function limit
+    maxNetworkRetries: 1,
+    timeout:           8000,
   })
 }
 
@@ -130,29 +136,62 @@ export async function buildStripeSession({
   const unitAmount = Math.round(plan.price_brl * 100)
   console.log(`${tag} creating Checkout Session — unit_amount=${unitAmount} BRL centavos`)
 
-  const session = await stripe.checkout.sessions.create({
-    customer:             customerId,
-    payment_method_types: ['card'],
-    line_items: [
-      {
-        price_data: {
-          currency:     'brl',
-          unit_amount:  unitAmount,
-          product_data: {
-            name:        `Método Revisão — Plano ${plan.name}`,
-            description: `${plan.essay_count} redações com devolutiva completa C1–C5 por ciclo`,
+  let session: Stripe.Checkout.Session
+  try {
+    session = await stripe.checkout.sessions.create({
+      customer:             customerId,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency:     'brl',
+            unit_amount:  unitAmount,
+            product_data: {
+              name:        `Método Revisão — Plano ${plan.name}`,
+              description: `${plan.essay_count} redações com devolutiva completa C1–C5 por ciclo`,
+            },
           },
+          quantity: 1,
         },
-        quantity: 1,
-      },
-    ],
-    mode:        'payment',
-    success_url: `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url:  `${siteUrl}/checkout/${planSlug}?cancelado=1`,
-    metadata:    { userId, planSlug: plan.slug },
-    client_reference_id: userId,
-    locale:      'pt-BR',
-  })
+      ],
+      mode:        'payment',
+      success_url: `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${siteUrl}/checkout/${planSlug}?cancelado=1`,
+      metadata:    { userId, planSlug: plan.slug },
+      client_reference_id: userId,
+      locale:      'pt-BR',
+    })
+  } catch (err) {
+    // Log with typed Stripe error info so Vercel shows the real cause
+    if (err instanceof Stripe.errors.StripeAuthenticationError) {
+      console.error(
+        `${tag} Stripe AUTHENTICATION error — STRIPE_SECRET_KEY is invalid or revoked.\n` +
+        `  Check: Stripe Dashboard → Developers → API keys`
+      )
+    } else if (err instanceof Stripe.errors.StripePermissionError) {
+      console.error(
+        `${tag} Stripe PERMISSION error — live mode requires full account activation.\n` +
+        `  Required: identity verification + bank account in Stripe Dashboard.\n` +
+        `  Stripe Dashboard → Settings → Business → Verify identity`
+      )
+    } else if (err instanceof Stripe.errors.StripeConnectionError) {
+      console.error(
+        `${tag} Stripe CONNECTION error — could not reach Stripe API from Vercel.\n` +
+        `  Common causes:\n` +
+        `    1. Vercel function timed out (hobby=10s, pro=60s) — cold start + Supabase queries + Stripe\n` +
+        `    2. Transient network issue — check https://status.stripe.com\n` +
+        `    3. export const runtime was set to 'edge' (needs 'nodejs') — check api/checkout/route.ts`
+      )
+    } else if (err instanceof Stripe.errors.StripeInvalidRequestError) {
+      console.error(
+        `${tag} Stripe INVALID REQUEST error — ${(err as Stripe.errors.StripeInvalidRequestError).message}\n` +
+        `  param: ${(err as Stripe.errors.StripeInvalidRequestError).param ?? 'n/a'}`
+      )
+    } else {
+      console.error(`${tag} Stripe unexpected error — ${err instanceof Error ? err.message : String(err)}`)
+    }
+    throw err
+  }
 
   if (!session.url) {
     console.error(`${tag} Stripe returned session without URL — id=${session.id}`)

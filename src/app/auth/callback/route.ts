@@ -186,6 +186,70 @@ export async function GET(request: NextRequest) {
   }
 
   /* ── No code and no token_hash ───────────────────────────────────────────── */
-  console.warn(`${tag} no code or token_hash — redirecting to login`)
-  return NextResponse.redirect(`${canonical}/login?error=link_invalido`)
+  // This happens when the Supabase project uses Implicit Flow instead of PKCE.
+  // In implicit flow the access_token is in the URL *fragment* (#), which is
+  // never sent to the server. We return a tiny HTML page (not a redirect) so
+  // the browser doesn't navigate away — the JS can then read the hash and
+  // redirect to /auth/processing while preserving it.
+  //
+  // If the hash has no access_token either, fall through to the login error.
+  console.warn(
+    `${tag} no code or token_hash in query string — serving implicit-flow bounce page.\n` +
+    `  If the Supabase project uses PKCE, this should never happen. ` +
+    `Check Dashboard → Authentication → Configuration → "Use PKCE flow for email".`
+  )
+
+  // The `next` value is already sanitised (relative path only) above.
+  const bounceHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Autenticando…</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#070c14;min-height:100vh;display:flex;flex-direction:column;
+         align-items:center;justify-content:center;gap:12px;
+         font-family:system-ui,-apple-system,sans-serif}
+    .spinner{width:20px;height:20px;border:2px solid rgba(168,85,247,.25);
+             border-top-color:#a855f7;border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    p{color:#6b7280;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p>Autenticando sua conta…</p>
+  <script>
+  ;(function () {
+    var hash   = window.location.hash.slice(1)
+    var params = new URLSearchParams(hash)
+    var next   = ${JSON.stringify(next)}
+
+    if (params.get('access_token')) {
+      // Implicit flow: redirect to client handler, preserving the fragment
+      window.location.replace('/auth/processing?next=' + encodeURIComponent(next) + '#' + hash)
+    } else if (params.get('error')) {
+      // Supabase sent an error in the fragment (e.g. access_denied)
+      window.location.replace('/login?error=' + encodeURIComponent(params.get('error')) + '&next=' + encodeURIComponent(next))
+    } else {
+      // No recognisable params at all — genuine invalid link
+      window.location.replace('/login?error=link_invalido&next=' + encodeURIComponent(next))
+    }
+  })()
+  </script>
+  <noscript>
+    <meta http-equiv="refresh" content="0;url=/login?error=link_invalido">
+  </noscript>
+</body>
+</html>`
+
+  return new Response(bounceHtml, {
+    status:  200,
+    headers: {
+      'Content-Type':  'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
+  })
 }

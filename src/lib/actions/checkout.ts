@@ -10,7 +10,7 @@
  * can also be imported cleanly by the /api/checkout route handler.
  */
 
-import { createClient }         from '@/lib/supabase/server'
+import { createActionClient }    from '@/lib/supabase/server-action'
 import { createAdminClient }     from '@/lib/supabase/admin'
 import { redirect }              from 'next/navigation'
 import { isRedirectError }       from 'next/dist/client/components/redirect'
@@ -91,7 +91,7 @@ export async function signUpAndCheckout(
   console.log(`${tag} plan verified: ${plan.name}`)
 
   // ── Supabase sign-up ────────────────────────────────────────────────────────
-  const supabase = await createClient()
+  const supabase = await createActionClient()
   console.log(`${tag} calling supabase.auth.signUp`)
 
   const { data, error: signUpErr } = await supabase.auth.signUp({

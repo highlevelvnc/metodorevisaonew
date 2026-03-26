@@ -1,8 +1,8 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { redirect }     from 'next/navigation'
-import { getSiteUrl }   from '@/lib/get-site-url'
+import { createActionClient } from '@/lib/supabase/server-action'
+import { redirect }           from 'next/navigation'
+import { getSiteUrl }         from '@/lib/get-site-url'
 
 export type AuthState = {
   error?: string
@@ -20,7 +20,7 @@ export async function signIn(
   if (!email || !password)
     return { error: 'Preencha e-mail e senha.' }
 
-  const supabase = await createClient()
+  const supabase = await createActionClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -72,7 +72,7 @@ export async function signUp(
   if (!password || password.length < 6)
     return { error: 'A senha precisa ter pelo menos 6 caracteres.' }
 
-  const supabase = await createClient()
+  const supabase = await createActionClient()
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -115,7 +115,7 @@ export async function resetPassword(
 
   if (!email) return { error: 'Informe seu e-mail.' }
 
-  const supabase = await createClient()
+  const supabase = await createActionClient()
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${getSiteUrl()}/auth/callback?next=/auth/atualizar-senha`,
@@ -142,7 +142,7 @@ export async function updatePassword(
   if (password !== confirm)
     return { error: 'As senhas não coincidem.' }
 
-  const supabase = await createClient()
+  const supabase = await createActionClient()
   const { error } = await supabase.auth.updateUser({ password })
 
   if (error) return { error: 'Erro ao atualizar senha. Solicite um novo link.' }
@@ -152,7 +152,7 @@ export async function updatePassword(
 
 // ─── Sign Out ─────────────────────────────────────────────────────────────────
 export async function signOut() {
-  const supabase = await createClient()
+  const supabase = await createActionClient()
   await supabase.auth.signOut()
   redirect('/login')
 }
