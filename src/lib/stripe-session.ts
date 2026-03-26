@@ -13,12 +13,13 @@
  * can use node:http / node:https correctly.
  */
 
-import Stripe       from 'stripe'
+import Stripe             from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getSiteUrl }        from '@/lib/get-site-url'
+
+export { getSiteUrl } // re-export so existing imports from this module keep working
 
 // ─── Stripe singleton ─────────────────────────────────────────────────────────
-// Validated at call-time (not module load) so missing env vars fail loudly
-// in logs rather than silently at startup.
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY
@@ -31,7 +32,7 @@ function getStripe(): Stripe {
   }
   if (!key.startsWith('sk_live_') && !key.startsWith('sk_test_')) {
     throw new Error(
-      `[stripe-session] STRIPE_SECRET_KEY looks wrong — got prefix "${key.slice(0, 8)}…". ` +
+      `[stripe-session] STRIPE_SECRET_KEY looks wrong — prefix "${key.slice(0, 8)}…". ` +
       'Expected sk_live_… or sk_test_…',
     )
   }
@@ -40,18 +41,6 @@ function getStripe(): Stripe {
     apiVersion: '2026-03-25.dahlia' as Stripe.LatestApiVersion,
     typescript:  true,
   })
-}
-
-// ─── URL helper ───────────────────────────────────────────────────────────────
-
-export function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  return 'http://localhost:3000'
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

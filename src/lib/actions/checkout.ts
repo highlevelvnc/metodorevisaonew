@@ -10,11 +10,12 @@
  * can also be imported cleanly by the /api/checkout route handler.
  */
 
-import { createClient }                       from '@/lib/supabase/server'
-import { createAdminClient }                  from '@/lib/supabase/admin'
-import { redirect }                           from 'next/navigation'
-import { isRedirectError }                    from 'next/dist/client/components/redirect'
-import { buildStripeSession, getSiteUrl }     from '@/lib/stripe-session'
+import { createClient }         from '@/lib/supabase/server'
+import { createAdminClient }     from '@/lib/supabase/admin'
+import { redirect }              from 'next/navigation'
+import { isRedirectError }       from 'next/dist/client/components/redirect'
+import { buildStripeSession }    from '@/lib/stripe-session'
+import { getSiteUrl }            from '@/lib/get-site-url'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

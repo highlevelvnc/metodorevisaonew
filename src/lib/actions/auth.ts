@@ -1,28 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { redirect }     from 'next/navigation'
+import { getSiteUrl }   from '@/lib/get-site-url'
 
 export type AuthState = {
   error?: string
   confirm?: boolean // sinaliza que o e-mail de confirmação foi enviado
 } | null
-
-/**
- * Returns the canonical site URL for use in email redirect links.
- * Resolution order:
- *   1. NEXT_PUBLIC_SITE_URL (must be set in production env vars)
- *   2. VERCEL_URL (auto-provided by Vercel on every deployment — good for preview envs)
- *   3. http://localhost:3000 (local development fallback)
- *
- * IMPORTANT: NEXT_PUBLIC_SITE_URL must be set in Vercel dashboard for production
- * so that email confirmation and password-reset links point to the right domain.
- */
-function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL
-  if (process.env.VERCEL_URL)           return `https://${process.env.VERCEL_URL}`
-  return 'http://localhost:3000'
-}
 
 // ─── Sign In ───────────────────────────────────────────────────────────────────
 export async function signIn(
