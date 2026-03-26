@@ -72,6 +72,10 @@ export async function signUp(
   if (!password || password.length < 6)
     return { error: 'A senha precisa ter pelo menos 6 caracteres.' }
 
+  // Thread ?next= through so checkout flows survive email confirmation
+  const rawNext  = (formData.get('next') as string | null)?.trim()
+  const safeNext = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/aluno'
+
   const supabase = await createActionClient()
 
   const { data, error } = await supabase.auth.signUp({
@@ -80,7 +84,7 @@ export async function signUp(
     options: {
       data: { full_name: fullName },
       // redirectTo é usado quando email confirmation está ativado
-      emailRedirectTo: `${getSiteUrl()}/auth/callback?next=/aluno`,
+      emailRedirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(safeNext)}`,
     },
   })
 
@@ -103,7 +107,7 @@ export async function signUp(
 
   // Sessão ativa: o trigger DB (handle_new_user) cria o perfil automaticamente.
   // Se precisar de fallback manual, rode o schema.sql no Supabase para garantir o trigger.
-  redirect('/aluno')
+  redirect(safeNext)
 }
 
 // ─── Reset Password (enviar e-mail) ───────────────────────────────────────────
@@ -146,6 +150,18 @@ export async function updatePassword(
   const { error } = await supabase.auth.updateUser({ password })
 
   if (error) return { error: 'Erro ao atualizar senha. Solicite um novo link.' }
+
+  // Redirect to the correct area based on role
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+    const role = (profile as { role: string } | null)?.role
+    if (role === 'admin' || role === 'reviewer') redirect('/professor')
+  }
 
   redirect('/aluno')
 }

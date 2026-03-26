@@ -2,10 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'
 import { signUp } from '@/lib/actions/auth'
 
 export default function RegisterForm() {
+  const searchParams = useSearchParams()
+  const nextPath     = searchParams.get('next') ?? ''
+
   const [pending,  setPending]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
   const [confirm,  setConfirm]  = useState(false)
@@ -70,6 +74,9 @@ export default function RegisterForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="card-dark rounded-2xl p-6 space-y-4">
+        {/* Thread ?next= so checkout flows survive email confirmation */}
+        {nextPath && <input type="hidden" name="next" value={nextPath} />}
+
         {error && (
           <div className="rounded-xl bg-red-500/10 border border-red-500/25 px-4 py-3 text-sm text-red-400">
             {error}
@@ -183,7 +190,7 @@ export default function RegisterForm() {
       <p className="text-center mt-5 text-sm text-gray-600">
         Já tem conta?{' '}
         <Link
-          href="/login"
+          href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login'}
           className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
         >
           Entrar

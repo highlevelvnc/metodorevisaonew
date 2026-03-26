@@ -323,14 +323,14 @@ export default async function AlunoDashboardPage() {
         <SimuladosSection />
       </div>
 
-      {/* ── 6. Community ────────────────────────────────────────────────────── */}
+      {/* ── 7. Community ────────────────────────────────────────────────────── */}
       <SectionLabel>Comunidade e aprofundamento</SectionLabel>
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
         <MentoriasSection />
         <ClubeLivroSection />
       </div>
 
-      {/* ── 7. Corretor VIP ──────────────────────────────────────────────────── */}
+      {/* ── 8. Corretor VIP ──────────────────────────────────────────────────── */}
       <SectionLabel>Plano Intensivo</SectionLabel>
       <CorrectorSelection />
 
