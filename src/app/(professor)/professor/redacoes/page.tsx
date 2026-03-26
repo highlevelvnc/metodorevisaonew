@@ -5,13 +5,13 @@ import { AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
-  title: 'Admin — Redações',
+  title: 'Professor — Redações',
   robots: { index: false, follow: false },
 }
 
 type EssayStatus = 'pending' | 'in_review' | 'corrected'
 
-type AdminEssay = {
+type ProfessorEssay = {
   id: string
   theme_title: string
   status: EssayStatus
@@ -48,7 +48,7 @@ const PLAN_COLOR: Record<string, string> = {
   'Intensivo':  'text-amber-400 bg-amber-500/10 border-amber-500/25',
 }
 
-export default async function AdminRedacoesPage() {
+export default async function ProfessorRedacoesPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -73,13 +73,13 @@ export default async function AdminRedacoesPage() {
     .order('submitted_at', { ascending: false })
     .limit(300)
 
-  const essays: AdminEssay[] = essaysRaw ?? []
+  const essays: ProfessorEssay[] = essaysRaw ?? []
 
   const pending   = essays.filter(e => e.status === 'pending')
   const review    = essays.filter(e => e.status === 'in_review')
   const corrected = essays.filter(e => e.status === 'corrected')
 
-  function EssayRow({ essay, variant }: { essay: AdminEssay; variant: 'pending' | 'review' | 'corrected' }) {
+  function EssayRow({ essay, variant }: { essay: ProfessorEssay; variant: 'pending' | 'review' | 'corrected' }) {
     const studentName = essay.student?.full_name ?? 'Aluno'
     const planName    = essay.student?.subscriptions?.[0]?.plans?.name ?? 'Trial'
     const urgency     = urgencyConfig(essay.submitted_at, essay.status)
@@ -123,19 +123,19 @@ export default async function AdminRedacoesPage() {
 
         {/* CTA */}
         {variant === 'pending' && (
-          <Link href={`/admin/redacoes/${essay.id}`}
+          <Link href={`/professor/redacoes/${essay.id}`}
             className="btn-primary text-xs py-2 px-4 flex-shrink-0 self-start sm:self-auto">
             Corrigir →
           </Link>
         )}
         {variant === 'review' && (
-          <Link href={`/admin/redacoes/${essay.id}`}
+          <Link href={`/professor/redacoes/${essay.id}`}
             className="text-xs text-blue-400 hover:text-blue-300 border border-blue-500/25 bg-blue-500/10 px-4 py-2 rounded-xl font-medium transition-colors flex-shrink-0 self-start sm:self-auto">
             Continuar →
           </Link>
         )}
         {variant === 'corrected' && (
-          <Link href={`/admin/redacoes/${essay.id}`}
+          <Link href={`/professor/redacoes/${essay.id}`}
             className="text-xs text-gray-600 hover:text-gray-400 border border-white/[0.06] bg-white/[0.03] px-4 py-2 rounded-xl font-medium transition-colors flex-shrink-0 self-start sm:self-auto">
             Ver
           </Link>
@@ -163,7 +163,7 @@ export default async function AdminRedacoesPage() {
           )}
           {(pending.length > 0 || review.length > 0) && (
             <Link
-              href={`/admin/redacoes/${pending[0]?.id ?? review[0]?.id}`}
+              href={`/professor/redacoes/${pending[0]?.id ?? review[0]?.id}`}
               className="btn-primary text-sm py-2 px-4"
             >
               Corrigir próxima →

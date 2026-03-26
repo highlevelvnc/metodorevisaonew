@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Admin — Temas',
+  title: 'Professor — Temas',
   robots: { index: false, follow: false },
 }
 
-export default function AdminTemasPage() {
+export default function ProfessorTemasPage() {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">

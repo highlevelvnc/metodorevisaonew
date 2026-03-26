@@ -5,7 +5,7 @@ import { AlertCircle, Users, CheckCircle2, TrendingUp, ArrowRight } from 'lucide
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
-  title: 'Admin — Dashboard',
+  title: 'Professor — Dashboard',
   robots: { index: false, follow: false },
 }
 
@@ -26,7 +26,7 @@ type CorrectionsRow = {
   total_score: number; c5_score: number
 }
 
-export default async function AdminDashboardPage() {
+export default async function ProfessorDashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -72,14 +72,14 @@ export default async function AdminDashboardPage() {
     <div className="max-w-5xl">
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-0.5">Painel Administrativo</h1>
+        <h1 className="text-2xl font-bold text-white mb-0.5">Painel do Professor</h1>
         <p className="text-gray-500 text-sm">Visão geral da plataforma · Método Revisão</p>
       </div>
 
       {/* ── Alerta de pendências ────────────────────────────────── */}
       {((pendingCount ?? 0) > 0 || (inReviewCount ?? 0) > 0) && (
         <Link
-          href={pendingEssays[0] ? `/admin/redacoes/${pendingEssays[0].id}` : '/admin/redacoes'}
+          href={pendingEssays[0] ? `/professor/redacoes/${pendingEssays[0].id}` : '/professor/redacoes'}
           className="block mb-6"
         >
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-4 flex items-center gap-4 hover:border-amber-500/50 transition-colors">
@@ -104,7 +104,7 @@ export default async function AdminDashboardPage() {
 
       {/* ── Stat cards ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Link href="/admin/redacoes" className="card-dark p-5 rounded-2xl hover:border-amber-500/25 transition-colors group">
+        <Link href="/professor/redacoes" className="card-dark p-5 rounded-2xl hover:border-amber-500/25 transition-colors group">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/15 flex items-center justify-center">
               <AlertCircle size={15} className="text-amber-400" />
@@ -117,7 +117,7 @@ export default async function AdminDashboardPage() {
           <p className="text-xs text-gray-600 mt-0.5">aguardando correção</p>
         </Link>
 
-        <Link href="/admin/alunos" className="card-dark p-5 rounded-2xl hover:border-purple-600/25 transition-colors group">
+        <Link href="/professor/alunos" className="card-dark p-5 rounded-2xl hover:border-purple-600/25 transition-colors group">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-lg bg-purple-600/10 border border-purple-500/15 flex items-center justify-center">
               <Users size={15} className="text-purple-400" />
@@ -157,7 +157,7 @@ export default async function AdminDashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-white">Próximas para corrigir</h2>
-            <Link href="/admin/redacoes" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
+            <Link href="/professor/redacoes" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
               Ver todas →
             </Link>
           </div>
@@ -174,7 +174,7 @@ export default async function AdminDashboardPage() {
                 const urgentColor = h >= 48 ? 'text-red-400' : h >= 24 ? 'text-amber-400' : 'text-gray-500'
                 const studentName = essay.student?.full_name ?? 'Aluno'
                 return (
-                  <Link key={essay.id} href={`/admin/redacoes/${essay.id}`}
+                  <Link key={essay.id} href={`/professor/redacoes/${essay.id}`}
                     className="card-dark rounded-2xl p-4 flex items-center gap-3 hover:border-purple-600/30 transition-all hover:-translate-y-0.5 group block">
                     <div className="w-9 h-9 rounded-full bg-purple-600/15 border border-purple-500/20 flex items-center justify-center text-sm font-bold text-purple-300 flex-shrink-0">
                       {studentName.charAt(0)}

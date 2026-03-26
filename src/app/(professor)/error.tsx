@@ -1,13 +1,13 @@
 'use client'
 
 /**
- * Error boundary for the admin area (/admin/*).
- * Renders inside the admin layout — sidebar and nav remain visible.
+ * Error boundary for the professor area (/professor/*).
+ * Renders inside the professor layout — sidebar and nav remain visible.
  */
 import { useEffect } from 'react'
 import Link from 'next/link'
 
-export default function AdminError({
+export default function ProfessorError({
   error,
   reset,
 }: {
@@ -15,7 +15,7 @@ export default function AdminError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('[AdminError]', error.message, error.digest)
+    console.error('[ProfessorError]', error.message, error.digest)
   }, [error])
 
   return (
@@ -34,7 +34,7 @@ export default function AdminError({
           </svg>
         </div>
 
-        <h2 className="text-lg font-bold text-white mb-2">Erro na área administrativa</h2>
+        <h2 className="text-lg font-bold text-white mb-2">Erro na área do professor</h2>
         <p className="text-gray-500 text-sm mb-6 leading-relaxed">
           Ocorreu um erro inesperado nesta página. Tente novamente
           ou volte ao painel principal.
@@ -49,12 +49,12 @@ export default function AdminError({
             Tentar novamente
           </button>
           <Link
-            href="/admin"
+            href="/professor"
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white
               border border-white/[0.08] hover:border-white/[0.18] px-4 py-2.5 rounded-xl
               transition-all"
           >
-            Painel admin
+            Painel do professor
           </Link>
         </div>
 

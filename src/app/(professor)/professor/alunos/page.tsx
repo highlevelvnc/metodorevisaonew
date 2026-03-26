@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Admin — Alunos',
+  title: 'Professor — Alunos',
   robots: { index: false, follow: false },
 }
 
-export default function AdminAlunosPage() {
+export default function ProfessorAlunosPage() {
   return (
     <div>
       <div className="mb-8">

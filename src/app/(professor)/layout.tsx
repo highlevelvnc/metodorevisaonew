@@ -9,7 +9,6 @@ import {
   FileText,
   Users,
   BookOpen,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -18,13 +17,13 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { label: 'Dashboard',    href: '/admin',              icon: LayoutDashboard },
-  { label: 'Redações',     href: '/admin/redacoes',    icon: FileText },
-  { label: 'Alunos',       href: '/admin/alunos',      icon: Users },
-  { label: 'Temas',        href: '/admin/temas',       icon: BookOpen },
+  { label: 'Dashboard',    href: '/professor',             icon: LayoutDashboard },
+  { label: 'Redações',     href: '/professor/redacoes',   icon: FileText },
+  { label: 'Alunos',       href: '/professor/alunos',     icon: Users },
+  { label: 'Temas',        href: '/professor/temas',      icon: BookOpen },
 ]
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function ProfessorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -47,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           lg:translate-x-0 lg:static lg:z-auto
         `}
       >
-        {/* Logo + Admin badge */}
+        {/* Logo + Professor badge */}
         <div className="h-16 flex items-center px-5 border-b border-white/[0.06] gap-3">
           <Link href="/" className="transition-opacity hover:opacity-80">
             <div style={{ position: 'relative', width: '110px', height: '35px', overflow: 'hidden' }}>
@@ -63,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <span className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">
             <ShieldCheck size={10} />
-            ADMIN
+            PROF
           </span>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -76,7 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Nav */}
         <nav className="flex-1 py-5 px-3 space-y-1">
           {navItems.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href || (href !== '/admin' && pathname.startsWith(href))
+            const active = pathname === href || (href !== '/professor' && pathname.startsWith(href))
             return (
               <Link
                 key={href}
@@ -121,7 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Menu size={22} />
           </button>
-          <span className="text-sm font-semibold text-white">Painel Admin</span>
+          <span className="text-sm font-semibold text-white">Painel do Professor</span>
         </header>
 
         {/* Page content */}

@@ -104,13 +104,13 @@ export async function saveCorrection(
   }
 
   // Revalidar caches das páginas afetadas
-  revalidatePath('/admin/redacoes')
-  revalidatePath(`/admin/redacoes/${essayId}`)
+  revalidatePath('/professor/redacoes')
+  revalidatePath(`/professor/redacoes/${essayId}`)
   revalidatePath(`/aluno/redacoes/${essayId}`)
   revalidatePath('/aluno')
   revalidatePath('/aluno/redacoes')
 
-  if (!isDraft) redirect(nextEssayId ? `/admin/redacoes/${nextEssayId}` : '/admin/redacoes')
+  if (!isDraft) redirect(nextEssayId ? `/professor/redacoes/${nextEssayId}` : '/professor/redacoes')
 
   return { success: true }
 }

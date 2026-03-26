@@ -33,7 +33,7 @@ export async function signIn(
     return { error: 'Erro ao entrar. Tente novamente.' }
   }
 
-  // Redireciona por role: admin/reviewer → /admin, student → /aluno (ou ?next=)
+  // Redireciona por role: admin/reviewer → /professor, student → /aluno (ou ?next=)
   const { data: { user } } = await supabase.auth.getUser()
 
   // Validate the next param — must be a relative path to prevent open redirects
@@ -49,7 +49,7 @@ export async function signIn(
 
     const role = (profile as { role: string } | null)?.role
     if (role === 'admin' || role === 'reviewer') {
-      redirect('/admin')
+      redirect('/professor')
     }
   }
 

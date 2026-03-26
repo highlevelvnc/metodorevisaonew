@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import CorrectionForm, { type EssayForCorrection } from './CorrectionForm'
 
-export default async function AdminCorrigirPage({ params }: { params: { id: string } }) {
+export default async function ProfessorCorrigirPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')

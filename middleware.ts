@@ -56,8 +56,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── /admin/* → precisa estar autenticado + ter role admin/reviewer ─────────
-  if (pathname.startsWith('/admin')) {
+  // ── /professor/* → precisa estar autenticado + ter role admin/reviewer ──────
+  if (pathname.startsWith('/professor')) {
     if (!user) {
       const loginUrl = request.nextUrl.clone()
       loginUrl.pathname = '/login'

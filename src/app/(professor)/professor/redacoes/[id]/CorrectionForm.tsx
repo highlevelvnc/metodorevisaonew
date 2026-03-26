@@ -392,7 +392,7 @@ export default function CorrectionForm({
       <div className="w-full lg:w-[55%] lg:sticky lg:top-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <Link href="/admin/redacoes"
+            <Link href="/professor/redacoes"
               className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.06] transition-all"
               onClick={e => {
                 if (isDirty && !confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) {
@@ -518,7 +518,7 @@ export default function CorrectionForm({
             </div>
             {nextEssayId && (
               <Link
-                href={`/admin/redacoes/${nextEssayId}`}
+                href={`/professor/redacoes/${nextEssayId}`}
                 onClick={e => {
                   if (isDirty && !confirm('Você tem alterações não salvas. Ir para a próxima redação mesmo assim?')) {
                     e.preventDefault()
@@ -807,7 +807,7 @@ export default function CorrectionForm({
               )}
             </div>
             <Link
-              href={`/admin/redacoes/${nextEssayId}`}
+              href={`/professor/redacoes/${nextEssayId}`}
               onClick={e => {
                 if (isDirty && !confirm('Você tem alterações não salvas. Ir para a próxima redação mesmo assim?')) {
                   e.preventDefault()

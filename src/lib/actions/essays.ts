@@ -118,8 +118,8 @@ export async function submitEssay(
   revalidatePath('/aluno')
   revalidatePath('/aluno/redacoes')
   // Notify admin queue so the new essay appears immediately
-  revalidatePath('/admin')
-  revalidatePath('/admin/redacoes')
+  revalidatePath('/professor')
+  revalidatePath('/professor/redacoes')
 
   redirect(`/aluno/redacoes/${essayId}`)
 }
