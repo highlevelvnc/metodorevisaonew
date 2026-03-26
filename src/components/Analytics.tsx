@@ -17,8 +17,10 @@ declare global {
 }
 
 export function trackEvent(event: string, data?: Record<string, unknown>) {
-  // Log no console durante desenvolvimento
-  console.log(`[Método Revisão Tracking] Event: ${event}`, data || '')
+  // Log no console apenas em desenvolvimento
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[Método Revisão Tracking] Event: ${event}`, data || '')
+  }
 
   // GA4 — descomente e insira seu ID quando tiver
   // if (typeof window.gtag === 'function') {

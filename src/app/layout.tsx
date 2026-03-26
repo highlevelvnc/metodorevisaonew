@@ -1,8 +1,5 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
-import LoadingScreen from '@/components/LoadingScreen'
 import Analytics from '@/components/Analytics'
 
 export const metadata: Metadata = {
@@ -39,7 +36,6 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
   },
   robots: { index: true, follow: true },
-  themeColor: '#070c14',
   icons: {
     icon: [
       { url: '/logo.png', type: 'image/png' },
@@ -47,6 +43,11 @@ export const metadata: Metadata = {
     apple: '/logo.png',
     shortcut: '/logo.png',
   },
+}
+
+// themeColor must be declared as a separate viewport export (Next.js 14+ requirement)
+export const viewport: Viewport = {
+  themeColor: '#070c14',
 }
 
 const jsonLdOrganization = {
@@ -82,10 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdService) }} />
       </head>
       <body>
-        <LoadingScreen />
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        {children}
         <Analytics />
       </body>
     </html>

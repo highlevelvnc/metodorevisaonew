@@ -22,8 +22,7 @@ export default function Plataforma() {
     e.preventDefault()
     // TODO: Conectar a um serviço de e-mail (ex: Mailchimp, ConvertKit, Resend, ou sua própria API)
     // Exemplo: POST para /api/waitlist com { name, email }
-    console.log('[Waitlist Submit]', { name, email })
-    trackEvent('waitlist_submit', { name, email: email.split('@')[1] })
+    trackEvent('waitlist_submit', { email_domain: email.split('@')[1] })
     setSubmitted(true)
   }
 
