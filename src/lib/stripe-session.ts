@@ -52,10 +52,14 @@ function getStripe(): Stripe {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface BuildSessionParams {
-  userId:   string
-  email:    string
-  name:     string
-  planSlug: string
+  userId:     string
+  email:      string
+  name:       string
+  planSlug:   string
+  /** Where Stripe sends the user when they click "Go back" in checkout.
+   *  Defaults to /checkout/{planSlug}?cancelado=1 (public page, correct for new users).
+   *  Pass /aluno/upgrade?cancelado=1 when called from the authenticated upgrade page. */
+  cancelUrl?: string
 }
 
 // ─── Core function ────────────────────────────────────────────────────────────
@@ -72,6 +76,7 @@ export async function buildStripeSession({
   email,
   name,
   planSlug,
+  cancelUrl,
 }: BuildSessionParams): Promise<string> {
   const tag     = `[buildStripeSession user=${userId} plan=${planSlug}]`
   const stripe  = getStripe()
@@ -156,7 +161,7 @@ export async function buildStripeSession({
       ],
       mode:        'payment',
       success_url: `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${siteUrl}/checkout/${planSlug}?cancelado=1`,
+      cancel_url:  cancelUrl ?? `${siteUrl}/checkout/${planSlug}?cancelado=1`,
       metadata:    { userId, planSlug: plan.slug },
       client_reference_id: userId,
       locale:      'pt-BR',

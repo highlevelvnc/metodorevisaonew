@@ -13,23 +13,22 @@ type Plan = {
   features: string[]
 }
 
-// Display order and feature bullets for each plan
+// Display order and feature bullets for each plan.
+// Essay count is intentionally omitted here — it's shown directly from
+// `plan.essay_count` (DB) in the price block, so there's only one source of truth.
 const PLAN_FEATURES: Record<string, string[]> = {
   trial: [
-    '1 redação por ciclo',
     'Devolutiva completa C1–C5',
     'Acesso à biblioteca de temas',
     'Videoaulas disponíveis',
   ],
   evolucao: [
-    '3 redações por ciclo',
     'Devolutiva completa C1–C5',
     'Análise de padrões recorrentes',
     'Acesso completo à plataforma',
     'Mentorias em grupo semanais',
   ],
   estrategia: [
-    '5 redações por ciclo',
     'Devolutiva completa C1–C5',
     'Plano de evolução personalizado',
     'Relatório exportável do ciclo',
@@ -37,7 +36,6 @@ const PLAN_FEATURES: Record<string, string[]> = {
     'Acompanhamento prioritário',
   ],
   intensivo: [
-    '8 redações por ciclo',
     'Devolutiva completa C1–C5',
     'Correção em até 24h',
     'Plano e relatório personalizados',

@@ -12,7 +12,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse }  from 'next/server'
 import { createServerClient }         from '@supabase/ssr'
-import { buildStripeSession }         from '@/lib/stripe-session'
+import { buildStripeSession, getSiteUrl } from '@/lib/stripe-session'
 
 // ─── Supabase client scoped to the incoming request (read-only cookies OK) ───
 // Route handlers can read cookies but not set them via next/headers.
@@ -150,7 +150,14 @@ export async function POST(request: NextRequest) {
 
   let stripeUrl: string
   try {
-    stripeUrl = await buildStripeSession({ userId: user.id, email, name: fullName, planSlug })
+    stripeUrl = await buildStripeSession({
+      userId:    user.id,
+      email,
+      name:      fullName,
+      planSlug,
+      // Logged-in upgrade users should return to their upgrade page, not the public checkout
+      cancelUrl: `${getSiteUrl()}/aluno/upgrade?cancelado=1`,
+    })
   } catch (err) {
     const raw      = err instanceof Error ? err.message : String(err)
     const isStripe = raw.toLowerCase().includes('stripe') ||
