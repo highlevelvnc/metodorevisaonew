@@ -19,7 +19,7 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, sub, iconClass }: StatCardProps) {
   return (
-    <div className="card-dark rounded-xl p-4 flex items-start gap-3.5 min-w-0">
+    <div className="card-dark rounded-2xl p-4 flex items-start gap-3.5 min-w-0">
       <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${iconClass}`}>
         {icon}
       </div>
@@ -88,7 +88,9 @@ export function StatsRow({
         sub={
           delta !== null
             ? <DeltaPill delta={delta} />
-            : <p className="text-[11px] text-gray-600">{avgScore !== null ? 'de média geral' : 'Sem dados ainda'}</p>
+            : avgScore !== null
+              ? <p className="text-[11px] text-gray-600">de média geral</p>
+              : <p className="text-[11px] text-gray-600">Meta: <span className="text-purple-400 font-semibold">900 pts</span></p>
         }
       />
 

@@ -140,8 +140,19 @@ export function DashboardHero({
               }
             </p>
 
+            {/* Pending strip — shown when essays are in review */}
+            {pendingCount > 0 && (
+              <div className="mt-4 inline-flex items-center gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3.5 py-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+                <span className="text-xs text-amber-300 font-medium">
+                  {pendingCount} redaç{pendingCount === 1 ? 'ão' : 'ões'} em análise
+                </span>
+                <span className="text-xs text-amber-400/50">·&nbsp;devolutiva em até 48h</span>
+              </div>
+            )}
+
             {/* Credits bar */}
-            <div className="mt-5 max-w-[280px]">
+            <div className="mt-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-600">Redações disponíveis</span>
                 <span className={`text-xs font-semibold tabular-nums ${
@@ -160,6 +171,35 @@ export function DashboardHero({
                 {creditsLeft} de {creditsTotal} neste ciclo
               </p>
             </div>
+
+            {/* Onboarding strip — shown only to brand-new users */}
+            {avgScore === null && pendingCount === 0 && (
+              <div className="mt-5 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-600 mb-3">
+                  Como começar
+                </p>
+                <div className="space-y-2.5">
+                  {([
+                    { n: 1, text: 'Explore os temas disponíveis',       href: '/aluno/temas' },
+                    { n: 2, text: 'Escreva e envie sua primeira redação', href: '/aluno/redacoes/nova' },
+                    { n: 3, text: 'Receba sua devolutiva em até 48h',    href: null },
+                  ] as { n: number; text: string; href: string | null }[]).map(step => (
+                    <div key={step.n} className="flex items-center gap-3">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-purple-600/20 border border-purple-500/30 text-[10px] font-bold text-purple-400 flex items-center justify-center">
+                        {step.n}
+                      </span>
+                      {step.href ? (
+                        <a href={step.href} className="text-xs text-gray-400 hover:text-gray-200 transition-colors leading-none">
+                          {step.text}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-gray-600 leading-none">{step.text}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Right: CTAs ── */}

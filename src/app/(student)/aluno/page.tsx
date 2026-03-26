@@ -14,6 +14,8 @@ import { MentoriasSection }   from './_components/MentoriasSection'
 import { ClubeLivroSection }  from './_components/ClubeLivroSection'
 import { CorrectorSelection } from './_components/CorrectorSelection'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Painel do Aluno',
   robots: { index: false, follow: false },
@@ -62,9 +64,12 @@ const PLAN_TIERS: Record<string, { nextPlan: string | null }> = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-700 mb-3 px-0.5">
-      {children}
-    </p>
+    <div className="flex items-center gap-3 mb-3 px-0.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 whitespace-nowrap">
+        {children}
+      </p>
+      <div className="flex-1 h-px bg-white/[0.05]" />
+    </div>
   )
 }
 
