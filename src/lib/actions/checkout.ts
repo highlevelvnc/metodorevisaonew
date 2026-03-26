@@ -1,10 +1,20 @@
 'use server'
 
-import { createClient }      from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { stripe }            from '@/lib/stripe'
-import { redirect }          from 'next/navigation'
-import { isRedirectError }   from 'next/dist/client/components/redirect'
+/**
+ * Server Actions for the checkout flow.
+ *
+ * 'use server' marks signUpAndCheckout as a Next.js Server Action,
+ * callable via useFormState from client components.
+ *
+ * buildStripeSession lives in stripe-session.ts (no 'use server') so it
+ * can also be imported cleanly by the /api/checkout route handler.
+ */
+
+import { createClient }                       from '@/lib/supabase/server'
+import { createAdminClient }                  from '@/lib/supabase/admin'
+import { redirect }                           from 'next/navigation'
+import { isRedirectError }                    from 'next/dist/client/components/redirect'
+import { buildStripeSession, getSiteUrl }     from '@/lib/stripe-session'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -15,139 +25,23 @@ export type CheckoutState = {
   existingUser?: boolean
 } | null
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL
-  if (process.env.VERCEL_URL)           return `https://${process.env.VERCEL_URL}`
-  return 'http://localhost:3000'
-}
-
-// ─── Core Stripe session builder ──────────────────────────────────────────────
-
-interface BuildSessionParams {
-  userId:   string
-  email:    string
-  name:     string
-  planSlug: string
-}
-
-/**
- * Looks up (or creates) a Stripe Customer for the user, then creates a
- * Checkout Session and returns the hosted checkout URL.
- *
- * NOTE: Does NOT call redirect() — callers are responsible for redirecting.
- * This keeps the function safe to use inside try/catch blocks.
- */
-export async function buildStripeSession({
-  userId,
-  email,
-  name,
-  planSlug,
-}: BuildSessionParams): Promise<string> {
-  const tag   = `[buildStripeSession user=${userId} plan=${planSlug}]`
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin = createAdminClient() as any
-
-  /* ── Fetch plan (authoritative source of truth for price) ──────────────── */
-  console.log(`${tag} fetching plan`)
-  const { data: plan, error: planErr } = await admin
-    .from('plans')
-    .select('id, name, slug, price_brl, essay_count')
-    .eq('slug', planSlug)
-    .eq('active', true)
-    .single()
-
-  if (planErr || !plan) {
-    console.error(`${tag} plan not found:`, planErr?.message ?? 'no row')
-    throw new Error(`Plano "${planSlug}" não encontrado ou inativo.`)
-  }
-  console.log(`${tag} plan found: ${plan.name} R$ ${plan.price_brl}`)
-
-  /* ── Stripe customer: fetch existing or create ─────────────────────────── */
-  const { data: userRow, error: userRowErr } = await admin
-    .from('users')
-    .select('stripe_customer_id')
-    .eq('id', userId)
-    .maybeSingle()
-
-  if (userRowErr) {
-    console.warn(`${tag} could not fetch users row (may not exist yet):`, userRowErr.message)
-  }
-
-  let stripeCustomerId: string = userRow?.stripe_customer_id ?? ''
-
-  if (!stripeCustomerId) {
-    console.log(`${tag} creating Stripe customer for email=${email}`)
-    const customer = await stripe.customers.create({
-      email,
-      name:     name || undefined,
-      metadata: { userId },
-    })
-    stripeCustomerId = customer.id
-    console.log(`${tag} Stripe customer created: ${stripeCustomerId}`)
-
-    // Persist — if row doesn't exist yet, this is a no-op (0 rows updated).
-    // The webhook also persists it as a fallback.
-    const { error: updateErr } = await admin
-      .from('users')
-      .update({ stripe_customer_id: stripeCustomerId })
-      .eq('id', userId)
-
-    if (updateErr) {
-      // Non-fatal: webhook will persist the customer ID when payment completes
-      console.warn(`${tag} could not persist stripe_customer_id (non-fatal):`, updateErr.message)
-    }
-  } else {
-    console.log(`${tag} reusing Stripe customer: ${stripeCustomerId}`)
-  }
-
-  /* ── Create Stripe Checkout Session ───────────────────────────────────── */
-  const siteUrl = getSiteUrl().replace(/\/$/, '')
-  console.log(`${tag} creating Checkout Session siteUrl=${siteUrl}`)
-
-  const session = await stripe.checkout.sessions.create({
-    customer:             stripeCustomerId,
-    payment_method_types: ['card'],
-    line_items: [
-      {
-        price_data: {
-          currency:     'brl',
-          unit_amount:  Math.round(plan.price_brl * 100),
-          product_data: {
-            name:        `Método Revisão — Plano ${plan.name}`,
-            description: `${plan.essay_count} redações com devolutiva completa C1–C5 por ciclo`,
-          },
-        },
-        quantity: 1,
-      },
-    ],
-    mode:        'payment',
-    success_url: `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url:  `${siteUrl}/checkout/${planSlug}?cancelado=1`,
-    metadata:    { userId, planSlug: plan.slug },
-    client_reference_id: userId,
-    locale:      'pt-BR',
-  })
-
-  if (!session.url) {
-    console.error(`${tag} Stripe session has no URL:`, session.id)
-    throw new Error('Stripe retornou uma sessão sem URL de checkout.')
-  }
-
-  console.log(`${tag} Checkout Session created: ${session.id}`)
-  return session.url
-}
-
 // ─── Server Action: sign-up → Stripe ─────────────────────────────────────────
 
 /**
  * Creates a new Supabase account, then immediately redirects to Stripe.
  *
- * ⚠️  IMPORTANT: redirect() MUST be called OUTSIDE any try/catch block.
+ * ⚠️  redirect() MUST be called OUTSIDE any try/catch block.
  *    In Next.js 14 App Router, redirect() throws a NEXT_REDIRECT error
- *    internally. If that error is caught, the redirect never fires and
- *    the user sees a spurious "payment error" message instead.
+ *    internally. If that throw is caught, the redirect never fires and
+ *    the user sees a spurious error message instead.
+ *
+ * Flow (email confirmation DISABLED in Supabase):
+ *   signUp → session active → buildStripeSession → redirect(stripeUrl)
+ *
+ * Flow (email confirmation ENABLED):
+ *   signUp → no session → return { confirm: true }
+ *   user clicks email link → /auth/callback → /checkout/[planSlug]
+ *   ProceedButton shown → calls POST /api/checkout → redirect to Stripe
  */
 export async function signUpAndCheckout(
   _prev: CheckoutState,
@@ -161,7 +55,7 @@ export async function signUpAndCheckout(
   const tag = `[signUpAndCheckout email=${email} plan=${planSlug}]`
   console.log(`${tag} form submitted`)
 
-  /* ── Input validation ─────────────────────────────────────────────────── */
+  // ── Input validation ────────────────────────────────────────────────────────
   if (!fullName || fullName.length < 2) {
     return { error: 'Informe seu nome completo (mínimo 2 caracteres).' }
   }
@@ -175,7 +69,7 @@ export async function signUpAndCheckout(
     return { error: 'Plano não especificado. Volte e escolha novamente.' }
   }
 
-  /* ── Verify plan exists before creating account ───────────────────────── */
+  // ── Verify plan exists before creating account ──────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = createAdminClient() as any
   const { data: plan, error: planCheckErr } = await admin
@@ -195,7 +89,7 @@ export async function signUpAndCheckout(
   }
   console.log(`${tag} plan verified: ${plan.name}`)
 
-  /* ── Supabase sign-up ─────────────────────────────────────────────────── */
+  // ── Supabase sign-up ────────────────────────────────────────────────────────
   const supabase = await createClient()
   console.log(`${tag} calling supabase.auth.signUp`)
 
@@ -204,7 +98,7 @@ export async function signUpAndCheckout(
     password,
     options: {
       data: { full_name: fullName },
-      // After email confirmation → user lands back on checkout page, already logged in
+      // After email confirmation → back to checkout page already logged in
       emailRedirectTo: `${getSiteUrl()}/auth/callback?next=/checkout/${planSlug}`,
     },
   })
@@ -230,25 +124,28 @@ export async function signUpAndCheckout(
 
   console.log(`${tag} signUp result: user=${data.user?.id ?? 'none'} session=${data.session ? 'present' : 'null'}`)
 
-  /* ── Email confirmation required ──────────────────────────────────────── */
+  // ── Email confirmation required ─────────────────────────────────────────────
   // Supabase returns user but no session when email confirmation is enabled.
-  // The user receives an email; on click → /auth/callback → back to /checkout/[planSlug].
+  // User gets an email → clicks link → /auth/callback → /checkout/[planSlug]
+  // At that point ProceedButton is shown and calls POST /api/checkout.
   if (data.user && !data.session) {
-    console.log(`${tag} email confirmation required`)
+    console.log(`${tag} email confirmation required — showing confirm screen`)
     return { confirm: true, planSlug }
   }
 
-  /* ── Session active → build Stripe session, then redirect ────────────── */
-  // CRITICAL: redirect() must be called OUTSIDE try/catch.
-  // Calling redirect() inside catch would cause it to be swallowed.
+  // ── Unexpected: neither session nor email-confirm ───────────────────────────
   if (!data.session) {
-    console.error(`${tag} unexpected: no session and no email-confirm flag`)
+    console.error(`${tag} unexpected state: no session and data.user=${data.user?.id ?? 'null'}`)
     return { error: 'Erro inesperado ao criar sessão. Tente novamente.' }
   }
 
   const user = data.session.user
-  console.log(`${tag} session active, user=${user.id}`)
+  console.log(`${tag} session active immediately — user=${user.id}`)
 
+  // ── Build Stripe session ────────────────────────────────────────────────────
+  // CRITICAL: redirect() is called OUTSIDE this try/catch.
+  // If redirect() were inside, Next.js's NEXT_REDIRECT throw would be
+  // caught and the redirect would never happen.
   let stripeUrl: string
   try {
     stripeUrl = await buildStripeSession({
@@ -258,14 +155,13 @@ export async function signUpAndCheckout(
       planSlug,
     })
   } catch (err) {
-    // Only catch actual errors here — NOT redirect errors (redirect isn't called inside)
-    if (isRedirectError(err)) throw err  // Safety net: re-throw if somehow a redirect slips in
+    if (isRedirectError(err)) throw err   // safety net: re-throw any stray redirects
     console.error(`${tag} buildStripeSession failed:`, err)
-    const message = err instanceof Error ? err.message : 'Erro desconhecido'
-    return { error: `Erro ao iniciar pagamento: ${message}` }
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+    return { error: `Erro ao iniciar pagamento: ${msg}` }
   }
 
-  // ✅ redirect() is called here, OUTSIDE the try/catch — safe to throw NEXT_REDIRECT
-  console.log(`${tag} redirecting to Stripe: ${stripeUrl.substring(0, 60)}…`)
+  // ✅ Outside try/catch — safe for NEXT_REDIRECT
+  console.log(`${tag} redirecting to Stripe`)
   redirect(stripeUrl)
 }
