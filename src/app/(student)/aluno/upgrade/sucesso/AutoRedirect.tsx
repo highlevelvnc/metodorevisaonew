@@ -5,10 +5,10 @@ import { trackEvent } from '@/components/Analytics'
 
 interface Props {
   planSlug?: string
-  delay?: number // seconds, default 5
+  delay?: number // seconds, default 10
 }
 
-export function AutoRedirect({ planSlug, delay = 5 }: Props) {
+export function AutoRedirect({ planSlug, delay = 10 }: Props) {
   const [seconds, setSeconds] = useState(delay)
   const router = useRouter()
 

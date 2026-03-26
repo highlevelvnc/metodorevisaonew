@@ -65,16 +65,16 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <Link
-          href="/cadastro?next=/aluno/upgrade"
+        <a
+          href="/#planos"
           className="hidden lg:inline-flex btn-primary text-sm py-2.5 px-5"
-          onClick={() => trackEvent('checkout_started', { plan: 'navbar' })}
+          onClick={() => trackEvent('cta_click', { source: 'navbar' })}
         >
-          Começar agora
+          Ver planos
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
-        </Link>
+        </a>
 
         {/* Mobile hamburger */}
         <button
@@ -108,16 +108,16 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/cadastro?next=/aluno/upgrade"
+          <a
+            href="/#planos"
             className="btn-primary w-full mt-4 text-sm"
-            onClick={() => { setOpen(false); trackEvent('checkout_started', { plan: 'navbar_mobile' }) }}
+            onClick={() => { setOpen(false); trackEvent('cta_click', { source: 'navbar_mobile' }) }}
           >
-            Começar agora
+            Ver planos
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </Link>
+          </a>
         </div>
       )}
     </header>

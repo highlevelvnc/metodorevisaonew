@@ -78,17 +78,17 @@ export default function Hero() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
             <Link
-              href="/cadastro?next=/aluno/upgrade"
+              href="/checkout/estrategia"
               className="btn-primary-lg animate-glow-pulse"
-              onClick={() => trackEvent('checkout_started', { plan: 'hero' })}
+              onClick={() => trackEvent('checkout_started', { plan: 'estrategia', source: 'hero' })}
             >
               Começar minha evolução
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
-            <a href="#como-funciona" className="btn-secondary-lg">
-              Ver como funciona
+            <a href="#planos" className="btn-secondary-lg">
+              Ver todos os planos
             </a>
           </div>
 

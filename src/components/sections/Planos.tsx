@@ -21,7 +21,7 @@ const planos = [
       'Orientação para a próxima redação',
       'Devolutiva em até 48h',
     ],
-    cta: 'Começar com o Evolução',
+    cta: 'Assinar Evolução — R$ 97',
     sub: 'Uma redação por semana, com feedback real.',
   },
   {
@@ -42,7 +42,7 @@ const planos = [
       'Propostas de tema direcionadas',
       'Prioridade na devolutiva',
     ],
-    cta: 'Quero o plano Estratégia',
+    cta: 'Assinar Estratégia — R$ 167',
     sub: 'O plano que mais gera resultado.',
   },
   {
@@ -64,7 +64,7 @@ const planos = [
       'Análise quinzenal de evolução',
       'Canal direto para dúvidas rápidas',
     ],
-    cta: 'Quero o Intensivo',
+    cta: 'Assinar Intensivo — R$ 227',
     sub: 'Aceleração máxima antes da prova.',
   },
 ]

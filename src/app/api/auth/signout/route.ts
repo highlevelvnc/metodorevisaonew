@@ -16,3 +16,21 @@ export async function POST() {
     { status: 302 },
   )
 }
+
+/** GET /api/auth/signout?next=/checkout/evolucao
+ *  Used by "Entrar com outra conta" links that can't use a form POST.
+ *  Validates `next` to prevent open redirect.
+ */
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const rawNext = searchParams.get('next')
+  const safePath = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+    ? rawNext
+    : '/login'
+
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+
+  const siteUrl = getSiteUrl().replace(/\/$/, '')
+  return NextResponse.redirect(`${siteUrl}${safePath}`, { status: 302 })
+}

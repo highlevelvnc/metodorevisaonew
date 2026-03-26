@@ -32,13 +32,13 @@ export default function FloatingCTA() {
           <p className="text-white font-bold text-sm leading-tight">Começar minha evolução</p>
           <p className="text-purple-200 text-xs mt-0.5">Devolutiva em até 48h · Sem fidelidade</p>
         </div>
-        <Link
-          href="/cadastro?next=/aluno/upgrade"
+        <a
+          href="#planos"
           className="bg-white text-purple-700 font-bold text-sm px-5 py-2.5 rounded-xl flex-shrink-0 active:scale-95 transition-transform"
-          onClick={() => trackEvent('checkout_started', { plan: 'floating_mobile' })}
+          onClick={() => trackEvent('cta_click', { source: 'floating_mobile' })}
         >
-          Assinar
-        </Link>
+          Ver planos
+        </a>
         <button
           onClick={() => { setDismissed(true); setVisible(false) }}
           className="text-purple-300/60 hover:text-purple-200 transition-colors flex-shrink-0 p-0.5"
