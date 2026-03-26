@@ -8,9 +8,15 @@ import {
   TrendingUp,
   Clock,
   ArrowRight,
-  Lock,
   Zap,
   Star,
+  Trophy,
+  Target,
+  Activity,
+  Timer,
+  Flame,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
@@ -38,6 +44,18 @@ type PendingEssay = {
 type CorrectionsRow = {
   total_score: number; c5_score: number
 }
+type EssayTimeRow = {
+  submitted_at: string; corrected_at: string
+}
+
+// ── Reward levels ─────────────────────────────────────────────────────────────
+const REWARD_LEVELS: Array<{ name: string; pts: number; color: string; bar: string; ring: string }> = [
+  { name: 'Iniciante', pts: 0,    color: 'text-gray-400',   bar: 'bg-gray-500/70',  ring: 'border-gray-500/40'   },
+  { name: 'Bronze',    pts: 100,  color: 'text-amber-600',  bar: 'bg-amber-700',    ring: 'border-amber-600/50'  },
+  { name: 'Prata',     pts: 300,  color: 'text-slate-300',  bar: 'bg-slate-400',    ring: 'border-slate-400/50'  },
+  { name: 'Ouro',      pts: 600,  color: 'text-yellow-400', bar: 'bg-yellow-500',   ring: 'border-yellow-500/50' },
+  { name: 'Diamante',  pts: 1200, color: 'text-cyan-300',   bar: 'bg-cyan-500',     ring: 'border-cyan-400/50'   },
+]
 
 export default async function ProfessorDashboardPage() {
   const supabase = await createClient()
@@ -64,6 +82,7 @@ export default async function ProfessorDashboardPage() {
     { data: pendingEssaysRaw },
     { data: correctionsRaw },
     { data: professorRaw },
+    { data: essayTimesRaw },
   ] = await Promise.all([
     db.from('essays').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     db.from('essays').select('*', { count: 'exact', head: true }).eq('status', 'in_review'),
@@ -83,10 +102,16 @@ export default async function ProfessorDashboardPage() {
       .limit(5),
     db.from('corrections').select('total_score, c5_score'),
     db.from('users').select('full_name').eq('id', user.id).single(),
+    db.from('essays')
+      .select('submitted_at, corrected_at')
+      .eq('status', 'corrected')
+      .not('corrected_at', 'is', null)
+      .gte('corrected_at', fourteenDaysAgo),
   ])
 
   const pendingEssays: PendingEssay[] = pendingEssaysRaw ?? []
   const corrections: CorrectionsRow[] = correctionsRaw ?? []
+  const essayTimes: EssayTimeRow[]    = essayTimesRaw ?? []
   const professorName: string = (professorRaw as { full_name: string } | null)?.full_name ?? 'Professor'
 
   const pending = pendingCount ?? 0
@@ -105,7 +130,50 @@ export default async function ProfessorDashboardPage() {
     ? Math.round(corrections.reduce((s, c) => s + c.c5_score, 0) / corrections.length)
     : 0
 
-  // Dynamic insight
+  // ── Performance metrics ────────────────────────────────────────────────────
+  const avgCorrectionHours: number | null = essayTimes.length
+    ? Math.round(
+        essayTimes.reduce((s, e) => {
+          const diff = new Date(e.corrected_at).getTime() - new Date(e.submitted_at).getTime()
+          return s + diff / 3_600_000
+        }, 0) / essayTimes.length
+      )
+    : null
+
+  const onTimeRate: number | null = essayTimes.length
+    ? Math.round(
+        (essayTimes.filter(e => {
+          const diff = new Date(e.corrected_at).getTime() - new Date(e.submitted_at).getTime()
+          return diff <= 48 * 3_600_000
+        }).length / essayTimes.length) * 100
+      )
+    : null
+
+  const avgPerDay = correctedThisWeek > 0
+    ? (correctedThisWeek / 7).toFixed(1)
+    : '0'
+
+  const weekDelta    = correctedThisWeek - correctedLastWeek
+  const weeklyGoal   = Math.max(correctedLastWeek > 0 ? Math.ceil(correctedLastWeek * 1.15) : 15, 10)
+  const weeklyGoalPct = Math.min(100, weeklyGoal > 0 ? Math.round((correctedThisWeek / weeklyGoal) * 100) : 0)
+
+  const criticalCount = pendingEssays.filter(e => msAgo(e.submitted_at) >= 24 * 3_600_000).length
+
+  // ── Reward system (derived preview) ────────────────────────────────────────
+  // 10 pts per correction this month + 2 pts/correction last week (recency bonus)
+  const estimatedPoints = correctedThisMonth * 10 + correctedLastWeek * 2
+
+  let currentLevelIdx = 0
+  for (let i = REWARD_LEVELS.length - 1; i >= 0; i--) {
+    if (estimatedPoints >= REWARD_LEVELS[i].pts) { currentLevelIdx = i; break }
+  }
+  const currentLevel = REWARD_LEVELS[currentLevelIdx]
+  const nextLevel    = REWARD_LEVELS[currentLevelIdx + 1] ?? null
+  const levelPct     = nextLevel
+    ? Math.min(100, Math.round(((estimatedPoints - currentLevel.pts) / (nextLevel.pts - currentLevel.pts)) * 100))
+    : 100
+
+  // ── Dynamic insight
   const insight = pending > 10
     ? `Fila crítica — ${pending} redações aguardando`
     : pending === 0
@@ -123,16 +191,35 @@ export default async function ProfessorDashboardPage() {
     <div className="max-w-5xl space-y-8">
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold text-white">Olá, {professorName.split(' ')[0]}</h1>
             <span className="inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
               Professor
             </span>
+            {criticalCount > 0 && (
+              <span className="inline-flex items-center gap-1 bg-red-500/10 border border-red-500/25 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {criticalCount} crítica{criticalCount !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
-          <p className="text-gray-500 text-sm">Acompanhe a fila de correções e o desempenho da turma.</p>
+          <p className="text-gray-500 text-sm">
+            {correctedToday > 0
+              ? `${correctedToday} devolutiva${correctedToday !== 1 ? 's' : ''} hoje · ${queueTotal} na fila`
+              : `${queueTotal} redaç${queueTotal !== 1 ? 'ões' : 'ão'} aguardando correção`}
+          </p>
         </div>
+        {pendingEssays.length > 0 && (
+          <Link
+            href={`/professor/redacoes/${pendingEssays[0].id}`}
+            className="shrink-0 flex items-center gap-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:text-amber-200"
+          >
+            <Flame size={14} />
+            Corrigir próxima
+            <ArrowRight size={13} />
+          </Link>
+        )}
       </div>
 
       {/* ── Top KPI cards (4 columns) ───────────────────────────── */}
@@ -163,7 +250,12 @@ export default async function ProfessorDashboardPage() {
           <p className={`text-3xl font-bold ${correctedToday > 0 ? 'text-green-400' : 'text-white'}`}>
             {correctedToday}
           </p>
-          <p className="text-xs text-gray-600 mt-0.5">devolutivas enviadas</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-gray-600">devolutivas enviadas</p>
+            {correctedToday > 0 && (
+              <span className="text-[10px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-full">✓</span>
+            )}
+          </div>
         </div>
 
         {/* Na fila total */}
@@ -194,28 +286,84 @@ export default async function ProfessorDashboardPage() {
 
       </div>
 
-      {/* ── Second row stats (compact, 4 cols) ──────────────────── */}
+      {/* ── Performance cockpit ─────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="card-dark rounded-xl p-4">
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Esta semana</p>
-          <p className="text-xl font-bold text-white">{correctedThisWeek}</p>
-          <p className="text-xs text-gray-600">corrigidas</p>
+
+        {/* Esta semana + trend */}
+        <div className="card-dark rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Activity size={12} className="text-gray-600" />
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Esta semana</p>
+          </div>
+          <div className="flex items-end gap-2">
+            <p className="text-xl font-bold text-white">{correctedThisWeek}</p>
+            {correctedLastWeek > 0 && (
+              <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold mb-0.5 ${
+                weekDelta >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {weekDelta >= 0 ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                {Math.abs(weekDelta)}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-600">vs {correctedLastWeek} semana passada</p>
         </div>
-        <div className="card-dark rounded-xl p-4">
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Este mês</p>
-          <p className="text-xl font-bold text-white">{correctedThisMonth}</p>
-          <p className="text-xs text-gray-600">corrigidas</p>
+
+        {/* Meta semanal */}
+        <div className="card-dark rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Target size={12} className="text-gray-600" />
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Meta semanal</p>
+          </div>
+          <div className="flex items-end gap-1.5 mb-2">
+            <p className="text-xl font-bold text-white">{correctedThisWeek}</p>
+            <p className="text-xs text-gray-600 mb-0.5">/ {weeklyGoal}</p>
+          </div>
+          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                weeklyGoalPct >= 100 ? 'bg-green-500' : weeklyGoalPct >= 60 ? 'bg-amber-500' : 'bg-amber-600/60'
+              }`}
+              style={{ width: `${weeklyGoalPct}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-gray-700 mt-1">{weeklyGoalPct}% da meta</p>
         </div>
-        <div className="card-dark rounded-xl p-4">
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Média C5</p>
-          <p className="text-xl font-bold text-white">{avgC5 || '—'}</p>
-          <p className="text-xs text-gray-600">proposta /200</p>
+
+        {/* Entrega 48h */}
+        <div className="card-dark rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Clock size={12} className="text-gray-600" />
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Entrega 48h</p>
+          </div>
+          <p className={`text-xl font-bold ${
+            onTimeRate === null ? 'text-white' :
+            onTimeRate >= 90 ? 'text-green-400' :
+            onTimeRate >= 70 ? 'text-amber-400' : 'text-red-400'
+          }`}>
+            {onTimeRate !== null ? `${onTimeRate}%` : '—'}
+          </p>
+          <p className="text-xs text-gray-600">no prazo (14 dias)</p>
         </div>
-        <div className="card-dark rounded-xl p-4">
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Alunos ativos</p>
-          <p className="text-xl font-bold text-white">{students}</p>
-          <p className="text-xs text-gray-600">na plataforma</p>
+
+        {/* Tempo médio */}
+        <div className="card-dark rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Timer size={12} className="text-gray-600" />
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Tempo médio</p>
+          </div>
+          <div className="flex items-end gap-1.5">
+            <p className={`text-xl font-bold ${
+              avgCorrectionHours === null ? 'text-white' :
+              avgCorrectionHours <= 24 ? 'text-green-400' :
+              avgCorrectionHours <= 48 ? 'text-amber-400' : 'text-red-400'
+            }`}>
+              {avgCorrectionHours !== null ? `${avgCorrectionHours}h` : '—'}
+            </p>
+          </div>
+          <p className="text-xs text-gray-600">por correção · {avgPerDay}/dia</p>
         </div>
+
       </div>
 
       {/* ── Main grid: correction queue + right column ───────────── */}
@@ -224,7 +372,18 @@ export default async function ProfessorDashboardPage() {
         {/* Correction queue — 2 columns wide */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-white">Fila de correção</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-white">Fila de correção</h2>
+              {queueTotal > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                  criticalCount > 0
+                    ? 'text-red-400 bg-red-500/10 border-red-500/20'
+                    : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                }`}>
+                  {queueTotal}
+                </span>
+              )}
+            </div>
             <Link href="/professor/redacoes" className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1">
               Ver todas <ArrowRight size={11} />
             </Link>
@@ -272,104 +431,133 @@ export default async function ProfessorDashboardPage() {
           )}
         </div>
 
-        {/* Right column: insight + reward system */}
+        {/* Right column: insight + month stats + reward system */}
         <div className="space-y-4">
 
           {/* Insight widget */}
-          <div>
-            <h2 className="text-sm font-semibold text-white mb-3">Insight</h2>
-            <div className={`rounded-2xl border p-4 ${insightBg}`}>
-              <div className="flex items-start gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  pending > 10 ? 'bg-red-500/10' : pending === 0 ? 'bg-green-500/10' : 'bg-amber-500/10'
-                }`}>
-                  {pending === 0
-                    ? <CheckCircle2 size={15} className="text-green-400" />
-                    : <AlertCircle size={15} className={insightColor} />
-                  }
-                </div>
+          <div className={`rounded-2xl border p-4 ${insightBg}`}>
+            <div className="flex items-start gap-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 flex-shrink-0 ${
+                pending > 10 ? 'bg-red-500/10' : pending === 0 ? 'bg-green-500/10' : 'bg-amber-500/10'
+              }`}>
+                {pending === 0
+                  ? <CheckCircle2 size={15} className="text-green-400" />
+                  : <AlertCircle size={15} className={insightColor} />
+                }
+              </div>
+              <div className="min-w-0 flex-1">
                 <p className={`text-sm font-semibold leading-snug ${insightColor}`}>{insight}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Weekly performance */}
-          <div className="card-dark rounded-2xl p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Produtividade semanal
-            </h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Esta semana</span>
-                <span className="text-sm font-bold text-white">{correctedThisWeek}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Semana passada</span>
-                <span className="text-sm font-bold text-gray-400">{correctedLastWeek}</span>
-              </div>
-              {correctedLastWeek > 0 && (
-                <div className="pt-1 border-t border-white/[0.04]">
-                  <p className={`text-xs font-semibold ${
-                    correctedThisWeek >= correctedLastWeek ? 'text-green-400' : 'text-amber-400'
-                  }`}>
-                    {correctedThisWeek >= correctedLastWeek
-                      ? `+${correctedThisWeek - correctedLastWeek} em relação à semana passada`
-                      : `${correctedLastWeek - correctedThisWeek} a menos que semana passada`}
+                {criticalCount > 0 && (
+                  <p className="text-[11px] text-red-400/70 mt-1">
+                    {criticalCount} redaç{criticalCount !== 1 ? 'ões' : 'ão'} aguardando +24h
                   </p>
-                </div>
-              )}
+                )}
+                {pending === 0 && (
+                  <p className="text-[11px] text-green-400/70 mt-1">Continue assim — excelente ritmo.</p>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Reward system — locked / coming soon */}
+          {/* Month + students stats */}
+          <div className="card-dark rounded-2xl p-4">
+            <h3 className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-3">
+              Visão geral
+            </h3>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Este mês</span>
+                <span className="text-sm font-bold text-white">{correctedThisMonth} corrigidas</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Alunos na plataforma</span>
+                <span className="text-sm font-bold text-white">{students}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Média C5 (turma)</span>
+                <span className={`text-sm font-bold ${avgC5 >= 120 ? 'text-green-400' : avgC5 >= 80 ? 'text-amber-400' : 'text-red-400'}`}>
+                  {avgC5 || '—'}/200
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Média geral (turma)</span>
+                <span className="text-sm font-bold text-white">{avgScore || '—'}/1000</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Reward system — preview */}
           <div className="card-dark rounded-2xl p-4 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-3">
+            {/* Top accent */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Star size={14} className="text-amber-400" />
-                <h3 className="text-xs font-semibold text-white">Sistema de Recompensas</h3>
+                <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
+                  <Trophy size={13} className="text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-white leading-none">Recompensas</h3>
+                  <p className="text-[10px] text-gray-700 leading-none mt-0.5">Prévia estimada</p>
+                </div>
               </div>
               <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full">
                 Em breve
               </span>
             </div>
 
-            <div className="space-y-2 opacity-50 select-none">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Pontos acumulados</span>
-                <span className="text-gray-400">0 pts</span>
+            {/* Level + points */}
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Nível atual</p>
+                <p className={`text-base font-bold leading-none ${currentLevel.color}`}>
+                  {currentLevel.name}
+                </p>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Ranking</span>
-                <span className="text-gray-400">—</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Meta da semana</span>
-                <span className="text-gray-400">— / —</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Nível atual</span>
-                <span className="text-amber-400/60 font-semibold">Iniciante</span>
-              </div>
-              <div className="mt-2">
-                <div className="flex justify-between text-[10px] text-gray-700 mb-1">
-                  <span>Progresso</span>
-                  <span>0%</span>
-                </div>
-                <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                  <div className="h-full w-0 bg-amber-500 rounded-full" />
-                </div>
+              <div className="text-right">
+                <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">Pontos est.</p>
+                <p className="text-base font-bold text-white leading-none">
+                  {estimatedPoints}
+                  <span className="text-[10px] font-normal text-gray-600 ml-1">pts</span>
+                </p>
               </div>
             </div>
 
-            {/* Lock overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-[#070c14]/40 rounded-2xl">
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center">
-                  <Lock size={16} className="text-amber-400" />
+            {/* Progress bar */}
+            {nextLevel && (
+              <>
+                <div className="flex justify-between text-[10px] text-gray-600 mb-1.5">
+                  <span>{currentLevel.name}</span>
+                  <span>{levelPct}% → {nextLevel.name}</span>
                 </div>
-                <span className="text-[10px] text-amber-400/80 font-medium">Em desenvolvimento</span>
-              </div>
+                <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden mb-1.5">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${currentLevel.bar}`}
+                    style={{ width: `${levelPct}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-700">
+                  {nextLevel.pts - estimatedPoints} pts para {nextLevel.name}
+                </p>
+              </>
+            )}
+
+            {/* Level milestones */}
+            <div className="mt-3 pt-3 border-t border-white/[0.05] flex justify-between">
+              {REWARD_LEVELS.slice(0, 5).map((level) => (
+                <div key={level.name} className={`text-center transition-opacity ${estimatedPoints >= level.pts ? 'opacity-100' : 'opacity-25'}`}>
+                  <div className={`w-5 h-5 rounded-full mx-auto mb-1 border flex items-center justify-center ${
+                    estimatedPoints >= level.pts ? `${level.bar} ${level.ring}` : 'bg-white/[0.04] border-white/[0.08]'
+                  }`}>
+                    <Star size={8} className={estimatedPoints >= level.pts ? 'text-white' : 'text-gray-700'} />
+                  </div>
+                  <p className={`text-[8px] font-medium ${estimatedPoints >= level.pts ? level.color : 'text-gray-700'}`}>
+                    {level.name.slice(0, 3)}
+                  </p>
+                </div>
+              ))}
             </div>
+
           </div>
 
         </div>

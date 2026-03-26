@@ -84,13 +84,13 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                   ${active
-                    ? 'bg-amber-500/10 text-amber-300 border border-amber-500/25'
-                    : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'}
+                    ? 'bg-amber-500/10 text-amber-300 border border-amber-500/25 shadow-[inset_3px_0_0_0_rgba(245,158,11,0.7)]'
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.05] border border-transparent'}
                 `}
               >
-                <Icon size={18} className="flex-shrink-0" />
+                <Icon size={16} className="flex-shrink-0" />
                 {label}
-                {active && <ChevronRight size={14} className="ml-auto opacity-60" />}
+                {active && <ChevronRight size={13} className="ml-auto opacity-60" />}
               </Link>
             )
           })}
