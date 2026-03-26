@@ -1,6 +1,8 @@
 import type { Metadata }   from 'next'
 import { redirect }        from 'next/navigation'
+import Link                from 'next/link'
 import { createClient }    from '@/lib/supabase/server'
+import { Calendar, CheckCircle2, Target } from 'lucide-react'
 
 import { DashboardHero }      from './_components/DashboardHero'
 import { StatsRow }           from './_components/StatsRow'
@@ -69,6 +71,81 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         {children}
       </p>
       <div className="flex-1 h-px bg-white/[0.05]" />
+    </div>
+  )
+}
+
+function WeeklyFocusBar({
+  weeklyCount,
+  daysSinceLastCorrection,
+  nextStep,
+}: {
+  weeklyCount: number
+  daysSinceLastCorrection: number | null
+  nextStep: { focus: string; tip: string } | null
+}) {
+  return (
+    <div className="mb-6 grid sm:grid-cols-3 gap-3">
+      {/* Activity this week */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+          <Calendar size={14} className="text-blue-400" />
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Esta semana</p>
+          <p className="text-sm font-bold text-white leading-none">
+            {weeklyCount}{' '}
+            <span className="font-normal text-gray-600 text-xs">
+              redaç{weeklyCount !== 1 ? 'ões' : 'ão'}
+            </span>
+          </p>
+        </div>
+      </div>
+
+      {/* Last correction */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+          <CheckCircle2 size={14} className="text-green-400" />
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Última devolutiva</p>
+          <p className="text-sm font-bold text-white leading-none">
+            {daysSinceLastCorrection === null
+              ? <span className="font-normal text-gray-600 text-xs">Nenhuma ainda</span>
+              : daysSinceLastCorrection === 0
+                ? 'Hoje'
+                : daysSinceLastCorrection === 1
+                  ? '1 dia atrás'
+                  : `${daysSinceLastCorrection}d atrás`
+            }
+          </p>
+        </div>
+      </div>
+
+      {/* Weekly focus */}
+      <div className="rounded-2xl border border-purple-500/15 bg-purple-500/[0.04] px-4 py-3.5 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+          <Target size={14} className="text-purple-400" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Foco da semana</p>
+          {nextStep ? (
+            <Link
+              href="/aluno/biia"
+              className="text-xs font-medium text-purple-300 hover:text-purple-200 transition-colors leading-snug line-clamp-1"
+            >
+              {nextStep.focus} →
+            </Link>
+          ) : (
+            <Link
+              href="/aluno/redacoes/nova"
+              className="text-xs font-medium text-purple-300 hover:text-purple-200 transition-colors"
+            >
+              Enviar redação →
+            </Link>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -143,6 +220,13 @@ export default async function AlunoDashboardPage() {
         .filter(c => c.avg < 100)
     : []
 
+  // Weekly activity
+  const oneWeekAgo             = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const weeklyCount            = essays.filter(e => e.submitted_at >= oneWeekAgo).length
+  const daysSinceLastCorrection = lastCorrection?.corrected_at
+    ? Math.floor((Date.now() - new Date(lastCorrection.corrected_at).getTime()) / (1000 * 60 * 60 * 24))
+    : null
+
   // Upgrade signal
   const creditsPct       = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
   const planTier         = PLAN_TIERS[planName] ?? PLAN_TIERS['Evolução']
@@ -176,6 +260,7 @@ export default async function AlunoDashboardPage() {
         avgScore={avgScore}
         overallDelta={overallDelta}
         pendingCount={pendingCount}
+        weeklyCount={weeklyCount}
         upgradeSignal={upgradeSignal}
         planTierNextPlan={planTier.nextPlan}
       />
@@ -190,7 +275,14 @@ export default async function AlunoDashboardPage() {
         pendingCount={pendingCount}
       />
 
-      {/* ── 3. Core: Correções + Biia ────────────────────────────────────────
+      {/* ── 3. Weekly focus bar ─────────────────────────────────────────────── */}
+      <WeeklyFocusBar
+        weeklyCount={weeklyCount}
+        daysSinceLastCorrection={daysSinceLastCorrection}
+        nextStep={nextStep}
+      />
+
+      {/* ── 4. Core: Correções + Biia ────────────────────────────────────────
            Correções takes 3/5 of the width (more important), Biia takes 2/5   */}
       <div className="grid lg:grid-cols-5 gap-4 mb-6">
         <div className="lg:col-span-3">
@@ -205,7 +297,7 @@ export default async function AlunoDashboardPage() {
         </div>
       </div>
 
-      {/* ── 4. Adaptive content ─────────────────────────────────────────────── */}
+      {/* ── 5. Adaptive content ─────────────────────────────────────────────── */}
       <AdaptiveContent
         patterns={patterns}
         worstCompKey={worstCompKey}

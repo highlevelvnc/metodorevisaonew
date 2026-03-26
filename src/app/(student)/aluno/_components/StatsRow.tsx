@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { FileText, TrendingUp, Zap, Clock } from 'lucide-react'
 
 interface StatsRowProps {
@@ -71,12 +72,14 @@ export function StatsRow({
         value={String(totalEssays)}
         iconClass="bg-white/[0.05] border border-white/[0.08] text-gray-400"
         sub={
-          <p className="text-[11px] text-gray-600">
-            {correctedCount > 0
-              ? `${correctedCount} corrigida${correctedCount !== 1 ? 's' : ''}`
-              : 'Nenhuma corrigida'
-            }
-          </p>
+          totalEssays === 0
+            ? <Link href="/aluno/redacoes/nova" className="text-[11px] text-purple-400 hover:text-purple-300 transition-colors font-medium">Enviar agora →</Link>
+            : <p className="text-[11px] text-gray-600">
+                {correctedCount > 0
+                  ? `${correctedCount} corrigida${correctedCount !== 1 ? 's' : ''}`
+                  : 'Nenhuma corrigida'
+                }
+              </p>
         }
       />
 
@@ -118,9 +121,9 @@ export function StatsRow({
             : 'bg-white/[0.05] border border-white/[0.08] text-gray-500'
         }
         sub={
-          <p className="text-[11px] text-gray-600">
-            {pendingCount === 0 ? 'Nada aguardando' : `aguardando devolutiva`}
-          </p>
+          pendingCount > 0
+            ? <Link href="/aluno/redacoes" className="text-[11px] text-amber-400/80 hover:text-amber-300 transition-colors">ver devolutiva em breve →</Link>
+            : <p className="text-[11px] text-gray-600">Nada aguardando</p>
         }
       />
     </div>

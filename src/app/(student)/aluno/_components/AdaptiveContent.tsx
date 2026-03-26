@@ -179,7 +179,7 @@ export function AdaptiveContent({ patterns, worstCompKey, nextStep, lastCorrecti
       {/* Pattern grid */}
       {patterns.length > 0 && (
         <>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-700 mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500 mb-3">
             Padrões identificados nas suas redações
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">

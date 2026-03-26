@@ -9,6 +9,7 @@ interface DashboardHeroProps {
   avgScore: number | null
   overallDelta: number | null
   pendingCount: number
+  weeklyCount: number
   upgradeSignal: 'last_credit_evolving' | 'exhausted' | 'halfway_evolving' | null
   planTierNextPlan: string | null
 }
@@ -36,8 +37,11 @@ function getMotivationalLine(
   overallDelta: number | null,
   pendingCount: number,
 ): MotivationLine {
+  // Pending: strip already shows count — complement with score context
+  if (pendingCount > 0 && avgScore !== null)
+    return { pre: 'Média de ', highlight: `${avgScore} pts`, post: ' — a devolutiva vai trazer o próximo salto.' }
   if (pendingCount > 0)
-    return { text: `${pendingCount} redaç${pendingCount === 1 ? 'ão' : 'ões'} em análise — devolutiva em até 48h.` }
+    return { text: 'A devolutiva vai mostrar exatamente onde você pode evoluir.' }
   if (overallDelta !== null && overallDelta > 60)
     return { pre: 'Você ganhou ', highlight: `+${overallDelta} pts`, post: ' na trajetória.' }
   if (avgScore !== null && avgScore >= 800)
@@ -46,7 +50,7 @@ function getMotivationalLine(
     return { text: 'Cada redação é um passo em direção aos 900+ pts.' }
   if (avgScore !== null)
     return { text: 'Cada devolutiva mostra exatamente onde subir a nota.' }
-  return { text: 'Envie sua primeira redação e veja onde você está.' }
+  return { text: 'Envie sua primeira redação e descubra onde você está.' }
 }
 
 export function DashboardHero({
@@ -57,6 +61,7 @@ export function DashboardHero({
   avgScore,
   overallDelta,
   pendingCount,
+  weeklyCount,
   upgradeSignal,
   planTierNextPlan,
 }: DashboardHeroProps) {
@@ -99,7 +104,7 @@ export function DashboardHero({
           {/* ── Left: greeting + meta ── */}
           <div className="flex-1 min-w-0">
 
-            {/* Plan + score pills */}
+            {/* Plan + score + activity pills */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${plan.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${plan.dot}`} />
@@ -117,6 +122,13 @@ export function DashboardHero({
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">
                   <Flame size={10} />
                   +{overallDelta} pts na trajetória
+                </span>
+              )}
+
+              {weeklyCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <Zap size={10} />
+                  {weeklyCount} esta semana
                 </span>
               )}
             </div>

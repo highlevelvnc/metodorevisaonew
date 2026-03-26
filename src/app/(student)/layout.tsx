@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -22,9 +22,44 @@ import {
   Library,
   Award,
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 type NavItem = { label: string; href: string; icon: React.ElementType; badge?: string }
 type NavSection = { label?: string; items: NavItem[] }
+
+// ── User identity strip (bottom of sidebar) ──────────────────────────────────
+function UserInfoStrip() {
+  const [email, setEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setEmail(data.user.email)
+    })
+  }, [])
+
+  const initial     = email ? email[0].toUpperCase() : '?'
+  const displayName = email ? email.split('@')[0] : null
+
+  return (
+    <Link
+      href="/aluno/conta"
+      className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-colors group"
+    >
+      <div className="w-7 h-7 rounded-full bg-purple-600/20 border border-purple-500/30 flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-purple-300 select-none">
+        {initial}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] font-medium text-gray-400 group-hover:text-gray-200 transition-colors truncate leading-none">
+          {displayName ?? 'Minha conta'}
+        </p>
+        {email && (
+          <p className="text-[10px] text-gray-700 truncate mt-0.5">{email}</p>
+        )}
+      </div>
+    </Link>
+  )
+}
 
 const navSections: NavSection[] = [
   {
@@ -159,8 +194,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           ))}
         </nav>
 
-        {/* Sign out */}
-        <div className="px-3 pb-5 shrink-0 border-t border-white/[0.05] pt-3">
+        {/* Account footer */}
+        <div className="px-3 pb-5 shrink-0 border-t border-white/[0.05] pt-3 space-y-0.5">
+          <UserInfoStrip />
           <form action="/api/auth/signout" method="POST">
             <button
               type="submit"
