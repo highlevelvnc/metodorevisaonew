@@ -6,7 +6,13 @@ import { useSearchParams } from 'next/navigation'
 import { signIn } from '@/lib/actions/auth'
 
 const URL_ERROR_MESSAGES: Record<string, string> = {
-  link_invalido: 'Link inválido ou expirado. Solicite um novo.',
+  // Sent by /auth/callback when exchangeCodeForSession or verifyOtp fails
+  link_expirado:  'Seu link de confirmação expirou. Clique em "Criar conta grátis" e cadastre-se novamente.',
+  // Sent by /auth/callback when no code/token_hash is present
+  link_invalido:  'Link inválido. Use o botão no e-mail que enviamos ou crie uma nova conta.',
+  // Sent by Supabase itself (e.g. OTP already used)
+  access_denied:  'Link expirado ou já utilizado. Crie a conta novamente para receber um novo link.',
+  otp_expired:    'Seu link de confirmação expirou. Crie a conta novamente para receber um novo e-mail.',
 }
 
 export default function LoginForm() {
@@ -35,7 +41,7 @@ export default function LoginForm() {
     // Se o login foi bem-sucedido, o servidor faz redirect e o componente desmonta
   }
 
-  const displayError = error ?? (urlError ? URL_ERROR_MESSAGES[urlError] ?? 'Erro de autenticação.' : null)
+  const displayError = error ?? (urlError ? (URL_ERROR_MESSAGES[urlError] ?? `Erro de autenticação (${urlError}). Tente novamente ou entre em contato com o suporte.`) : null)
 
   return (
     <div className="w-full max-w-sm">

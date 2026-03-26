@@ -77,6 +77,30 @@ export async function GET(request: NextRequest) {
   const canonical = getSiteUrl()
 
   const tag = `[auth/callback]`
+
+  // ── Cookie diagnostics (run before anything else) ─────────────────────────
+  const allCookies  = request.cookies.getAll()
+  const cookieNames = allCookies.map((c) => c.name)
+  const sbCookies   = cookieNames.filter((n) => n.startsWith('sb-'))
+
+  // The PKCE code verifier is stored as a cookie by @supabase/ssr during signUp.
+  // If it's absent here, exchangeCodeForSession() will ALWAYS fail.
+  const verifierCookie = sbCookies.find((n) => n.includes('code-verifier') || n.includes('pkce'))
+  console.log(
+    `${tag} cookies: total=${cookieNames.length} sb-count=${sbCookies.length} ` +
+    `sb-names=[${sbCookies.join(', ')}]`
+  )
+  if (verifierCookie) {
+    console.log(`${tag} ✓ PKCE verifier cookie FOUND: "${verifierCookie}"`)
+  } else if (code) {
+    console.error(
+      `${tag} ✗ PKCE verifier cookie MISSING — exchangeCodeForSession will fail!\n` +
+      `  This means the signUp/signIn call that generated the email link did NOT write\n` +
+      `  the verifier cookie to the browser (likely a domain mismatch or Server Action\n` +
+      `  cookie-write failure). All sb- cookies: [${sbCookies.join(', ')}]`
+    )
+  }
+
   console.log(
     `${tag} requestOrigin="${requestOrigin}" canonical="${canonical}" ` +
     `code=${code ? 'present' : 'absent'} ` +
@@ -86,8 +110,12 @@ export async function GET(request: NextRequest) {
 
   if (requestOrigin !== canonical) {
     console.warn(
-      `${tag} ⚠️  requestOrigin ≠ canonical — email link was built with wrong domain. ` +
-      `Ensure NEXT_PUBLIC_SITE_URL is set on ALL Vercel environments.`
+      `${tag} ⚠️  requestOrigin ≠ canonical — email link was built with wrong domain.\n` +
+      `  requestOrigin = "${requestOrigin}"\n` +
+      `  canonical     = "${canonical}"\n` +
+      `  PKCE verifier was set on "${requestOrigin}" — but we're running on "${canonical}".\n` +
+      `  The verifier cookie won't cross domains → exchange will fail.\n` +
+      `  Fix: ensure NEXT_PUBLIC_SITE_URL is set correctly on ALL Vercel environments.`
     )
   }
 
@@ -112,7 +140,13 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.error(`${tag} exchangeCodeForSession failed: ${error.message} (code: ${error.code ?? 'n/a'})`)
+      console.error(
+        `${tag} ✗ exchangeCodeForSession FAILED\n` +
+        `  message : ${error.message}\n` +
+        `  code    : ${error.code    ?? 'n/a'}\n` +
+        `  status  : ${error.status  ?? 'n/a'}\n` +
+        `  hint    : ${!verifierCookie ? 'PKCE verifier was missing — domain mismatch likely' : 'verifier present — possible expired/already-used code'}`
+      )
       return NextResponse.redirect(
         `${canonical}/login?error=link_expirado&next=${encodeURIComponent(next)}`,
       )
