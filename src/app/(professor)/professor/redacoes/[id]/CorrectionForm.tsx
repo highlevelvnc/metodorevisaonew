@@ -150,21 +150,29 @@ function ScoreSelector({
 }) {
   return (
     <div className="flex gap-1.5 flex-wrap">
-      {SCORE_OPTIONS.map(opt => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => onChange(opt)}
-          className={`w-11 py-1.5 rounded-lg flex flex-col items-center transition-all ${
-            touched && value === opt
-              ? 'bg-purple-700 text-white border border-purple-500 shadow-sm shadow-purple-900/50'
-              : 'bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/20'
-          }`}
-        >
-          <span className="text-sm font-semibold leading-none">{opt}</span>
-          <span className="text-[9px] leading-none mt-0.5 opacity-70">{SCORE_LABELS[opt]}</span>
-        </button>
-      ))}
+      {SCORE_OPTIONS.map(opt => {
+        const isSelected = touched && value === opt
+        const selectedStyle =
+          opt >= 160 ? 'bg-green-700/80 border-green-500 text-white shadow-sm shadow-green-900/40' :
+          opt >= 120 ? 'bg-purple-700 border-purple-500 text-white shadow-sm shadow-purple-900/50' :
+          opt >= 80  ? 'bg-amber-700/80 border-amber-500 text-white shadow-sm shadow-amber-900/40' :
+                       'bg-red-800/70 border-red-600 text-white shadow-sm shadow-red-900/40'
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(opt)}
+            className={`w-12 py-2 rounded-lg flex flex-col items-center transition-all ${
+              isSelected
+                ? selectedStyle
+                : 'bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.07] hover:border-white/20'
+            }`}
+          >
+            <span className="text-sm font-bold leading-none">{opt}</span>
+            <span className="text-[9px] leading-none mt-1 opacity-80">{SCORE_LABELS[opt]}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -384,7 +392,8 @@ export default function CorrectionForm({
     markDirty()
   }
 
-  const studentName = essay.student?.full_name ?? 'Aluno'
+  const studentName       = essay.student?.full_name ?? 'Aluno'
+  const firstNameNext     = nextStudentName?.split(' ')[0]
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -393,7 +402,7 @@ export default function CorrectionForm({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <Link href="/professor/redacoes"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.06] transition-all"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/[0.06] transition-all flex-shrink-0"
               onClick={e => {
                 if (isDirty && !confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) {
                   e.preventDefault()
@@ -404,8 +413,8 @@ export default function CorrectionForm({
                 <path d="M19 12H5M12 19l-7-7 7-7" />
               </svg>
             </Link>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-base font-bold text-white">{studentName}</h1>
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
                   essay.plan === 'Intensivo'  ? 'text-amber-400 bg-amber-500/10 border-amber-500/25' :
@@ -585,15 +594,35 @@ export default function CorrectionForm({
 
         {/* ── Pontuação ─────────────────────────────────────────────────────── */}
         <div className="card-dark rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pontuação</span>
-            <div className="flex items-center gap-2">
-              <span className={`text-2xl font-extrabold ${
-                total === 0   ? 'text-gray-600' :
-                total >= 800  ? 'text-green-400' :
-                total >= 600  ? 'text-purple-400' : 'text-amber-400'
-              }`}>{total}</span>
-              <span className="text-gray-600 text-sm">/ 1000</span>
+          <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pontuação</span>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-2xl font-extrabold tabular-nums ${
+                  total === 0   ? 'text-gray-600' :
+                  total >= 800  ? 'text-green-400' :
+                  total >= 600  ? 'text-purple-400' : 'text-amber-400'
+                }`}>{total}</span>
+                <span className="text-gray-600 text-sm font-medium">/ 1000</span>
+              </div>
+            </div>
+            {/* Mini per-competency score pills */}
+            <div className="flex gap-1.5 flex-wrap">
+              {COMPETENCIES.map(c => (
+                <span key={c.key} className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tabular-nums ${
+                  !touchedScores.has(c.key)
+                    ? 'text-gray-700 bg-white/[0.02] border-white/[0.04]'
+                    : scores[c.key] >= 160
+                    ? 'text-green-400 bg-green-500/10 border-green-500/20'
+                    : scores[c.key] >= 120
+                    ? 'text-purple-400 bg-purple-600/10 border-purple-500/20'
+                    : scores[c.key] > 0
+                    ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                    : 'text-red-400 bg-red-500/10 border-red-500/20'
+                }`}>
+                  {c.label} {touchedScores.has(c.key) ? scores[c.key] : '–'}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -722,9 +751,9 @@ export default function CorrectionForm({
               ref={feedbackRef}
               value={feedback}
               onChange={e => { setFeedback(e.target.value); markDirty() }}
-              placeholder={`**C1 – Domínio da Escrita (${scores.c1}/200)**\n...comentário...\n\n**C2 – Compreensão da Proposta (${scores.c2}/200)**\n...comentário...\n\n**C3 – Seleção de Argumentos (${scores.c3}/200)**\n...comentário...\n\n**C4 – Mecanismos de Coesão (${scores.c4}/200)**\n...comentário...\n\n**C5 – Proposta de Intervenção (${scores.c5}/200)**\n...comentário...`}
-              className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent leading-relaxed font-mono text-xs overflow-hidden"
-              style={{ minHeight: '280px' }}
+              placeholder={`**C1 – Domínio da Norma Culta (${scores.c1}/200)**\nComente aqui os pontos de ortografia, concordância e pontuação...\n\n**C2 – Compreensão da Proposta (${scores.c2}/200)**\nA redação atendeu ao tema? Há tangência?\n\n**C3 – Seleção de Argumentos (${scores.c3}/200)**\nOs argumentos são sólidos? Há repertório?\n\n**C4 – Mecanismos de Coesão (${scores.c4}/200)**\nOs parágrafos estão bem articulados?\n\n**C5 – Proposta de Intervenção (${scores.c5}/200)**\nOs 4 elementos (agente, ação, modo, finalidade) estão presentes?`}
+              className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5 text-sm text-white placeholder:text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/30 leading-[1.8] font-mono text-xs overflow-hidden transition-colors"
+              style={{ minHeight: '320px' }}
             />
             {/* Feedback progress bar */}
             {feedback.length > 0 && (
@@ -749,47 +778,64 @@ export default function CorrectionForm({
         </div>
 
         {/* ── Ações ─────────────────────────────────────────────────────────── */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || sending}
-            className="btn-secondary flex-1 justify-center"
-          >
-            {saving ? (
-              <span className="w-4 h-4 border-2 border-gray-500/30 border-t-gray-400 rounded-full animate-spin" />
-            ) : (
-              <Save size={15} />
-            )}
-            {saving ? 'Salvando...' : 'Salvar rascunho'}
-          </button>
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!canSend || sending || saving}
-            className="btn-primary flex-1 justify-center"
-            title={!canSend
-              ? (!allScored
-                  ? `Preencha as ${5 - scored} competência${5 - scored !== 1 ? 's' : ''} restante${5 - scored !== 1 ? 's' : ''}`
-                  : `Escreva pelo menos ${50 - feedback.trim().length} caracteres de feedback`)
-              : 'Enviar devolutiva para o aluno'}
-          >
-            {sending ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Send size={15} />
-            )}
-            {sending ? 'Enviando...' : 'Enviar devolutiva'}
-          </button>
+        <div className={`rounded-2xl border p-4 space-y-3 ${
+          canSend
+            ? 'border-amber-500/20 bg-amber-500/[0.03]'
+            : 'border-white/[0.06] bg-white/[0.02]'
+        }`}>
+          {/* Progress hint */}
+          {!canSend && (
+            <p className="text-xs text-gray-600 text-center">
+              {!allScored
+                ? `⟶ Preencha ${5 - scored} competência${5 - scored !== 1 ? 's' : ''} restante${5 - scored !== 1 ? 's' : ''} para liberar o envio`
+                : `⟶ Escreva mais ${50 - feedback.trim().length} caracteres de feedback`}
+            </p>
+          )}
+          {canSend && (
+            <p className="text-xs text-green-400 text-center font-semibold">
+              ✓ Correção completa — pronto para enviar
+            </p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || sending}
+              className="btn-secondary flex-1 justify-center"
+            >
+              {saving ? (
+                <span className="w-4 h-4 border-2 border-gray-500/30 border-t-gray-400 rounded-full animate-spin" />
+              ) : (
+                <Save size={15} />
+              )}
+              {saving ? 'Salvando...' : 'Salvar rascunho'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!canSend || sending || saving}
+              className="btn-primary flex-1 justify-center"
+              title={!canSend
+                ? (!allScored
+                    ? `Preencha as ${5 - scored} competência${5 - scored !== 1 ? 's' : ''} restante${5 - scored !== 1 ? 's' : ''}`
+                    : `Escreva pelo menos ${50 - feedback.trim().length} caracteres de feedback`)
+                : 'Enviar devolutiva para o aluno'}
+            >
+              {sending ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send size={15} />
+              )}
+              <span className="truncate">
+                {sending
+                  ? 'Enviando...'
+                  : nextEssayId && firstNameNext
+                  ? `Enviar e ir para ${firstNameNext}`
+                  : 'Enviar devolutiva'}
+              </span>
+            </button>
+          </div>
         </div>
-
-        {!canSend && (
-          <p className="text-xs text-gray-700 text-center">
-            {!allScored
-              ? `Preencha as ${5 - scored} competência${5 - scored !== 1 ? 's' : ''} restante${5 - scored !== 1 ? 's' : ''}.`
-              : `Escreva pelo menos ${50 - feedback.trim().length} caracteres a mais de feedback.`}
-          </p>
-        )}
 
         {/* ── Fila: próxima redação ──────────────────────────────────────────── */}
         {nextEssayId && (

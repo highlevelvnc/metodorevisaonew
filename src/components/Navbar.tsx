@@ -5,13 +5,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { trackEvent } from './Analytics'
 
-
 const navLinks = [
-  { label: 'Método', href: '/#como-funciona' },
   { label: 'Como funciona', href: '/#como-funciona' },
-  { label: 'Planos', href: '/#planos' },
-  { label: 'Resultados', href: '/#depoimentos' },
-  { label: 'Blog', href: '/blog' },
+  { label: 'Planos',        href: '/#planos' },
+  { label: 'Resultados',    href: '/#depoimentos' },
+  { label: 'Blog',          href: '/blog' },
 ]
 
 export default function Navbar() {
@@ -32,13 +30,16 @@ export default function Navbar() {
           : 'bg-transparent'
       }`}
     >
-      <nav className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between" aria-label="Navegação principal">
+      <nav
+        className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between"
+        aria-label="Navegação principal"
+      >
+        {/* ── Logo ──────────────────────────────────────────────── */}
         <Link
           href="/"
           aria-label="Método Revisão — Página inicial"
           className="flex-shrink-0 transition-opacity duration-200 hover:opacity-80"
         >
-          {/* Container crops the whitespace of the PNG, showing only the logo content */}
           <div style={{ position: 'relative', width: '148px', height: '46px', overflow: 'hidden' }}>
             <Image
               src="/logo.png"
@@ -51,8 +52,8 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop nav */}
-        <ul className="hidden lg:flex items-center gap-7">
+        {/* ── Desktop nav links ──────────────────────────────────── */}
+        <ul className="hidden lg:flex items-center gap-6">
           {navLinks.map((link) => (
             <li key={link.label}>
               <Link
@@ -65,18 +66,41 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <a
-          href="/#planos"
-          className="hidden lg:inline-flex btn-primary text-sm py-2.5 px-5"
-          onClick={() => trackEvent('cta_click', { source: 'navbar' })}
-        >
-          Ver planos
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </a>
+        {/* ── Desktop action group ───────────────────────────────── */}
+        <div className="hidden lg:flex items-center gap-2">
+          {/* Divider */}
+          <div className="w-px h-4 bg-white/[0.10] mr-1" aria-hidden="true" />
 
-        {/* Mobile hamburger */}
+          {/* Login Aluno — text/ghost */}
+          <Link
+            href="/login"
+            className="text-sm text-gray-400 hover:text-white font-medium px-3.5 py-2 rounded-lg transition-all hover:bg-white/[0.05]"
+          >
+            Login Aluno
+          </Link>
+
+          {/* Login Professor — outlined ghost */}
+          <Link
+            href="/login?next=/professor"
+            className="text-sm text-gray-500 hover:text-white font-medium px-3.5 py-2 rounded-lg border border-white/[0.08] hover:border-white/[0.20] hover:bg-white/[0.04] transition-all"
+          >
+            Login Professor
+          </Link>
+
+          {/* Começar agora — primary CTA */}
+          <Link
+            href="/cadastro"
+            className="btn-primary text-sm py-2.5 px-5 ml-1"
+            onClick={() => trackEvent('cta_click', { source: 'navbar' })}
+          >
+            Começar agora
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+
+        {/* ── Mobile hamburger ──────────────────────────────────── */}
         <button
           onClick={() => setOpen(!open)}
           className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -95,9 +119,10 @@ export default function Navbar() {
         </button>
       </nav>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ───────────────────────────────────────────── */}
       {open && (
-        <div className="lg:hidden bg-slate-950/95 backdrop-blur-xl border-t border-gray-800/50 px-5 py-5 space-y-1">
+        <div className="lg:hidden bg-slate-950/97 backdrop-blur-xl border-t border-gray-800/50 px-5 py-5 space-y-1">
+          {/* Nav links */}
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -108,16 +133,42 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <a
-            href="/#planos"
-            className="btn-primary w-full mt-4 text-sm"
-            onClick={() => { setOpen(false); trackEvent('cta_click', { source: 'navbar_mobile' }) }}
-          >
-            Ver planos
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </a>
+
+          {/* Login + CTA section */}
+          <div className="pt-4 mt-2 border-t border-white/[0.06] space-y-2.5">
+            {/* Two login buttons side-by-side */}
+            <div className="flex gap-2">
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex-1 text-center py-2.5 text-sm font-semibold text-gray-300 border border-gray-700/60 rounded-xl hover:bg-white/[0.05] hover:text-white hover:border-gray-600 transition-all"
+              >
+                Login Aluno
+              </Link>
+              <Link
+                href="/login?next=/professor"
+                onClick={() => setOpen(false)}
+                className="flex-1 text-center py-2.5 text-sm font-semibold text-gray-500 border border-gray-800/80 rounded-xl hover:bg-white/[0.04] hover:text-gray-300 hover:border-gray-700 transition-all"
+              >
+                Login Professor
+              </Link>
+            </div>
+
+            {/* Primary CTA — full width */}
+            <Link
+              href="/cadastro"
+              className="btn-primary w-full text-sm justify-center"
+              onClick={() => {
+                setOpen(false)
+                trackEvent('cta_click', { source: 'navbar_mobile' })
+              }}
+            >
+              Começar agora
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       )}
     </header>

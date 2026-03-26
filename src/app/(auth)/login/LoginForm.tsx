@@ -22,6 +22,9 @@ export default function LoginForm() {
   const urlError     = searchParams.get('error')
   const errorCode    = searchParams.get('error_code') // e.g. 'otp_expired'
 
+  // Derive intent from ?next= — no auth logic changes
+  const isProfessor = nextPath === '/professor' || nextPath.startsWith('/professor/')
+
   // An OTP-expired error means the account exists but the confirmation link was
   // consumed before the user clicked (usually by an email scanner / prefetch).
   const isOtpExpired = errorCode === 'otp_expired' || urlError === 'otp_expired'
@@ -79,8 +82,24 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-sm">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Bem-vindo de volta</h1>
-        <p className="text-gray-500 text-sm">Acesse sua conta para ver suas redações</p>
+        {isProfessor ? (
+          <>
+            {/* Professor badge */}
+            <div className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[11px] font-bold px-3 py-1 rounded-full mb-4">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Área do Professor
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2">Entrar como professor</h1>
+            <p className="text-gray-500 text-sm">Acesse o painel para corrigir redações e acompanhar seus alunos</p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-white mb-2">Bem-vindo de volta</h1>
+            <p className="text-gray-500 text-sm">Acesse sua conta para ver suas redações</p>
+          </>
+        )}
       </div>
 
       {/* ── OTP expired — resend section ──────────────────────────────────── */}
@@ -211,15 +230,27 @@ export default function LoginForm() {
         </button>
       </form>
 
-      <p className="text-center mt-5 text-sm text-gray-600">
-        Não tem conta?{' '}
-        <Link
-          href="/cadastro"
-          className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
-        >
-          Criar conta grátis
-        </Link>
-      </p>
+      {isProfessor ? (
+        <p className="text-center mt-5 text-sm text-gray-700">
+          Acesso restrito a professores cadastrados.{' '}
+          <Link
+            href="/login"
+            className="text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Entrar como aluno →
+          </Link>
+        </p>
+      ) : (
+        <p className="text-center mt-5 text-sm text-gray-600">
+          Não tem conta?{' '}
+          <Link
+            href="/cadastro"
+            className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
+          >
+            Criar conta grátis
+          </Link>
+        </p>
+      )}
     </div>
   )
 }

@@ -96,6 +96,17 @@ export default function Hero() {
           <p className="text-sm text-gray-600">
             Sem fidelidade &nbsp;·&nbsp; Cancele quando quiser &nbsp;·&nbsp; Devolutiva em até 48h
           </p>
+
+          {/* Returning user link */}
+          <p className="text-sm text-gray-700 mt-4">
+            Já tem uma conta?{' '}
+            <Link
+              href="/login"
+              className="text-purple-400 hover:text-purple-300 font-medium transition-colors underline-offset-2 hover:underline"
+            >
+              Entrar →
+            </Link>
+          </p>
         </div>
 
         {/* ── Correction preview card ───────────── */}

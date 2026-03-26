@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, Clock, CheckCircle2, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Professor — Redações',
@@ -37,8 +39,8 @@ function relativeDate(iso: string) {
 function urgencyConfig(iso: string, status: EssayStatus) {
   if (status === 'corrected') return null
   const h = Math.floor(msAgo(iso) / 3_600_000)
-  if (h >= 48) return { label: `${h}h aguardando`,         color: 'text-red-400',   bg: 'bg-red-500/10 border-red-500/25',     icon: '🔴' }
-  if (h >= 24) return { label: `${h}h aguardando`,         color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/25', icon: '⚠️' }
+  if (h >= 48) return { label: `${h}h aguardando`, color: 'text-red-400',   bg: 'bg-red-500/10 border-red-500/25',     icon: '🔴' }
+  if (h >= 24) return { label: `${h}h aguardando`, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/25', icon: '⚠️' }
   return             { label: h < 1 ? 'há menos de 1h' : `${h}h aguardando`, color: 'text-gray-500', bg: 'bg-white/[0.04] border-white/[0.06]', icon: '⏳' }
 }
 
@@ -48,7 +50,21 @@ const PLAN_COLOR: Record<string, string> = {
   'Intensivo':  'text-amber-400 bg-amber-500/10 border-amber-500/25',
 }
 
-export default async function ProfessorRedacoesPage() {
+const TAB_OPTIONS = ['all', 'pending', 'review', 'corrected'] as const
+type TabOption = typeof TAB_OPTIONS[number]
+
+function tabLabel(tab: TabOption): string {
+  if (tab === 'all') return 'Todas'
+  if (tab === 'pending') return 'Pendentes'
+  if (tab === 'review') return 'Em Revisão'
+  return 'Corrigidas'
+}
+
+export default async function ProfessorRedacoesPage({
+  searchParams,
+}: {
+  searchParams: { tab?: string }
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -75,9 +91,28 @@ export default async function ProfessorRedacoesPage() {
 
   const essays: ProfessorEssay[] = essaysRaw ?? []
 
-  const pending   = essays.filter(e => e.status === 'pending')
-  const review    = essays.filter(e => e.status === 'in_review')
-  const corrected = essays.filter(e => e.status === 'corrected')
+  const activeTab: TabOption = TAB_OPTIONS.includes(searchParams.tab as TabOption)
+    ? (searchParams.tab as TabOption)
+    : 'all'
+
+  // Sort: pending/review oldest first, corrected newest first
+  const allPending   = essays.filter(e => e.status === 'pending').sort(
+    (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime()
+  )
+  const allReview    = essays.filter(e => e.status === 'in_review').sort(
+    (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime()
+  )
+  const allCorrected = essays.filter(e => e.status === 'corrected')
+
+  const showPending   = activeTab === 'all' || activeTab === 'pending'
+  const showReview    = activeTab === 'all' || activeTab === 'review'
+  const showCorrected = activeTab === 'all' || activeTab === 'corrected'
+
+  const pending   = showPending   ? allPending   : []
+  const review    = showReview    ? allReview    : []
+  const corrected = showCorrected ? allCorrected : []
+
+  const oldestPendingId = allPending[0]?.id ?? allReview[0]?.id
 
   function EssayRow({ essay, variant }: { essay: ProfessorEssay; variant: 'pending' | 'review' | 'corrected' }) {
     const studentName = essay.student?.full_name ?? 'Aluno'
@@ -85,36 +120,38 @@ export default async function ProfessorRedacoesPage() {
     const urgency     = urgencyConfig(essay.submitted_at, essay.status)
 
     return (
-      <div className={`card-dark rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 ${variant === 'corrected' ? 'opacity-70' : ''}`}>
-        {/* Aluno */}
+      <div className={`card-dark rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 ${variant === 'corrected' ? 'opacity-75' : ''}`}>
+        {/* Avatar + aluno */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0 ${
             variant === 'corrected' ? 'bg-green-500/10 border border-green-500/20 text-green-400' :
             variant === 'review'    ? 'bg-blue-500/15 border border-blue-500/20 text-blue-300'   :
-                                      'bg-purple-600/15 border border-purple-500/20 text-purple-300'
+                                      'bg-amber-500/10 border border-amber-500/20 text-amber-300'
           }`}>
-            {studentName.charAt(0)}
+            {studentName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className={`text-sm font-medium ${variant === 'corrected' ? 'text-gray-300' : 'text-white'}`}>
-              {studentName}
-            </p>
-            <p className="text-xs text-gray-600 line-clamp-1">{essay.theme_title}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-sm font-semibold ${variant === 'corrected' ? 'text-gray-300' : 'text-white'}`}>
+                {studentName}
+              </p>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${PLAN_COLOR[planName] ?? PLAN_COLOR['Evolução']}`}>
+                {planName}
+              </span>
+            </div>
+            <p className="text-xs text-gray-600 line-clamp-1 mt-0.5">{essay.theme_title}</p>
           </div>
         </div>
 
         {/* Meta */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${PLAN_COLOR[planName] ?? PLAN_COLOR['Evolução']}`}>
-            {planName}
-          </span>
+        <div className="flex items-center gap-2 flex-wrap">
           {urgency && (
             <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${urgency.bg} ${urgency.color}`}>
               {urgency.icon} {urgency.label}
             </span>
           )}
           {variant === 'corrected' && essay.corrections[0] && (
-            <span className="text-xs font-bold text-green-400">
+            <span className="text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
               {essay.corrections[0].total_score}/1000
             </span>
           )}
@@ -124,20 +161,20 @@ export default async function ProfessorRedacoesPage() {
         {/* CTA */}
         {variant === 'pending' && (
           <Link href={`/professor/redacoes/${essay.id}`}
-            className="btn-primary text-xs py-2 px-4 flex-shrink-0 self-start sm:self-auto">
+            className="btn-primary text-xs py-2 px-4 flex-shrink-0 self-start sm:self-auto whitespace-nowrap">
             Corrigir →
           </Link>
         )}
         {variant === 'review' && (
           <Link href={`/professor/redacoes/${essay.id}`}
-            className="text-xs text-blue-400 hover:text-blue-300 border border-blue-500/25 bg-blue-500/10 px-4 py-2 rounded-xl font-medium transition-colors flex-shrink-0 self-start sm:self-auto">
+            className="text-xs text-blue-400 hover:text-blue-300 border border-blue-500/25 bg-blue-500/10 px-4 py-2 rounded-xl font-medium transition-colors flex-shrink-0 self-start sm:self-auto whitespace-nowrap">
             Continuar →
           </Link>
         )}
         {variant === 'corrected' && (
           <Link href={`/professor/redacoes/${essay.id}`}
-            className="text-xs text-gray-600 hover:text-gray-400 border border-white/[0.06] bg-white/[0.03] px-4 py-2 rounded-xl font-medium transition-colors flex-shrink-0 self-start sm:self-auto">
-            Ver
+            className="text-xs text-gray-500 hover:text-gray-300 border border-white/[0.06] bg-white/[0.03] px-4 py-2 rounded-xl font-medium transition-colors flex-shrink-0 self-start sm:self-auto whitespace-nowrap">
+            Ver →
           </Link>
         )}
       </div>
@@ -147,24 +184,24 @@ export default async function ProfessorRedacoesPage() {
   return (
     <div>
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white mb-0.5">Redações</h1>
           <p className="text-gray-500 text-sm">
-            {essays.length} total · {pending.length + review.length} aguardando
+            {essays.length} total · {allPending.length + allReview.length} aguardando
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {pending.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {allPending.length > 0 && (
             <div className="flex items-center gap-2 text-sm font-medium text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-2">
               <AlertCircle size={15} />
-              {pending.length} pendente{pending.length !== 1 ? 's' : ''}
+              {allPending.length} pendente{allPending.length !== 1 ? 's' : ''}
             </div>
           )}
-          {(pending.length > 0 || review.length > 0) && (
+          {oldestPendingId && (
             <Link
-              href={`/professor/redacoes/${pending[0]?.id ?? review[0]?.id}`}
-              className="btn-primary text-sm py-2 px-4"
+              href={`/professor/redacoes/${oldestPendingId}`}
+              className="btn-primary text-sm py-2 px-4 whitespace-nowrap"
             >
               Corrigir próxima →
             </Link>
@@ -172,11 +209,54 @@ export default async function ProfessorRedacoesPage() {
         </div>
       </div>
 
+      {/* ── Stats summary pills ─────────────────────────────────── */}
+      <div className="flex items-center gap-2 flex-wrap mb-6">
+        <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+          <Clock size={12} />
+          {allPending.length} pendente{allPending.length !== 1 ? 's' : ''}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+          {allReview.length} em revisão
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-1.5">
+          <CheckCircle2 size={12} />
+          {allCorrected.length} corrigida{allCorrected.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* ── Filter tabs ─────────────────────────────────────────── */}
+      <div className="flex items-center gap-1 mb-6 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1 w-fit flex-wrap">
+        {TAB_OPTIONS.map(tab => (
+          <Link
+            key={tab}
+            href={tab === 'all' ? '/professor/redacoes' : `/professor/redacoes?tab=${tab}`}
+            className={`text-xs font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+              activeTab === tab
+                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
+                : 'text-gray-500 hover:text-white'
+            }`}
+          >
+            {tabLabel(tab)}
+            {tab === 'pending' && allPending.length > 0 && (
+              <span className="ml-1.5 text-[10px] bg-amber-500/20 text-amber-400 rounded-full px-1.5 py-0.5">
+                {allPending.length}
+              </span>
+            )}
+            {tab === 'review' && allReview.length > 0 && (
+              <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-400 rounded-full px-1.5 py-0.5">
+                {allReview.length}
+              </span>
+            )}
+          </Link>
+        ))}
+      </div>
+
       {/* ── Aguardando correção ─────────────────────────────────── */}
-      {pending.length > 0 && (
+      {showPending && pending.length > 0 && (
         <section className="mb-8">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Clock size={13} /> Aguardando correção ({pending.length})
+            <Clock size={13} className="text-amber-400" /> Aguardando correção ({pending.length})
           </h2>
           <div className="space-y-2">
             {pending.map(essay => <EssayRow key={essay.id} essay={essay} variant="pending" />)}
@@ -185,7 +265,7 @@ export default async function ProfessorRedacoesPage() {
       )}
 
       {/* ── Em revisão ─────────────────────────────────────────── */}
-      {review.length > 0 && (
+      {showReview && review.length > 0 && (
         <section className="mb-8">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
@@ -198,7 +278,7 @@ export default async function ProfessorRedacoesPage() {
       )}
 
       {/* ── Corrigidas ─────────────────────────────────────────── */}
-      {corrected.length > 0 && (
+      {showCorrected && corrected.length > 0 && (
         <section>
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
             <CheckCircle2 size={13} className="text-green-400" /> Corrigidas ({corrected.length})
@@ -209,12 +289,35 @@ export default async function ProfessorRedacoesPage() {
         </section>
       )}
 
-      {/* ── Empty state ─────────────────────────────────────────── */}
+      {/* ── Empty states per filter ─────────────────────────────── */}
+      {activeTab === 'pending' && allPending.length === 0 && (
+        <div className="card-dark rounded-2xl p-12 text-center">
+          <CheckCircle2 size={28} className="text-green-400 mx-auto mb-3" />
+          <p className="text-white font-semibold mb-1">Nenhuma pendente!</p>
+          <p className="text-gray-600 text-sm">Todas as redações foram atendidas.</p>
+        </div>
+      )}
+      {activeTab === 'review' && allReview.length === 0 && (
+        <div className="card-dark rounded-2xl p-12 text-center">
+          <FileText size={28} className="text-gray-600 mx-auto mb-3" />
+          <p className="text-white font-semibold mb-1">Nenhuma em revisão</p>
+          <p className="text-gray-600 text-sm">Não há rascunhos em andamento.</p>
+        </div>
+      )}
+      {activeTab === 'corrected' && allCorrected.length === 0 && (
+        <div className="card-dark rounded-2xl p-12 text-center">
+          <FileText size={28} className="text-gray-600 mx-auto mb-3" />
+          <p className="text-white font-semibold mb-1">Nenhuma corrigida</p>
+          <p className="text-gray-600 text-sm">As devolutivas enviadas aparecerão aqui.</p>
+        </div>
+      )}
+
+      {/* ── Global empty state ─────────────────────────────────── */}
       {essays.length === 0 && (
         <div className="card-dark rounded-2xl p-12 text-center">
           <CheckCircle2 size={28} className="text-green-400 mx-auto mb-3" />
           <p className="text-white font-semibold mb-1">Tudo em dia!</p>
-          <p className="text-gray-600 text-sm">Nenhuma redação aguardando correção.</p>
+          <p className="text-gray-600 text-sm">Nenhuma redação na plataforma ainda.</p>
         </div>
       )}
     </div>

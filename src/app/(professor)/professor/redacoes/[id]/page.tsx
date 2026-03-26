@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import CorrectionForm, { type EssayForCorrection } from './CorrectionForm'
 
@@ -99,5 +100,34 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
       : null,
   }
 
-  return <CorrectionForm essay={essay} nextEssayId={nextEssayId} queueCount={queueCount} nextStudentName={nextStudentName} />
+  const studentName = raw.student?.full_name ?? 'Aluno'
+
+  return (
+    <div>
+      {/* ── Breadcrumb ──────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 text-xs text-gray-600 mb-5 flex-wrap">
+        <Link href="/professor" className="hover:text-gray-400 transition-colors">Professor</Link>
+        <span>/</span>
+        <Link href="/professor/redacoes" className="hover:text-gray-400 transition-colors">Redações</Link>
+        <span>/</span>
+        <span className="text-gray-400 font-medium">{studentName}</span>
+        {queueCount > 0 && (
+          <>
+            <span className="ml-2 text-gray-700">·</span>
+            <span className="text-gray-600">
+              {queueCount} na fila
+              {nextStudentName ? ` · próxima: ${nextStudentName}` : ''}
+            </span>
+          </>
+        )}
+      </div>
+
+      <CorrectionForm
+        essay={essay}
+        nextEssayId={nextEssayId}
+        queueCount={queueCount}
+        nextStudentName={nextStudentName}
+      />
+    </div>
+  )
 }
