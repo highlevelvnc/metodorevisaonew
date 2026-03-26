@@ -6,6 +6,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
+        // Private authenticated areas — must not be indexed
+        disallow: ['/aluno/', '/admin/', '/api/', '/auth/'],
       },
     ],
     sitemap: 'https://metodorevisao.com/sitemap.xml',

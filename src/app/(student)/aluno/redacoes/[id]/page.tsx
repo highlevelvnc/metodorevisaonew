@@ -70,6 +70,83 @@ const MAINTAIN_TIPS: Record<string, string> = {
   c5_score: 'Proposta de intervenção completa e específica — mantenha os 4 elementos sempre explícitos.',
 }
 
+// Contextual first-person phrase from reviewer — shown inside the feedback card header
+function generateReviewerPhrase(
+  score: number,
+  delta: number | null,
+  weakestKey: string,
+): string {
+  const improving  = delta !== null && delta > 0
+  const regressing = delta !== null && delta < 0
+  const firstEssay = delta === null
+
+  if (score >= 800) {
+    return improving
+      ? 'Evolução consistente. Os ajustes agora são de precisão — exatamente o que separa uma nota acima de 900.'
+      : 'Redação de alto nível. O refinamento agora está nos detalhes que fazem a diferença entre 800 e 960.'
+  }
+  if (score >= 640) {
+    if (firstEssay)  return 'Boa redação de partida. A partir daqui, cada ciclo vai mostrar onde você está evoluindo com mais clareza.'
+    if (improving)   return 'Sua evolução é clara e vai na direção certa. Continue com essa consistência e os resultados aparecem.'
+    if (regressing)  return 'Nem toda redação é igual — o importante é entender o que variou. Você tem a base para retomar.'
+    return 'Redação sólida. Seu caminho agora é transformar esse patamar em consistência cíclica.'
+  }
+  if (score >= 480) {
+    if (firstEssay) return 'Esta é sua redação de partida. Vou acompanhar sua evolução a partir daqui — o potencial para crescer é claro.'
+    if (improving)  return 'Você está evoluindo — isso é o mais importante. Cada redação corrigida é um passo que a maioria dos candidatos não dá.'
+    return 'Há pontos sólidos aqui e espaço concreto para crescer. As orientações desta devolutiva são o caminho mais direto.'
+  }
+  if (firstEssay) return 'Toda trajetória começa com um ponto de partida honesto. Esta devolutiva é o mapa — agora é sobre execução.'
+  if (improving)  return 'Você está evoluindo mesmo com muito espaço pela frente. Continue submetendo — é assim que a nota sobe.'
+  return `Há muito espaço para crescer, e isso é oportunidade. As orientações abaixo são diretas e aplicáveis já na próxima redação.`
+}
+
+// Personalized note — specific "Recado da corretora" for the student's next essay
+function generateReviewerNote(
+  delta: number | null,
+  weakestKey: string,
+  weakestName: string,
+  weakestScore: number,
+  mostImprovedName: string | null,
+  mostImprovedDelta: number | null,
+  keepCount: number,
+  totalScore: number,
+): string {
+  const gap = 200 - weakestScore
+
+  // Highlight meaningful improvement first
+  if (mostImprovedDelta !== null && mostImprovedDelta >= 40 && mostImprovedName) {
+    return `Notei uma evolução real em ${mostImprovedName} — +${mostImprovedDelta} pts é um salto significativo, que mostra que você aplicou o que foi trabalhado. Para a próxima redação, quero ver esse mesmo nível de atenção em ${weakestName}: ainda há ${gap} pontos disponíveis aqui, e é onde o seu crescimento vai ser mais visível.`
+  }
+
+  // Strong base, precision refinement
+  if (totalScore >= 700 && keepCount >= 3) {
+    return `Você já tem uma base muito sólida — ${keepCount} competências acima de 140 pontos é consistência real. O que vai fazer a diferença agora é precisão em ${weakestName}. Com ${gap} pontos ainda disponíveis, um trabalho focado aqui pode levar sua nota a outro patamar.`
+  }
+
+  // First essay — competency-specific coaching
+  if (delta === null) {
+    const FIRST: Record<string, string> = {
+      c1_score: `Na sua primeira redação já identifiquei o padrão: a norma culta precisa de atenção sistemática. A técnica mais eficaz é simples — leia em voz alta antes de entregar. O ouvido pega o que o olho ignora. Quero ver esse cuidado na próxima.`,
+      c2_score: `O que mais chamou minha atenção foi a âncora da tese ao enunciado. Antes de escrever a próxima, escreva sua tese em uma frase e pergunte: ela responde diretamente ao que foi pedido? Se não, reescreva antes de avançar.`,
+      c3_score: `O potencial argumentativo aparece — mas precisa de embasamento concreto. Antes de começar a próxima redação, anote 2–3 dados, referências ou exemplos históricos que vão sustentar sua tese. Argumento sem apoio raramente passa de 80/200.`,
+      c4_score: `Percebi que a coesão ainda está em desenvolvimento — os parágrafos precisam se conectar melhor entre si. Na próxima, preste atenção à última frase de cada parágrafo: ela deve criar uma ponte natural para o seguinte.`,
+      c5_score: `A proposta de intervenção é o ponto que mais cresce com prática dirigida. Memorize a estrutura: agente, ação, modo e finalidade — todos os quatro precisam aparecer de forma explícita, sem subentendidos.`,
+    }
+    return FIRST[weakestKey] ?? `Esta foi sua redação de partida, e o mapa já está claro. Foco em ${weakestName} vai trazer os maiores ganhos nas próximas redações.`
+  }
+
+  // Returning student — per-weakness coaching note
+  const RETURNING: Record<string, string> = {
+    c1_score: `Quero ver uma revisão mais cuidadosa da norma culta na próxima. Reserve os últimos 5 minutos da escrita só para reler em busca de concordância e pontuação — esse hábito vale pontos diretos.`,
+    c2_score: `Meu ponto de atenção para a próxima é a aderência ao tema. Antes de começar, escreva sua tese em uma frase. Se ela não responder diretamente ao enunciado, reescreva antes de avançar.`,
+    c3_score: `Quero ver argumentação com mais embasamento na próxima. Antes de escrever, anote pelo menos dois dados ou referências concretas que vão sustentar sua tese. Argumento sem embasamento raramente passa de 80/200.`,
+    c4_score: `Na próxima redação, quero ver mais variedade nos conectivos e melhor articulação entre parágrafos. Releia a última frase de cada parágrafo separadamente — ela deve criar uma ponte natural para o seguinte.`,
+    c5_score: `Quero ver uma proposta de intervenção completa e específica na próxima. Anote mentalmente: agente, ação, modo, finalidade — os quatro precisam estar lá, de forma explícita, sem subentendidos.`,
+  }
+  return RETURNING[weakestKey] ?? `Meu foco para a próxima é ${weakestName}. Com ${gap} pontos ainda disponíveis, um trabalho direcionado aqui vai fazer diferença na nota.`
+}
+
 // Most urgent fix for weakest competency — "O que corrigir imediatamente"
 const FIX_QUICKLY: Record<string, string> = {
   c1_score: 'Revise cada parágrafo em busca de erros de concordância e pontuação antes de entregar. Um erro evitado já vale pontos.',
@@ -271,6 +348,18 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
   const fixComp    = weakest
   const nextTarget = correction.total_score + 40
 
+  const reviewerPhrase = generateReviewerPhrase(correction.total_score, totalDelta, weakest.key)
+  const reviewerNote   = generateReviewerNote(
+    totalDelta,
+    weakest.key,
+    weakest.name,
+    weakest.score,
+    mostImproved ? mostImproved.name : null,
+    mostImproved ? mostImproved.delta : null,
+    keepComps.length,
+    correction.total_score,
+  )
+
   return (
     <div className="max-w-4xl">
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -289,8 +378,10 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
               </span>
             </div>
             <h1 className="text-xl font-bold text-white leading-snug">{essay.theme_title}</h1>
-            <p className="text-gray-600 text-xs mt-0.5">
-              Corrigida por {correction.reviewer_name} · {formatDate(correction.corrected_at)}
+            <p className="text-xs mt-0.5 text-gray-500">
+              Corrigida por{' '}
+              <span className="text-gray-300 font-medium">{correction.reviewer_name}</span>
+              {' '}· {formatDate(correction.corrected_at)}
             </p>
           </div>
         </div>
@@ -378,7 +469,7 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
         {/* O que manter */}
         {keepComps.length > 0 && (
           <div className="mb-4">
-            <p className="text-xs font-semibold text-green-400 mb-2">✅ O que manter</p>
+            <p className="text-xs font-semibold text-green-400 mb-2">✅ Seus pontos sólidos</p>
             <div className="space-y-2">
               {keepComps.map(c => (
                 <div key={c.key} className="flex items-center gap-3 rounded-xl bg-green-500/[0.04] border border-green-500/10 px-4 py-3">
@@ -400,6 +491,9 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
               <span className="ml-auto text-xs font-bold text-amber-400 tabular-nums">{fixComp.score}/200</span>
             </div>
             <p className="text-xs text-gray-400 leading-relaxed">{FIX_QUICKLY[fixComp.key]}</p>
+            <p className="text-[10px] text-amber-400/60 mt-2">
+              {200 - fixComp.score} pts ainda disponíveis nesta competência — a maior oportunidade desta devolutiva.
+            </p>
           </div>
         </div>
 
@@ -411,26 +505,60 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
               Atingir <span className="text-purple-300">{nextTarget} pontos</span>
             </p>
             <p className="text-xs text-gray-500 leading-relaxed">
-              +40 pts em relação a esta redação. Foco em {fixComp.label} é o caminho mais direto.
+              +40 pts em relação a esta redação, equivalente a um nível acima em {fixComp.label} — {fixComp.name}.
             </p>
+            {totalDelta !== null && totalDelta > 0 && (
+              <p className="text-[10px] text-purple-400/70 mt-1.5">
+                Você já ganhou +{totalDelta} pts desde a última redação — a trajetória está no rumo certo.
+              </p>
+            )}
           </div>
         </div>
       </div>
 
       {/* ── 4. Feedback da corretora ────────────────────────────── */}
       <div className="card-dark rounded-2xl p-6 mb-6">
-        <div className="flex items-center gap-3 mb-5 pb-5 border-b border-white/[0.06]">
-          <div className="w-9 h-9 rounded-full bg-purple-600/20 border border-purple-500/25 flex items-center justify-center text-sm font-bold text-purple-300 flex-shrink-0">
+        {/* Reviewer presence — prominent */}
+        <div className="flex items-start gap-4 mb-6 pb-6 border-b border-white/[0.06]">
+          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-700/30 to-purple-900/20 border border-purple-500/30 flex items-center justify-center text-base font-bold text-purple-200 flex-shrink-0">
             {correction.reviewer_name.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <p className="text-sm font-semibold text-white">{correction.reviewer_name}</p>
-            <p className="text-xs text-gray-600">Corretora especialista · ENEM</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <p className="text-sm font-bold text-white">{correction.reviewer_name}</p>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                Especialista ENEM
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">{reviewerPhrase}</p>
           </div>
         </div>
+        {/* Feedback content */}
         <div className="prose-feedback">
           {renderFeedback(correction.general_feedback)}
         </div>
+        {/* Reviewer sign-off */}
+        <div className="mt-5 pt-5 border-t border-white/[0.06] flex items-center justify-between">
+          <p className="text-xs text-gray-600 italic">— {correction.reviewer_name} · Especialista ENEM</p>
+          <p className="text-xs text-gray-700">{formatDate(correction.corrected_at)}</p>
+        </div>
+      </div>
+
+      {/* ── 4b. Recado da corretora ─────────────────────────────── */}
+      <div className="rounded-2xl border border-amber-500/[0.18] bg-amber-500/[0.03] p-5 mb-6">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-400">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-amber-400">Recado da corretora</p>
+            <p className="text-[10px] text-amber-400/50">{correction.reviewer_name} · para a sua próxima redação</p>
+          </div>
+        </div>
+        <p className="text-sm text-gray-300 leading-relaxed">{reviewerNote}</p>
       </div>
 
       {/* ── 5. Plano para a próxima ─────────────────────────────── */}

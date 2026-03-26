@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   FileText,
   TrendingUp,
+  BarChart2,
   User,
   LogOut,
   Menu,
@@ -16,10 +17,11 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { label: 'Sua evolução', href: '/aluno',           icon: LayoutDashboard },
-  { label: 'Redações',     href: '/aluno/redacoes',  icon: FileText },
-  { label: 'Evolução',     href: '/aluno/evolucao',  icon: TrendingUp },
-  { label: 'Meu Perfil',   href: '/aluno/conta',     icon: User },
+  { label: 'Sua evolução', href: '/aluno',            icon: LayoutDashboard },
+  { label: 'Redações',     href: '/aluno/redacoes',   icon: FileText },
+  { label: 'Evolução',     href: '/aluno/evolucao',   icon: TrendingUp },
+  { label: 'Relatório',    href: '/aluno/relatorio',  icon: BarChart2 },
+  { label: 'Meu Perfil',   href: '/aluno/conta',      icon: User },
 ]
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -40,7 +42,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       <aside
         className={`
           fixed top-0 left-0 h-full w-64 bg-slate-950 border-r border-white/[0.06] z-40
-          flex flex-col transition-transform duration-300
+          flex flex-col transition-transform duration-300 print:hidden
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
@@ -108,7 +110,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile topbar */}
-        <header className="lg:hidden h-14 bg-slate-950 border-b border-white/[0.06] flex items-center px-4 gap-3">
+        <header className="lg:hidden h-14 bg-slate-950 border-b border-white/[0.06] flex items-center px-4 gap-3 print:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-gray-400 hover:text-white"
@@ -129,7 +131,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-5 sm:p-7 lg:p-8">
+        <main className="flex-1 p-5 sm:p-7 lg:p-8 print:p-0">
           {children}
         </main>
       </div>

@@ -29,32 +29,37 @@ const NEXT_STEP_SHORT: Record<string, { focus: string; tip: string }> = {
   c5_score: { focus: 'Proposta de intervenção', tip: 'Inclua explicitamente: agente, ação, modo/meio e finalidade.' },
 }
 
-// Enhanced patterns — label + specific description + actionable tip
-const PATTERN_LABELS: Record<string, { label: string; description: string; tip: string }> = {
+// Enhanced patterns — label + description + tip + concrete example
+const PATTERN_LABELS: Record<string, { label: string; description: string; tip: string; example: string }> = {
   c1_score: {
     label:       'Erros gramaticais recorrentes',
     description: 'Concordância, pontuação ou ortografia aparecem com frequência em todas as redações analisadas',
     tip:         'Releia em voz alta antes de entregar',
+    example:     'Ex: "Os dados indica" → "Os dados indicam". Cada erro sinaliza descuido com a norma culta.',
   },
   c2_score: {
     label:       'Tangência ao tema',
     description: 'Seus textos começam no foco correto mas desviam — a tese não sustenta todos os parágrafos',
     tip:         'Escreva a tese em uma frase antes de começar',
+    example:     'Ex: escrever sobre "bem-estar geral" num tema de "saúde mental jovem" — pauta diferente do que foi pedido.',
   },
   c3_score: {
     label:       'Argumentação no senso comum',
     description: 'Os argumentos ficam genéricos por falta de dados, autores ou referências concretas',
     tip:         'Pesquise 2–3 referências antes de escrever',
+    example:     'Ex: "É notório que o desemprego causa problemas" — sem dados, datas ou autores específicos.',
   },
   c4_score: {
     label:       'Conectivos repetidos ou ausentes',
     description: '"Porém" e "mas" dominam o texto — pouca variação nos operadores argumentativos',
     tip:         'Use "ademais", "nesse sentido", "entretanto"',
+    example:     'Ex: usar "portanto" 3 vezes no mesmo parágrafo — sinaliza vocabulário argumentativo restrito.',
   },
   c5_score: {
     label:       'Intervenção sempre incompleta',
     description: 'Um ou mais dos 4 elementos (agente, ação, modo, finalidade) estão ausentes ou vagos',
     tip:         'Responda: quem? faz o quê? como? para quê?',
+    example:     'Ex: "O governo deve investir em educação" — falta o modo (como?) e a finalidade explícita (para quê?).',
   },
 }
 
@@ -136,37 +141,71 @@ const SUGGESTED_THEMES: Record<string, { title: string; reason: string; trains: 
   },
 }
 
-function generateCyclePhrase(
+// Plan progression data — used for contextual upgrade suggestions
+const PLAN_TIERS: Record<string, {
+  nextPlan: string | null; nextEssays: number | null
+  nextBenefit: string; color: string
+}> = {
+  'Trial':      { nextPlan: 'Evolução',    nextEssays: 3, nextBenefit: '3 redações por ciclo com devolutiva completa C1–C5',      color: 'text-gray-400'   },
+  'Evolução':   { nextPlan: 'Estratégia',  nextEssays: 5, nextBenefit: '5 redações + acompanhamento de padrões prioritário',       color: 'text-gray-400'   },
+  'Estratégia': { nextPlan: 'Intensivo',   nextEssays: 8, nextBenefit: '8 redações + correção prioritária em até 24h',             color: 'text-purple-400' },
+  'Intensivo':  { nextPlan: null,          nextEssays: null, nextBenefit: '',                                                      color: 'text-amber-400'  },
+}
+
+function generateCycleNarrative(
   count: number,
   correctedCount: number,
   avg: number | null,
   bestGain: number | null,
   focusKey: string | null
-): string {
+): { headline: string; support: string } {
   const focusLabel: Record<string, string> = { c1_score: 'C1', c2_score: 'C2', c3_score: 'C3', c4_score: 'C4', c5_score: 'C5' }
-  const focusName = focusKey ? (focusLabel[focusKey] ?? '') : ''
+  const focusFullName: Record<string, string> = { c1_score: 'Norma Culta', c2_score: 'Compreensão do Tema', c3_score: 'Seleção de Argumentos', c4_score: 'Mecanismos de Coesão', c5_score: 'Proposta de Intervenção' }
+  const label = focusKey ? (focusLabel[focusKey] ?? '') : ''
+  const name  = focusKey ? (focusFullName[focusKey] ?? '') : ''
 
   if (correctedCount === 0) {
     return count === 1
-      ? 'Você enviou sua primeira redação do mês — a devolutiva vai mostrar o caminho.'
-      : `Você enviou ${count} redações este mês. As devolutivas vão mostrar onde focar.`
+      ? { headline: 'Primeira redação enviada — aguarde a devolutiva.', support: 'Sua análise por competência estará disponível em até 48h. Use esse tempo para reler as orientações do ENEM.' }
+      : { headline: `${count} redações enviadas este mês.`, support: 'Assim que as devolutivas chegarem, o painel vai indicar exatamente onde focar para subir a nota.' }
   }
   if (avg !== null && avg >= 800) {
     return bestGain && bestGain > 0
-      ? `Ciclo excelente: média ${avg} pontos e maior ganho de +${bestGain} pts. Você está no nível das melhores notas do ENEM.`
-      : `Ciclo excelente: média ${avg} pontos. Continue com essa consistência — você está acima da média nacional.`
+      ? { headline: `Ciclo excelente: média ${avg} pts e maior salto de +${bestGain} pts.`, support: 'Você está operando no nível das melhores notas do ENEM. Mantenha a cadência e expanda o repertório de argumentos.' }
+      : { headline: `Ciclo excelente: média ${avg} pts.`, support: 'Consistência acima de 800 é rara — você está acima da média nacional. Próximo alvo: refinamento da proposta de intervenção para 1000.' }
   }
   if (avg !== null && avg >= 600) {
-    return focusName
-      ? `Bom ciclo com média ${avg} pts. Foco em ${focusName} ainda pode render mais ${bestGain && bestGain > 0 ? `— você já provou que consegue ganhar +${bestGain} pts entre redações` : 'pontos importantes'}.`
-      : `Bom ciclo com média ${avg} pontos. Cada redação é uma chance de consolidar mais um ponto de melhoria.`
+    return label
+      ? { headline: `Bom ciclo — média ${avg} pts. ${label} ainda é a maior alavanca.`, support: `Foco em ${name} pode render ganhos expressivos${bestGain && bestGain > 0 ? ` — você já provou isso com +${bestGain} pts entre duas redações` : ' nas próximas redações'}.` }
+      : { headline: `Bom ciclo com média ${avg} pts.`, support: 'Cada devolutiva traz um padrão claro. Aplique um ajuste por redação e a curva sobe de forma consistente.' }
   }
   if (bestGain !== null && bestGain > 0) {
-    return `Você evoluiu +${bestGain} pts entre redações este ciclo${focusName ? ` — o foco em ${focusName} está gerando resultado` : ''}. Continue.`
+    return label
+      ? { headline: `+${bestGain} pts de evolução neste ciclo.`, support: `O foco em ${name} (${label}) está gerando resultado concreto. Continue aplicando a mesma estratégia na próxima redação.` }
+      : { headline: `+${bestGain} pts de evolução neste ciclo.`, support: 'O esforço está convertendo em pontos. Mantenha a consistência de envio para acelerar a curva.' }
   }
   return correctedCount >= 2
-    ? `${correctedCount} devolutivas concluídas neste ciclo. Analise os padrões e aplique um ajuste por vez.`
-    : 'Ciclo em andamento — a consistência de envio já é o primeiro passo para evoluir.'
+    ? { headline: `${correctedCount} devolutivas concluídas neste ciclo.`, support: 'Analise os padrões repetidos e aplique um ajuste específico por redação — é assim que a nota sobe de forma sustentável.' }
+    : { headline: 'Ciclo em andamento.', support: 'A consistência de envio já é o primeiro passo. Cada redação corrigida revela um padrão que você pode eliminar.' }
+}
+
+function generateThemeContext(worstCompKey: string, delta: number | null, worstAvg: number): string {
+  const compName: Record<string, string> = {
+    c1_score: 'Norma Culta', c2_score: 'Compreensão do Tema',
+    c3_score: 'Seleção de Argumentos', c4_score: 'Mecanismos de Coesão',
+    c5_score: 'Proposta de Intervenção',
+  }
+  const name = compName[worstCompKey] ?? worstCompKey
+  if (worstAvg < 80) {
+    return `${name} está abaixo de 80 pts de média — cada redação neste tema cria uma oportunidade direta de recuperar pontos que hoje ficam na mesa.`
+  }
+  if (delta !== null && delta < 0) {
+    return `${name} recuou na última devolutiva. Escrever sobre um tema que força esse músculo agora ajuda a reverter a queda antes que vire padrão.`
+  }
+  if (delta !== null && delta > 20) {
+    return `${name} ganhou +${delta} pts na última redação — o momento é ideal para consolidar esse avanço com mais uma repetição direcionada.`
+  }
+  return `${name} é sua maior alavanca de pontos neste momento. Um tema alinhado a essa competência maximiza o retorno de cada hora de treino.`
 }
 
 function ScoreBar({ score, max = 200 }: { score: number; max?: number }) {
@@ -256,6 +295,11 @@ export default async function AlunoDashboardPage() {
     : null
   const nextStep = worstCompKey ? NEXT_STEP_SHORT[worstCompKey] : null
 
+  // Average score for the worst competency across all corrected essays (used by generateThemeContext)
+  const worstCompAvg = worstCompKey && correctedEssays.length > 0
+    ? Math.round(correctedEssays.reduce((s, e) => s + (e.corrections[0]?.[worstCompKey as CompKey] ?? 0), 0) / correctedEssays.length)
+    : 0
+
   // "Seus padrões" — competencies that average < 100 across all corrected essays
   const compAvgs = correctedEssays.length >= 2
     ? compKeys.map(key => ({
@@ -291,9 +335,36 @@ export default async function AlunoDashboardPage() {
   const bestCycleScore = cycleCorrected.length > 0
     ? Math.max(...cycleCorrected.map(e => e.corrections[0]?.total_score ?? 0))
     : null
-  const cyclePhrase = showCycle
-    ? generateCyclePhrase(cycleEssays.length, cycleCorrected.length, cycleAvg, bestCycleGain, cycleFocusKey)
+  // Per-comp deltas within this cycle (oldest → newest corrected essay)
+  const cycleCompDeltas: { key: CompKey; delta: number; last: number }[] = cycleCorrected.length >= 2
+    ? compKeys.map(key => ({
+        key,
+        delta: (cycleChron[cycleChron.length - 1].corrections[0]?.[key] ?? 0) - (cycleChron[0].corrections[0]?.[key] ?? 0),
+        last:  cycleChron[cycleChron.length - 1].corrections[0]?.[key] ?? 0,
+      }))
+    : []
+
+  const cycleNarrative = showCycle
+    ? generateCycleNarrative(cycleEssays.length, cycleCorrected.length, cycleAvg, bestCycleGain, cycleFocusKey)
     : null
+
+  // ── Monetização contextual ────────────────────────────────────────────────
+  const creditsPct      = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
+  const planTier        = PLAN_TIERS[planName] ?? PLAN_TIERS['Evolução']
+  const upgradeAvailable = planTier.nextPlan !== null
+  // "Evoluindo bem" = ganhou mais de 60 pts no geral, ou média do ciclo ≥ 560
+  const isEvolving      = (overallDelta !== null && overallDelta > 60) || (cycleAvg !== null && cycleAvg >= 560)
+  // "Ciclo intenso" = usou ≥ 66% dos créditos disponíveis
+  const cycleIsIntense  = cycleEssays.length >= Math.max(2, Math.ceil(creditsTotal * 0.66))
+
+  type UpgradeSignal = 'last_credit_evolving' | 'exhausted' | 'halfway_evolving' | null
+  const upgradeSignal: UpgradeSignal = (() => {
+    if (!upgradeAvailable) return null
+    if (creditsLeft === 0 && correctedEssays.length > 0) return 'exhausted'
+    if (creditsLeft === 1 && isEvolving) return 'last_credit_evolving'
+    if (creditsPct <= 50 && isEvolving && cycleIsIntense) return 'halfway_evolving'
+    return null
+  })()
 
   return (
     <div className="max-w-4xl">
@@ -423,29 +494,58 @@ export default async function AlunoDashboardPage() {
           )}
         </div>
 
-        <div className={`p-5 rounded-2xl ${creditsLeft === 0 ? 'card-dark border-red-500/20' : 'card-dark'}`}>
+        <div className={`p-5 rounded-2xl ${
+          creditsLeft === 0 ? 'card-dark border-red-500/20' :
+          creditsLeft === 1 ? 'card-dark border-amber-500/20' : 'card-dark'
+        }`}>
           <div className="flex items-center gap-2 mb-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              creditsLeft === 0 ? 'bg-red-500/10 border border-red-500/15' : 'bg-amber-500/10 border border-amber-500/15'
+              creditsLeft === 0 ? 'bg-red-500/10 border border-red-500/15' :
+              creditsLeft === 1 ? 'bg-amber-500/15 border border-amber-500/20' :
+              'bg-amber-500/10 border border-amber-500/15'
             }`}>
               <Zap size={15} className={creditsLeft === 0 ? 'text-red-400' : 'text-amber-400'} />
             </div>
-            <span className="text-xs text-gray-500">Créditos</span>
+            {/* Plan name as label context */}
+            <span className={`text-xs font-medium ${planTier.color}`}>{planName}</span>
           </div>
           <p className={`text-3xl font-bold ${creditsLeft === 0 ? 'text-red-400' : 'text-white'}`}>{creditsLeft}</p>
-          <p className="text-xs text-gray-600 mt-0.5">de {creditsTotal} neste ciclo</p>
-          <div className="mt-2.5 h-1 bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                creditsLeft === 0 ? 'bg-red-500' :
-                creditsLeft <= creditsTotal * 0.25 ? 'bg-amber-500' : 'bg-amber-400'
-              }`}
-              style={{ width: creditsTotal > 0 ? `${(creditsLeft / creditsTotal) * 100}%` : '0%' }}
-            />
-          </div>
-          {creditsLeft === 0 && (
-            <Link href="/#planos" className="inline-block mt-2 text-[11px] text-red-400 hover:text-red-300 transition-colors underline">
-              Fazer upgrade →
+          <p className="text-xs text-gray-600 mt-0.5">
+            {sub ? `${sub.essays_used} usada${sub.essays_used !== 1 ? 's' : ''} de ${creditsTotal}` : `de ${creditsTotal} neste ciclo`}
+          </p>
+          {/* Dot indicators — visual credit tracking */}
+          {creditsTotal <= 8 ? (
+            <div className="flex gap-1 mt-2.5">
+              {Array.from({ length: creditsTotal }).map((_, i) => {
+                const usedCount = creditsTotal - creditsLeft
+                const isUsed    = i < usedCount
+                return (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      creditsLeft === 0 ? 'bg-red-500/40' :
+                      isUsed ? 'bg-white/[0.10]' : 'bg-amber-400'
+                    }`}
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <div className="mt-2.5 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  creditsLeft === 0 ? 'bg-red-500' : 'bg-amber-400'
+                }`}
+                style={{ width: creditsTotal > 0 ? `${(creditsLeft / creditsTotal) * 100}%` : '0%' }}
+              />
+            </div>
+          )}
+          {creditsLeft === 1 && (
+            <p className="text-[11px] font-semibold text-amber-400 mt-2">Última redação do ciclo</p>
+          )}
+          {creditsLeft === 0 && planTier.nextPlan && (
+            <Link href="/#planos" className="inline-flex items-center gap-1 mt-2 text-[11px] font-medium text-red-400 hover:text-red-300 transition-colors">
+              → {planTier.nextPlan}: {planTier.nextEssays} redações
             </Link>
           )}
         </div>
@@ -467,7 +567,7 @@ export default async function AlunoDashboardPage() {
         <div className="card-dark rounded-2xl p-5 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-semibold text-white">Seu progresso este mês</h2>
+              <h2 className="text-sm font-semibold text-white">Relatório do ciclo</h2>
               <p className="text-xs text-gray-600 mt-0.5">Últimos 30 dias</p>
             </div>
             <Link href="/aluno/evolucao" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
@@ -535,24 +635,92 @@ export default async function AlunoDashboardPage() {
               )}
             </div>
           </div>
-          {/* Foco do ciclo — only when we have cycle corrected essays */}
-          {cycleFocusKey && cycleCorrected.length >= 1 && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-              <span className="text-amber-400">🎯</span>
-              <span>
-                Foco principal do mês:{' '}
-                <span className="text-amber-400 font-medium">
-                  {COMPETENCIES.find(c => c.key === cycleFocusKey)?.label} — {COMPETENCIES.find(c => c.key === cycleFocusKey)?.name}
-                </span>
-              </span>
+          {/* Per-comp cycle deltas — only when ≥2 corrected essays in cycle */}
+          {cycleCompDeltas.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-white/[0.05]">
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-2.5">Evolução por competência no ciclo</p>
+              <div className="grid grid-cols-5 gap-2">
+                {cycleCompDeltas.map(({ key, delta, last }) => {
+                  const comp = COMPETENCIES.find(c => c.key === key)
+                  return (
+                    <div key={key} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-2 text-center">
+                      <p className="text-[10px] font-semibold text-gray-500 mb-1">{comp?.label}</p>
+                      <p className="text-sm font-bold text-white tabular-nums leading-none">{last}</p>
+                      {delta !== 0 && (
+                        <p className={`text-[10px] font-semibold mt-0.5 tabular-nums ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {delta > 0 ? `+${delta}` : delta}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
-          {/* Frase de resumo do ciclo */}
-          {cyclePhrase && (
-            <p className="mt-3 text-xs text-gray-500 leading-relaxed border-t border-white/[0.05] pt-3">
-              {cyclePhrase}
-            </p>
+          {/* Cycle narrative card */}
+          {cycleNarrative && (
+            <div className="mt-4 pt-4 border-t border-white/[0.05]">
+              <div className="rounded-xl bg-purple-500/[0.06] border border-purple-500/15 px-4 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-white leading-snug mb-1">{cycleNarrative.headline}</p>
+                    <p className="text-xs text-gray-400 leading-relaxed">{cycleNarrative.support}</p>
+                  </div>
+                  {cycleFocusKey && cycleCorrected.length >= 1 && (
+                    <span className="flex-shrink-0 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5 whitespace-nowrap">
+                      🎯 {COMPETENCIES.find(c => c.key === cycleFocusKey)?.label}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
+        </div>
+      )}
+
+      {/* ── Upgrade contextual ──────────────────────────────────── */}
+      {upgradeSignal === 'exhausted' && planTier.nextPlan && (
+        <div className="card-dark rounded-2xl p-5 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Ciclo {planName} concluído
+              </p>
+              <p className="text-base font-bold text-white mb-1">
+                Com o plano{' '}
+                <span className="text-purple-400">{planTier.nextPlan}</span>
+                , você teria{' '}
+                <span className="text-purple-400">{planTier.nextEssays} redações</span>
+                {' '}por ciclo
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed">{planTier.nextBenefit}</p>
+              {/* Personalised context based on student evolution */}
+              {isEvolving && overallDelta !== null && overallDelta > 0 && (
+                <p className="text-xs text-green-400 mt-2 leading-relaxed">
+                  Com +{overallDelta} pts de evolução em {correctedEssays.length} redaç{correctedEssays.length !== 1 ? 'ões' : 'ão'}, mais ciclos acelerariam significativamente sua nota.
+                </p>
+              )}
+            </div>
+            <Link
+              href="/#planos"
+              className="flex-shrink-0 self-start sm:self-center inline-flex items-center gap-2 text-sm font-bold text-purple-400 bg-purple-600/10 border border-purple-500/20 rounded-xl px-4 py-2.5 hover:bg-purple-600/20 transition-colors whitespace-nowrap"
+            >
+              Ver planos →
+            </Link>
+          </div>
+        </div>
+      )}
+      {(upgradeSignal === 'last_credit_evolving' || upgradeSignal === 'halfway_evolving') && planTier.nextPlan && (
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-purple-500/15 bg-purple-500/[0.04] px-4 py-3.5">
+          <p className="text-xs text-gray-300 leading-relaxed">
+            {upgradeSignal === 'last_credit_evolving'
+              ? <><span className="text-purple-400 font-semibold">Você está evoluindo bem.</span> No plano {planTier.nextPlan} teria {planTier.nextEssays} redações por ciclo — {(planTier.nextEssays ?? 0) - creditsTotal} a mais para manter o ritmo.</>
+              : <><span className="text-purple-400 font-semibold">{cycleEssays.length} redações enviadas este ciclo.</span> Com o plano {planTier.nextPlan} você teria {planTier.nextEssays} disponíveis — {(planTier.nextEssays ?? 0) - creditsTotal} a mais para continuar evoluindo.</>
+            }
+          </p>
+          <Link href="/#planos" className="flex-shrink-0 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap">
+            Ver planos →
+          </Link>
         </div>
       )}
 
@@ -701,7 +869,11 @@ export default async function AlunoDashboardPage() {
                 {best.score}<span className="text-xs text-gray-600 font-normal ml-0.5">/200</span>
               </p>
               <p className="text-[11px] text-green-400/70 mt-1.5 leading-snug">
-                Mantenha essa estratégia nas próximas redações.
+                {best.score >= 160
+                  ? 'Desempenho de elite — mantenha e use como base para elevar as demais.'
+                  : best.score >= 120
+                  ? 'Sólido. Continue refinando para chegar ainda mais perto de 200.'
+                  : 'Seu ponto mais alto agora — construa sobre ele nas próximas redações.'}
               </p>
             </div>
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
@@ -711,7 +883,11 @@ export default async function AlunoDashboardPage() {
                 {worst.score}<span className="text-xs text-gray-600 font-normal ml-0.5">/200</span>
               </p>
               <p className="text-[11px] text-amber-400/70 mt-1.5 leading-snug">
-                {worst.score < 100 ? 'Maior oportunidade de ganho de pontos.' : 'Ainda pode melhorar com foco específico.'}
+                {worst.score < 80
+                  ? 'Prioridade máxima — maior potencial de ganho de pontos agora.'
+                  : worst.score < 120
+                  ? 'Cada ponto aqui vale mais: ainda está abaixo da sua média geral.'
+                  : 'Ainda há margem — um ajuste específico aqui pode fechar a lacuna.'}
               </p>
             </div>
           </div>
@@ -720,17 +896,32 @@ export default async function AlunoDashboardPage() {
 
       {/* ── 💡 Tema sugerido ────────────────────────────────────── */}
       {worstCompKey && SUGGESTED_THEMES[worstCompKey] && lastCorrection && (() => {
-        const theme = SUGGESTED_THEMES[worstCompKey]
+        const theme        = SUGGESTED_THEMES[worstCompKey]
+        const weekPlan     = WEEKLY_PLAN[worstCompKey]
+        const themeContext = generateThemeContext(worstCompKey, delta, worstCompAvg)
         return (
           <div className="card-dark rounded-2xl p-5 mb-4">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-base">💡</span>
               <h2 className="text-sm font-bold text-white">Tema sugerido para você</h2>
             </div>
+            {/* Theme title + pedagogical reason */}
             <div className="rounded-xl bg-blue-500/[0.05] border border-blue-500/15 p-4 mb-3">
               <p className="text-sm font-semibold text-white leading-snug mb-2">&ldquo;{theme.title}&rdquo;</p>
               <p className="text-xs text-gray-500 leading-relaxed">{theme.reason}</p>
             </div>
+            {/* Por que agora — dynamic context */}
+            <div className="rounded-xl bg-amber-500/[0.04] border border-amber-500/15 px-4 py-3 mb-3">
+              <p className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1">Por que agora</p>
+              <p className="text-xs text-gray-400 leading-relaxed">{themeContext}</p>
+            </div>
+            {/* Connection to weekly plan */}
+            {weekPlan && (
+              <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] px-4 py-3 mb-3">
+                <p className="text-[10px] font-semibold text-purple-400 uppercase tracking-wider mb-1.5">Meta da semana ligada a este tema</p>
+                <p className="text-xs text-gray-300 leading-relaxed">{weekPlan.weekGoal}</p>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-1">
                 Treina: {theme.trains}
@@ -756,9 +947,11 @@ export default async function AlunoDashboardPage() {
           <div className="space-y-3">
             {patterns.map(p => {
               const info = PATTERN_LABELS[p.key]
+              const potentialGain = 200 - p.avg
               return (
                 <div key={p.key} className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
-                  <div className="flex items-start justify-between gap-3">
+                  {/* Header: label + score + potential */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-white">{info.label}</p>
                       <p className="text-xs text-gray-500 mt-1 leading-relaxed">{info.description}</p>
@@ -772,7 +965,15 @@ export default async function AlunoDashboardPage() {
                     <div className="text-right flex-shrink-0">
                       <p className="text-lg font-bold text-amber-400 tabular-nums leading-none">{p.avg}</p>
                       <p className="text-[10px] text-gray-600 mt-0.5">/200 média</p>
+                      <span className="inline-block mt-1.5 text-[10px] font-semibold text-green-400/80 bg-green-500/[0.08] border border-green-500/15 rounded-full px-1.5 py-0.5">
+                        +{potentialGain} potencial
+                      </span>
                     </div>
+                  </div>
+                  {/* Concrete example */}
+                  <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2.5">
+                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Exemplo real</p>
+                    <p className="text-[11px] text-gray-400 leading-relaxed italic">{info.example}</p>
                   </div>
                 </div>
               )
