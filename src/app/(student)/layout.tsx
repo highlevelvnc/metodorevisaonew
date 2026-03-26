@@ -14,14 +14,38 @@ import {
   Menu,
   X,
   ChevronRight,
+  BookOpen,
+  PlayCircle,
+  Clock,
+  Users,
 } from 'lucide-react'
 
-const navItems = [
-  { label: 'Sua evolução', href: '/aluno',            icon: LayoutDashboard },
-  { label: 'Redações',     href: '/aluno/redacoes',   icon: FileText },
-  { label: 'Evolução',     href: '/aluno/evolucao',   icon: TrendingUp },
-  { label: 'Relatório',    href: '/aluno/relatorio',  icon: BarChart2 },
-  { label: 'Meu Perfil',   href: '/aluno/conta',      icon: User },
+type NavItem = { label: string; href: string; icon: React.ElementType }
+type NavSection = { label?: string; items: NavItem[] }
+
+const navSections: NavSection[] = [
+  {
+    items: [
+      { label: 'Painel',    href: '/aluno',           icon: LayoutDashboard },
+      { label: 'Redações',  href: '/aluno/redacoes',  icon: FileText },
+      { label: 'Evolução',  href: '/aluno/evolucao',  icon: TrendingUp },
+      { label: 'Relatório', href: '/aluno/relatorio', icon: BarChart2 },
+    ],
+  },
+  {
+    label: 'Recursos',
+    items: [
+      { label: 'Temas',     href: '/aluno/temas',     icon: BookOpen },
+      { label: 'Aulas',     href: '/aluno/aulas',     icon: PlayCircle },
+      { label: 'Simulados', href: '/aluno/simulados', icon: Clock },
+      { label: 'Mentoria',  href: '/aluno/mentoria',  icon: Users },
+    ],
+  },
+  {
+    items: [
+      { label: 'Meu Perfil', href: '/aluno/conta', icon: User },
+    ],
+  },
 ]
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -70,27 +94,38 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-5 px-3 space-y-1">
-          {navItems.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href || (href !== '/aluno' && pathname.startsWith(href))
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setSidebarOpen(false)}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                  ${active
-                    ? 'bg-purple-700/20 text-purple-300 border border-purple-600/30'
-                    : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'}
-                `}
-              >
-                <Icon size={18} className="flex-shrink-0" />
-                {label}
-                {active && <ChevronRight size={14} className="ml-auto opacity-60" />}
-              </Link>
-            )
-          })}
+        <nav className="flex-1 py-4 px-3 overflow-y-auto">
+          {navSections.map((section, si) => (
+            <div key={si} className={si > 0 ? 'mt-4' : ''}>
+              {section.label && (
+                <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-600 select-none">
+                  {section.label}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map(({ label, href, icon: Icon }) => {
+                  const active = pathname === href || (href !== '/aluno' && pathname.startsWith(href))
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                        ${active
+                          ? 'bg-purple-700/20 text-purple-300 border border-purple-600/30'
+                          : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'}
+                      `}
+                    >
+                      <Icon size={18} className="flex-shrink-0" />
+                      {label}
+                      {active && <ChevronRight size={14} className="ml-auto opacity-60" />}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* User / Logout */}
