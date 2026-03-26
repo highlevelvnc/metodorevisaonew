@@ -156,3 +156,51 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+
+// ─── Resend email confirmation ────────────────────────────────────────────────
+// Called from the login page when the user's confirmation link expired (otp_expired).
+// The account exists but is unconfirmed — supabase.auth.resend() sends a fresh email.
+//
+// `nextPath` is the page the user should land on after confirming (e.g. /checkout/estrategia).
+// We pass it as `emailRedirectTo` so the callback keeps the intended destination.
+export async function resendConfirmation(
+  email: string,
+  nextPath?: string,
+): Promise<{ error?: string; success?: boolean }> {
+  const trimmed = email?.trim().toLowerCase()
+  if (!trimmed || !trimmed.includes('@'))
+    return { error: 'Informe um e-mail válido.' }
+
+  const supabase = await createActionClient()
+
+  // Build the emailRedirectTo — keep the intended next destination if provided
+  const safeNext =
+    nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')
+      ? nextPath
+      : '/aluno'
+
+  const emailRedirectTo = `${getSiteUrl()}/auth/callback?next=${encodeURIComponent(safeNext)}`
+
+  const { error } = await supabase.auth.resend({
+    type:  'signup',
+    email: trimmed,
+    options: { emailRedirectTo },
+  })
+
+  if (error) {
+    const msg = error.message.toLowerCase()
+    console.error('[resendConfirmation]', error.message)
+
+    if (msg.includes('rate limit') || msg.includes('too many'))
+      return { error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' }
+    if (msg.includes('already confirmed') || msg.includes('email confirmed'))
+      return { error: 'Este e-mail já foi confirmado. Tente fazer login normalmente.' }
+    if (msg.includes('user not found') || msg.includes('no user'))
+      return { error: 'E-mail não encontrado. Verifique ou crie uma nova conta.' }
+
+    return { error: 'Erro ao reenviar. Tente novamente em instantes.' }
+  }
+
+  console.log(`[resendConfirmation] ✓ novo link enviado para ${trimmed} → next=${safeNext}`)
+  return { success: true }
+}

@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
   const type       = searchParams.get('type')
   const rawNext    = searchParams.get('next')
   const errorParam = searchParams.get('error')
-  const errorDesc  = searchParams.get('error_description')
+  const errorCode  = searchParams.get('error_code')        // e.g. 'otp_expired'
+  const errorDesc  = searchParams.get('error_description') // human-readable detail
 
   // Validate next — must be a relative path (prevent open redirect)
   const next =
@@ -121,10 +122,25 @@ export async function GET(request: NextRequest) {
 
   /* ── Supabase-side error (expired link etc.) ─────────────────────────────── */
   if (errorParam) {
-    console.error(`${tag} Supabase error: "${errorParam}" — ${errorDesc}`)
-    return NextResponse.redirect(
-      `${canonical}/login?error=${encodeURIComponent(errorParam)}&next=${encodeURIComponent(next)}`,
+    console.error(
+      `${tag} Supabase error — error="${errorParam}" error_code="${errorCode ?? 'n/a'}" desc="${errorDesc ?? 'n/a'}"\n` +
+      (errorCode === 'otp_expired'
+        ? `  CAUSE: The email confirmation token was already consumed before the user clicked.\n` +
+          `  Most common reason: Gmail / Outlook / corporate email scanner made a prefetch GET\n` +
+          `  request to the Supabase verify URL (https://[project].supabase.co/auth/v1/verify?token=...)\n` +
+          `  which consumed the single-use OTP. When the user actually clicked, the token was gone.\n` +
+          `  FIX: Supabase Dashboard → Authentication → Email Templates → enable "Confirm email"\n` +
+          `  button-based flow, OR increase OTP expiry (Auth → Config → OTP Expiry).`
+        : '')
     )
+
+    // Build the login redirect, preserving error_code so the UI can show a specific message
+    const loginUrl = new URL(`${canonical}/login`)
+    loginUrl.searchParams.set('error', errorParam)
+    if (errorCode)  loginUrl.searchParams.set('error_code', errorCode)
+    loginUrl.searchParams.set('next', next)
+
+    return NextResponse.redirect(loginUrl.toString())
   }
 
   /* ── PKCE code exchange ──────────────────────────────────────────────────── */
