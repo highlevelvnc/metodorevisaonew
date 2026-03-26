@@ -135,10 +135,7 @@ export default async function MentoriaPage() {
     <div className="max-w-4xl">
       {/* Masthead */}
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-purple-400/70 mb-1.5">
-          Recursos
-        </p>
-        <h1 className="text-2xl font-bold text-white mb-1.5">Mentorias em Grupo</h1>
+        <h1 className="text-2xl font-bold text-white mb-1">Mentorias em Grupo</h1>
         <p className="text-sm text-gray-500">
           Sessões ao vivo: correções comentadas, workshops práticos e espaço para tirar dúvidas com a corretora.
         </p>
@@ -273,7 +270,7 @@ export default async function MentoriaPage() {
                   </div>
                   <p className="text-[11px] text-gray-600">{session.time} · com {session.host}</p>
                 </div>
-                <span className="shrink-0 text-[10px] font-semibold text-gray-700 border border-white/[0.06] px-2 py-1 rounded-full">
+                <span className="shrink-0 text-[10px] font-semibold text-gray-600 border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 rounded-full">
                   Em breve
                 </span>
               </div>
@@ -290,10 +287,10 @@ export default async function MentoriaPage() {
         </div>
         <div className="space-y-2">
           {RECORDINGS.map((rec) => (
-            <div key={rec.id} className="card-dark rounded-2xl p-4 flex items-start gap-4">
+            <div key={rec.id} className={`card-dark rounded-2xl p-4 flex items-start gap-4 transition-all ${rec.recordingUrl ? 'hover:border-white/[0.10]' : 'opacity-75'}`}>
               {/* Play icon */}
-              <div className="shrink-0 w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mt-0.5">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-gray-500 ml-0.5">
+              <div className={`shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center mt-0.5 ${rec.recordingUrl ? 'bg-purple-700/15 border-purple-600/25' : 'bg-white/[0.04] border-white/[0.06]'}`}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className={`ml-0.5 ${rec.recordingUrl ? 'text-purple-400' : 'text-gray-600'}`}>
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
               </div>
@@ -328,7 +325,7 @@ export default async function MentoriaPage() {
                   Assistir
                 </a>
               ) : (
-                <span className="shrink-0 text-[10px] font-semibold text-gray-700 border border-white/[0.06] px-2 py-1 rounded-full">
+                <span className="shrink-0 text-[10px] font-semibold text-gray-600 border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 rounded-full">
                   Em breve
                 </span>
               )}
@@ -344,8 +341,8 @@ export default async function MentoriaPage() {
           { label: 'Gravação disponível', desc: 'Não pôde ao vivo? Acesse a gravação logo após cada sessão.' },
           { label: 'Toda semana', desc: 'Sessões fixas para manter o ritmo durante todo o ciclo.' },
         ].map((item, i) => (
-          <div key={i} className="rounded-2xl border border-white/[0.04] bg-white/[0.015] px-4 py-3">
-            <p className="text-xs font-bold text-gray-400 mb-0.5">{item.label}</p>
+          <div key={i} className="card-dark rounded-2xl px-4 py-3">
+            <p className="text-[12px] font-semibold text-gray-300 mb-0.5">{item.label}</p>
             <p className="text-[11px] text-gray-600 leading-relaxed">{item.desc}</p>
           </div>
         ))}

@@ -3,7 +3,7 @@ import { redirect }      from 'next/navigation'
 import { createClient }  from '@/lib/supabase/server'
 import Link              from 'next/link'
 import {
-  ArrowLeft, Star, Clock, MessageCircle, CheckCircle2,
+  ArrowLeft, ArrowRight, Star, Clock, MessageCircle, CheckCircle2,
   Award, Shield, Users,
 } from 'lucide-react'
 
@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   title: 'Solicitar Correção · Método Revisão',
   robots: { index: false, follow: false },
 }
+
+// Plan tier check must never be stale-cached
+export const dynamic = 'force-dynamic'
 
 type CompKey = 'C1' | 'C2' | 'C3' | 'C4' | 'C5'
 
@@ -199,7 +202,7 @@ export default async function CorrectorDetailPage({
                 Faça upgrade para escolher este corretor e receber devolutivas prioritárias.
               </p>
               <Link href="/checkout/intensivo" className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-amber-400 hover:text-amber-300 transition-colors">
-                Conhecer plano Intensivo <ArrowLeft size={11} className="rotate-180" />
+                Conhecer plano Intensivo <ArrowRight size={11} />
               </Link>
             </div>
           </div>

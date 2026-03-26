@@ -140,19 +140,16 @@ export default async function SimuladosPage() {
       {/* Masthead */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-purple-400/70 mb-1.5">
-            Recursos
-          </p>
-          <h1 className="text-2xl font-bold text-white mb-1.5">Simulados Realistas</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">Simulados Realistas</h1>
           <p className="text-sm text-gray-500">
             Escreva como se fosse dia de prova. Receba correção humana e evolua de verdade.
           </p>
         </div>
         <Link
           href="/aluno/redacoes/nova"
-          className="shrink-0 self-start inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          className="btn-primary shrink-0 self-start"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 5v14M5 12h14" />
           </svg>
           {hasEssays ? 'Novo simulado' : 'Começar agora'}
@@ -195,10 +192,7 @@ export default async function SimuladosPage() {
           <p className="text-sm text-gray-500 leading-relaxed mb-6 max-w-sm mx-auto">
             Escreva sua primeira redação agora e receba uma devolutiva completa nas 5 competências do ENEM — em até 48h.
           </p>
-          <Link
-            href="/aluno/redacoes/nova"
-            className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
-          >
+          <Link href="/aluno/redacoes/nova" className="btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 5v14M5 12h14" />
             </svg>
@@ -283,17 +277,20 @@ export default async function SimuladosPage() {
       )}
 
       {/* Momentum tip — always visible, adapts to context */}
-      <div className="rounded-2xl border border-purple-500/[0.15] bg-purple-500/[0.04] px-5 py-4">
-        <p className="text-xs font-bold text-purple-400 mb-1">{tip.headline}</p>
-        <p className="text-xs text-gray-500 leading-relaxed">{tip.body}</p>
-        {!hasEssays && (
-          <Link
-            href="/aluno/redacoes/nova"
-            className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors"
-          >
-            Começar agora →
-          </Link>
-        )}
+      <div className="rounded-2xl border border-purple-500/20 bg-purple-500/[0.05] px-5 py-4 flex items-start gap-3">
+        <div className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0 mt-1.5" />
+        <div>
+          <p className="text-[12px] font-semibold text-purple-300 mb-1">{tip.headline}</p>
+          <p className="text-[12px] text-gray-500 leading-relaxed">{tip.body}</p>
+          {!hasEssays && (
+            <Link
+              href="/aluno/redacoes/nova"
+              className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              Começar agora →
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   )

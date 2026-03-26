@@ -175,7 +175,7 @@ function BookCard({ book, expanded, onToggle }: { book: Book; expanded: boolean;
         <div className="flex items-start gap-4 p-4">
           {/* Spine */}
           <div className={`w-10 h-14 rounded-lg bg-gradient-to-br ${book.gradient} flex-shrink-0 flex items-end justify-center pb-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.4)]`}>
-            <span className="text-[9px] font-bold text-white/70 writing-vertical">{book.comp}</span>
+            <span className="text-[9px] font-bold text-white/70 [writing-mode:vertical-lr] rotate-180">{book.comp}</span>
           </div>
 
           {/* Info */}

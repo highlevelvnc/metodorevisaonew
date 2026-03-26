@@ -130,9 +130,16 @@ export default async function SucessoPage({
                 )}
               </div>
             </div>
-            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-              ✓ Ativo
-            </span>
+            {/* Badge reflects the actual DB state — not just "payment received" */}
+            {subscriptionActive ? (
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                ✓ Ativo
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full animate-pulse">
+                Ativando…
+              </span>
+            )}
           </div>
 
           {/* ── What happens next ────────────────────────────────────────── */}
@@ -195,7 +202,14 @@ export default async function SucessoPage({
           </div>
 
           {/* ── Countdown ────────────────────────────────────────────────── */}
-          <AutoRedirect planSlug={planSlug || undefined} delay={10} />
+          {/* When webhook has already confirmed the sub: auto-redirect after 10s.
+              When it hasn't landed yet: show a manual "go to dashboard" prompt
+              instead of pushing the user to /aluno with stale plan data.       */}
+          <AutoRedirect
+            planSlug={planSlug || undefined}
+            delay={10}
+            confirmed={subscriptionActive}
+          />
         </div>
       </div>
 

@@ -233,17 +233,14 @@ export default async function AulasPage() {
       {/* Masthead */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-purple-400/70 mb-1.5">
-            Recursos
-          </p>
-          <h1 className="text-2xl font-bold text-white mb-1.5">Videoaulas Estratégicas</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">Videoaulas Estratégicas</h1>
           <p className="text-sm text-gray-500">
             Aulas curtas e diretas sobre cada competência — feitas para quem quer evoluir, não apenas assistir.
           </p>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="text-2xl font-black text-white">{availableCount}</p>
-          <p className="text-xs text-gray-600">aulas disponíveis</p>
+        <div className="shrink-0 card-dark rounded-2xl px-4 py-2.5 text-center min-w-[80px]">
+          <p className="text-2xl font-bold text-white tabular-nums">{availableCount}</p>
+          <p className="text-[11px] text-gray-600">disponíveis</p>
         </div>
       </div>
 
@@ -271,11 +268,11 @@ export default async function AulasPage() {
 
       {/* No corrections yet — neutral suggestion */}
       {!focusSectionKey && user && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 mb-6">
-          <p className="text-xs font-bold text-gray-400 mb-0.5">Sugestão de ordem</p>
-          <p className="text-xs text-gray-600 leading-relaxed">
+        <div className="card-dark rounded-2xl px-5 py-4 mb-6">
+          <p className="text-[12px] font-semibold text-gray-400 mb-1">Sugestão de ordem</p>
+          <p className="text-[12px] text-gray-600 leading-relaxed">
             Comece pelo bloco Geral, depois siga C1 → C5 em ordem. Depois de receber sua primeira correção,
-            as aulas serão organizadas pelo que mais importa para você.
+            as aulas serão reorganizadas pelo que mais importa para você.
           </p>
         </div>
       )}

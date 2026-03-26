@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
+// Always fetch fresh plan data — plan tier determines what the user can access
+export const dynamic = 'force-dynamic'
+
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface Corrector {

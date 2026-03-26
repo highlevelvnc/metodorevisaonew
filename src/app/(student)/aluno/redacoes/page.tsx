@@ -133,14 +133,14 @@ export default async function RedacoesPage() {
   return (
     <div className="max-w-3xl">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-0.5">Minhas Redações</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">Minhas Redações</h1>
           <p className="text-gray-500 text-sm">
             {essays.length} redaç{essays.length === 1 ? 'ão' : 'ões'} enviada{essays.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Link href="/aluno/redacoes/nova" className="btn-primary text-sm py-2 px-4">
+        <Link href="/aluno/redacoes/nova" className="btn-primary self-start sm:self-auto">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
           Enviar próxima redação
         </Link>
@@ -164,7 +164,7 @@ export default async function RedacoesPage() {
           <div className="card-dark rounded-2xl p-5 mb-6">
             <div className="flex items-start justify-between gap-6">
               <div className="flex-1">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Sua evolução</p>
+                <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-2">Sua evolução</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold text-white tabular-nums">{lastScore}</span>
                   <span className="text-xs text-gray-600">pontos · última redação</span>

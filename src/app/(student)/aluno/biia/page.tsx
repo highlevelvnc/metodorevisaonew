@@ -106,7 +106,7 @@ export default async function BiiaPage() {
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
 
         {/* ── Chat panel ─────────────────────────────────────────────────────── */}
-        <div className="card-dark rounded-2xl p-5 flex flex-col" style={{ minHeight: '640px' }}>
+        <div className="card-dark rounded-2xl p-5 flex flex-col min-h-[560px] lg:min-h-[640px]">
           {/* Chat header */}
           <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.05]">
             <div className="flex items-center gap-3">

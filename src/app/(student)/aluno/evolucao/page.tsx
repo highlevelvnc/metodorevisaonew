@@ -59,7 +59,7 @@ export default async function EvolucaoPage() {
   if (correctedEssays.length === 0) {
     return (
       <div className="max-w-3xl">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-1">Minha Evolução</h1>
           <p className="text-gray-500 text-sm">Acompanhe sua progressão em cada competência do ENEM</p>
         </div>
@@ -213,7 +213,7 @@ export default async function EvolucaoPage() {
       {/* ── 2. Conquistas ───────────────────────────────────────── */}
       {achievements.length > 0 && (
         <div className="mb-6">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">🏅 Conquistas desbloqueadas</p>
+          <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-3">🏅 Conquistas desbloqueadas</p>
           <div className="flex flex-wrap gap-2">
             {achievements.map((a, i) => (
               <span key={i} className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${a.cls}`}>
@@ -412,7 +412,7 @@ export default async function EvolucaoPage() {
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-purple-600/10 rounded-full blur-2xl pointer-events-none" />
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1">
-            <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2">🎯 Próxima meta</p>
+            <p className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider mb-2">🎯 Próxima meta</p>
             {nextTarget <= 1000 ? (
               <>
                 <p className="text-base font-bold text-white">
@@ -431,10 +431,7 @@ export default async function EvolucaoPage() {
               </>
             )}
           </div>
-          <Link
-            href="/aluno/redacoes/nova"
-            className="flex-shrink-0 inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white font-bold px-5 py-3 rounded-xl transition-colors text-sm"
-          >
+          <Link href="/aluno/redacoes/nova" className="btn-primary flex-shrink-0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
             Continuar evoluindo
           </Link>

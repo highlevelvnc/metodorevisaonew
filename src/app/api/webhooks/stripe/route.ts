@@ -23,6 +23,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
+  const t0 = Date.now()
+
   /* ── Read raw body (must be text, not parsed) ──────────────────────────── */
   const body = await req.text()
   const sig  = req.headers.get('stripe-signature') ?? ''
@@ -69,16 +71,18 @@ export async function POST(req: Request) {
         console.log('[webhook] Unhandled event type:', event.type)
     }
   } catch (err) {
-    console.error('[webhook] Handler threw:', err)
+    console.error(`[webhook] Handler threw (+${Date.now() - t0}ms):`, err)
     // Return 500 so Stripe retries the event
     return new Response('Internal handler error', { status: 500 })
   }
 
+  console.log(`[webhook] Completed event=${event.type} total=${Date.now() - t0}ms`)
   return new Response('OK', { status: 200 })
 }
 
 /* ── Core activation logic ────────────────────────────────────────────────── */
 async function activateSubscription(session: Stripe.Checkout.Session) {
+  const t0       = Date.now()
   const userId   = session.metadata?.userId ?? session.client_reference_id
   const planSlug = session.metadata?.planSlug
 
@@ -86,6 +90,8 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
     console.error('[webhook] Missing userId or planSlug in session metadata:', session.id)
     return
   }
+
+  console.log(`[webhook] activateSubscription start — session=${session.id} user=${userId} plan=${planSlug}`)
 
   // Use admin client — webhook has no user auth context
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,7 +107,7 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
     .maybeSingle()
 
   if (existing) {
-    console.log('[webhook] Session already processed — skipping:', session.id)
+    console.log(`[webhook] Session already processed — skipping: ${session.id} (+${Date.now() - t0}ms)`)
     return
   }
 
@@ -157,6 +163,6 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
   }
 
   console.log(
-    `[webhook] Subscription activated — user: ${userId} | plan: ${planSlug} | session: ${session.id}`
+    `[webhook] Subscription activated — user: ${userId} | plan: ${planSlug} | session: ${session.id} | total: ${Date.now() - t0}ms`
   )
 }
