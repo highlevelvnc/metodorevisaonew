@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { stripe } from '@/lib/stripe'
+import { buildStripeSession } from '@/lib/actions/checkout'
 
 /**
  * POST /api/checkout
@@ -9,116 +9,115 @@ import { stripe } from '@/lib/stripe'
  * Creates a Stripe Checkout Session for the authenticated user and returns
  * the hosted Checkout URL. The client redirects to that URL.
  *
+ * Used by:
+ * - ProceedButton (logged-in user on /checkout/[planSlug])
+ * - LandingCheckoutButton (any page, redirects to /login if 401)
+ *
  * After payment Stripe redirects to:
  *   success → /aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}
- *   cancel  → /aluno/upgrade?cancelado=1
+ *   cancel  → /checkout/[planSlug]?cancelado=1
  */
 export async function POST(req: Request) {
-  try {
-    /* ── Auth ──────────────────────────────────────────────────────────────── */
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+  const requestId = Math.random().toString(36).slice(2, 8)
+  const tag = `[api/checkout req=${requestId}]`
 
-    if (!user) {
-      return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
+  try {
+    /* ── Parse body first (before auth, so we can log planSlug) ──────────── */
+    let planSlug: string | undefined
+    try {
+      const body = await req.json()
+      planSlug = (body as { planSlug?: string }).planSlug?.trim()
+    } catch {
+      console.error(`${tag} failed to parse request body`)
+      return NextResponse.json(
+        { error: 'Corpo da requisição inválido. Envie JSON com { planSlug }.' },
+        { status: 400 },
+      )
     }
 
-    /* ── Validate plan ─────────────────────────────────────────────────────── */
-    const body = await req.json().catch(() => ({}))
-    const { planSlug } = body as { planSlug?: string }
+    console.log(`${tag} planSlug=${planSlug}`)
 
     if (!planSlug) {
-      return NextResponse.json({ error: 'planSlug obrigatório.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'planSlug é obrigatório.' },
+        { status: 400 },
+      )
     }
 
-    // Trial plan is free — should never go through Stripe
     if (planSlug === 'trial') {
-      return NextResponse.json({ error: 'Plano trial não requer pagamento.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'O plano trial é gratuito e não requer pagamento.' },
+        { status: 400 },
+      )
     }
 
-    /* ── Fetch plan from DB (source of truth for price) ───────────────────── */
+    /* ── Auth check ────────────────────────────────────────────────────────── */
+    const supabase = await createClient()
+    const { data: { user }, error: authErr } = await supabase.auth.getUser()
+
+    if (authErr) {
+      console.error(`${tag} auth error:`, authErr.message)
+    }
+
+    if (!user) {
+      console.log(`${tag} unauthenticated request — returning 401`)
+      return NextResponse.json(
+        { error: 'Você precisa estar logado para realizar o pagamento.' },
+        { status: 401 },
+      )
+    }
+
+    console.log(`${tag} user=${user.id} email=${user.email}`)
+
+    /* ── Fetch user profile (for Stripe customer name) ────────────────────── */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any
-
-    const { data: plan, error: planErr } = await db
-      .from('plans')
-      .select('id, name, slug, price_brl, essay_count')
-      .eq('slug', planSlug)
-      .eq('active', true)
-      .single()
-
-    if (planErr || !plan) {
-      return NextResponse.json({ error: 'Plano não encontrado.' }, { status: 404 })
-    }
-
-    /* ── Fetch / create Stripe customer ────────────────────────────────────── */
-    const { data: userData } = await db
+    const { data: userData, error: profileErr } = await db
       .from('users')
       .select('email, full_name, stripe_customer_id')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
-    let stripeCustomerId: string = userData?.stripe_customer_id ?? ''
-
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: userData?.email ?? user.email ?? '',
-        name: userData?.full_name || undefined,
-        metadata: { userId: user.id },
-      })
-      stripeCustomerId = customer.id
-
-      // Persist customer ID on user so future checkouts reuse it
-      await db
-        .from('users')
-        .update({ stripe_customer_id: stripeCustomerId })
-        .eq('id', user.id)
+    if (profileErr) {
+      console.warn(`${tag} could not fetch user profile (non-fatal):`, profileErr.message)
     }
 
-    /* ── Create Checkout Session ───────────────────────────────────────────── */
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
+    const email    = userData?.email    ?? user.email    ?? ''
+    const fullName = userData?.full_name ?? ''
+    console.log(`${tag} profile: name="${fullName}" email=${email}`)
 
-    const session = await stripe.checkout.sessions.create({
-      customer: stripeCustomerId,
-      payment_method_types: ['card'],
+    /* ── Build Stripe session ──────────────────────────────────────────────── */
+    let stripeUrl: string
+    try {
+      stripeUrl = await buildStripeSession({
+        userId:   user.id,
+        email,
+        name:     fullName,
+        planSlug,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro desconhecido'
+      console.error(`${tag} buildStripeSession failed:`, message)
 
-      line_items: [
-        {
-          price_data: {
-            currency: 'brl',
-            // Stripe expects amount in smallest currency unit (centavos)
-            unit_amount: Math.round(plan.price_brl * 100),
-            product_data: {
-              name: `Método Revisão — Plano ${plan.name}`,
-              description: `${plan.essay_count} redações com devolutiva completa C1–C5 por ciclo`,
-            },
-          },
-          quantity: 1,
-        },
-      ],
+      // Return specific error to help frontend show a useful message
+      if (message.includes('não encontrado') || message.includes('inativo')) {
+        return NextResponse.json({ error: message }, { status: 404 })
+      }
+      return NextResponse.json(
+        { error: `Erro ao criar sessão de pagamento: ${message}` },
+        { status: 500 },
+      )
+    }
 
-      mode: 'payment',
+    console.log(`${tag} returning Stripe URL`)
+    return NextResponse.json({ url: stripeUrl })
 
-      // {CHECKOUT_SESSION_ID} is a Stripe template variable — replaced at runtime
-      success_url: `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/aluno/upgrade?cancelado=1`,
-
-      // Stored in session.metadata — recovered in the webhook
-      metadata: {
-        userId: user.id,
-        planSlug: plan.slug,
-      },
-
-      // client_reference_id is an extra fallback identifier
-      client_reference_id: user.id,
-
-      locale: 'pt-BR',
-    })
-
-    return NextResponse.json({ url: session.url })
   } catch (err) {
-    console.error('[api/checkout]', err)
-    return NextResponse.json({ error: 'Erro interno ao criar sessão de pagamento.' }, { status: 500 })
+    // Unexpected error — last-resort catch
+    console.error(`${tag} unhandled error:`, err)
+    return NextResponse.json(
+      { error: 'Erro inesperado ao processar o pagamento. Tente novamente.' },
+      { status: 500 },
+    )
   }
 }

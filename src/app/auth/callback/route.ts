@@ -1,41 +1,92 @@
 /**
- * Rota de callback do Supabase Auth (PKCE flow).
+ * GET /auth/callback
  *
- * Usada em dois cenários:
- * 1. Confirmação de e-mail após cadastro
- * 2. Redefinição de senha (link enviado por e-mail)
+ * Supabase Auth PKCE callback handler. Used in two scenarios:
+ *   1. Email confirmation after sign-up  → redirects to ?next= (e.g. /checkout/estrategia)
+ *   2. Password reset link               → redirects to /auth/atualizar-senha
  *
- * O Supabase envia o usuário para esta URL com ?code=xxx.
- * Aqui trocamos o code por uma sessão e redirecionamos para ?next=.
+ * Supabase sends the user here with ?code=xxx (PKCE) or ?token_hash=xxx&type=email.
+ * We exchange the code/token for a session cookie, then redirect to the intended page.
  *
- * Em Supabase Dashboard → Authentication → URL Configuration:
- *   Site URL:      http://localhost:3000
- *   Redirect URLs: http://localhost:3000/auth/callback
+ * Supabase Dashboard → Authentication → URL Configuration must include:
+ *   https://metodorevisao.com/auth/callback    (or your domain)
+ *   http://localhost:3000/auth/callback        (for local dev)
  */
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
-  const code    = searchParams.get('code')
-  const rawNext = searchParams.get('next')
+
+  const code       = searchParams.get('code')
+  const tokenHash  = searchParams.get('token_hash')
+  const type       = searchParams.get('type')  // 'email' | 'recovery' | etc.
+  const rawNext    = searchParams.get('next')
+  const errorParam = searchParams.get('error')
+  const errorDesc  = searchParams.get('error_description')
+
   // Validate next to prevent open redirect — must be a relative path
-  const next    = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+  const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
     ? rawNext
     : '/aluno'
 
-  if (code) {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+  const tag = `[auth/callback]`
+  console.log(`${tag} code=${code ? 'present' : 'absent'} token_hash=${tokenHash ? 'present' : 'absent'} type=${type} next=${next}`)
 
-    if (!error) {
-      // Redirecionar para a página solicitada
-      return NextResponse.redirect(`${origin}${next}`)
-    }
-
-    console.error('[auth/callback] exchangeCodeForSession error:', error.message)
+  /* ── Supabase-side error (e.g. expired link) ──────────────────────────── */
+  if (errorParam) {
+    console.error(`${tag} Supabase error: ${errorParam} — ${errorDesc}`)
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(errorParam)}&next=${encodeURIComponent(next)}`,
+    )
   }
 
-  // Algo deu errado — volta para login com mensagem
+  const supabase = await createClient()
+
+  /* ── PKCE code exchange ────────────────────────────────────────────────── */
+  if (code) {
+    console.log(`${tag} exchanging code for session`)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      console.error(`${tag} exchangeCodeForSession failed:`, error.message, '| code:', error.code ?? 'n/a')
+      // Link may be expired or already used
+      return NextResponse.redirect(
+        `${origin}/login?error=link_expirado&next=${encodeURIComponent(next)}`,
+      )
+    }
+
+    console.log(`${tag} session established for user=${data.session?.user?.id ?? 'unknown'}`)
+    console.log(`${tag} redirecting to: ${next}`)
+    return NextResponse.redirect(`${origin}${next}`)
+  }
+
+  /* ── Token hash flow (magic link / recovery) ──────────────────────────── */
+  if (tokenHash && type) {
+    console.log(`${tag} verifying token_hash type=${type}`)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
+
+    if (error) {
+      console.error(`${tag} verifyOtp failed:`, error.message)
+      return NextResponse.redirect(
+        `${origin}/login?error=link_expirado&next=${encodeURIComponent(next)}`,
+      )
+    }
+
+    console.log(`${tag} OTP verified for user=${data.session?.user?.id ?? 'unknown'}`)
+
+    // Recovery (password reset) → send to password update page
+    if (type === 'recovery') {
+      console.log(`${tag} recovery flow — redirecting to /auth/atualizar-senha`)
+      return NextResponse.redirect(`${origin}/auth/atualizar-senha`)
+    }
+
+    console.log(`${tag} redirecting to: ${next}`)
+    return NextResponse.redirect(`${origin}${next}`)
+  }
+
+  /* ── No code and no token_hash ────────────────────────────────────────── */
+  console.warn(`${tag} no code or token_hash present — redirecting to login`)
   return NextResponse.redirect(`${origin}/login?error=link_invalido`)
 }

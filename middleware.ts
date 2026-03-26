@@ -78,12 +78,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── /login, /cadastro → redireciona se já estiver logado ──────────────────
+  // ── /login, /cadastro → se já logado, respeita ?next= e redireciona ───────
   if (pathname === '/login' || pathname === '/cadastro') {
     if (user) {
-      const dashboardUrl = request.nextUrl.clone()
-      dashboardUrl.pathname = '/aluno'
-      return NextResponse.redirect(dashboardUrl)
+      const rawNext = request.nextUrl.searchParams.get('next')
+      // Validate next: must be a relative path (prevent open redirect)
+      const safePath =
+        rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+          ? rawNext
+          : '/aluno'
+      const dest = request.nextUrl.clone()
+      // Parse safePath safely in case it contains query params (e.g. /checkout/estrategia?cancelado=1)
+      try {
+        const parsed = new URL(safePath, request.url)
+        dest.pathname = parsed.pathname
+        dest.search   = parsed.search
+        dest.hash     = ''
+      } catch {
+        dest.pathname = '/aluno'
+        dest.search   = ''
+      }
+      return NextResponse.redirect(dest)
     }
   }
 
