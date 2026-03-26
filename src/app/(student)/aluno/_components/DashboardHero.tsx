@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, MessageCircle, Sparkles, TrendingUp, Award } from 'lucide-react'
+import { ArrowRight, MessageCircle, Sparkles, TrendingUp, Flame, Zap } from 'lucide-react'
 
 interface DashboardHeroProps {
   firstName: string
@@ -13,40 +13,40 @@ interface DashboardHeroProps {
   planTierNextPlan: string | null
 }
 
-const PLAN_COLORS: Record<string, string> = {
-  Trial:      'bg-gray-500/15 text-gray-400 border-gray-500/20',
-  Evolução:   'bg-blue-500/15 text-blue-400 border-blue-500/20',
-  Estratégia: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
-  Intensivo:  'bg-amber-500/15 text-amber-400 border-amber-500/20',
+const PLAN_CONFIG: Record<string, { color: string; dot: string; label: string }> = {
+  Trial:      { color: 'text-gray-400  bg-white/[0.05]  border-white/[0.08]',          dot: 'bg-gray-400',   label: 'Trial'      },
+  Evolução:   { color: 'text-blue-400  bg-blue-500/10   border-blue-500/20',            dot: 'bg-blue-400',   label: 'Evolução'   },
+  Estratégia: { color: 'text-purple-400 bg-purple-500/10 border-purple-500/20',         dot: 'bg-purple-400', label: 'Estratégia' },
+  Intensivo:  { color: 'text-amber-400 bg-amber-500/10  border-amber-500/20',           dot: 'bg-amber-400',  label: 'Intensivo'  },
 }
 
-const PLAN_ICONS: Record<string, string> = {
-  Trial: '○', Evolução: '◈', Estratégia: '◆', Intensivo: '★',
-}
-
-function getGreeting(firstName: string): string {
+function getGreeting(): string {
   const h = new Date().getHours()
-  if (h < 12) return `Bom dia, ${firstName}`
-  if (h < 18) return `Boa tarde, ${firstName}`
-  return `Boa noite, ${firstName}`
+  if (h < 12) return 'Bom dia'
+  if (h < 18) return 'Boa tarde'
+  return 'Boa noite'
 }
+
+type MotivationLine =
+  | { text: string }
+  | { pre: string; highlight: string; post: string }
 
 function getMotivationalLine(
   avgScore: number | null,
   overallDelta: number | null,
   pendingCount: number,
-): string {
+): MotivationLine {
   if (pendingCount > 0)
-    return `${pendingCount} redaç${pendingCount === 1 ? 'ão em análise' : 'ões em análise'} — a devolutiva chega em até 48h.`
+    return { text: `${pendingCount} redaç${pendingCount === 1 ? 'ão' : 'ões'} em análise — devolutiva em até 48h.` }
   if (overallDelta !== null && overallDelta > 60)
-    return `Você evoluiu +${overallDelta} pts na trajetória. Continue assim.`
+    return { pre: 'Você ganhou ', highlight: `+${overallDelta} pts`, post: ' na trajetória.' }
   if (avgScore !== null && avgScore >= 800)
-    return 'Sua média está acima de 800 pts — nível de destaque no ENEM.'
+    return { pre: 'Média de ', highlight: `${avgScore} pts`, post: ' — nível de destaque no ENEM.' }
   if (avgScore !== null && avgScore >= 600)
-    return 'Boa consistência. Cada redação é um passo em direção aos 900+ pts.'
+    return { text: 'Cada redação é um passo em direção aos 900+ pts.' }
   if (avgScore !== null)
-    return 'Cada devolutiva revela exatamente onde subir a nota. Use-as.'
-  return 'Envie sua primeira redação e descubra onde você está.'
+    return { text: 'Cada devolutiva mostra exatamente onde subir a nota.' }
+  return { text: 'Envie sua primeira redação e veja onde você está.' }
 }
 
 export function DashboardHero({
@@ -60,105 +60,132 @@ export function DashboardHero({
   upgradeSignal,
   planTierNextPlan,
 }: DashboardHeroProps) {
-  const planColor  = PLAN_COLORS[planName] ?? PLAN_COLORS['Evolução']
-  const planIcon   = PLAN_ICONS[planName]  ?? '◈'
-  const greeting   = getGreeting(firstName)
+  const plan       = PLAN_CONFIG[planName] ?? PLAN_CONFIG['Evolução']
+  const greeting   = getGreeting()
   const motivation = getMotivationalLine(avgScore, overallDelta, pendingCount)
   const creditsPct = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
+  const barColor   = creditsPct > 50 ? 'bg-purple-500' : creditsPct > 20 ? 'bg-amber-500' : 'bg-red-500'
+  const creditText = creditsLeft === 0
+    ? 'Ciclo esgotado'
+    : `${creditsLeft} crédito${creditsLeft !== 1 ? 's' : ''} restante${creditsLeft !== 1 ? 's' : ''}`
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#0d1220] via-[#0f1428] to-[#0d1220] p-6 sm:p-8 mb-6">
-      {/* Subtle background glow */}
+    <div className="relative mb-6 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b1121]">
+      {/* Top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
+
+      {/* Background glows */}
       <div
-        className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full opacity-[0.08]"
-        style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)' }}
+        className="pointer-events-none absolute -top-32 -right-20 h-72 w-72 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 65%)' }}
       />
       <div
-        className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full opacity-[0.05]"
-        style={{ background: 'radial-gradient(circle, #3b82f6 0%, transparent 70%)' }}
+        className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 65%)' }}
       />
 
-      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        {/* Left — greeting + plan + motivation */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            {/* Plan badge */}
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${planColor}`}>
-              <span className="text-[10px]">{planIcon}</span>
-              Plano {planName}
-            </span>
+      {/* Dot grid texture */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
+      />
 
-            {/* Score badge — only if they have data */}
-            {avgScore !== null && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white/[0.05] text-gray-400 border border-white/[0.06]">
-                <TrendingUp size={11} />
-                Média {avgScore} pts
-              </span>
-            )}
+      <div className="relative px-6 py-7 sm:px-8 sm:py-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
 
-            {/* Delta badge */}
-            {overallDelta !== null && overallDelta > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
-                <Award size={10} />
-                +{overallDelta} pts na trajetória
+          {/* ── Left: greeting + meta ── */}
+          <div className="flex-1 min-w-0">
+
+            {/* Plan + score pills */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${plan.color}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${plan.dot}`} />
+                {plan.label}
               </span>
-            )}
+
+              {avgScore !== null && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/[0.04] text-gray-400 border border-white/[0.07]">
+                  <TrendingUp size={10} />
+                  Média {avgScore} pts
+                </span>
+              )}
+
+              {overallDelta !== null && overallDelta > 30 && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                  <Flame size={10} />
+                  +{overallDelta} pts na trajetória
+                </span>
+              )}
+            </div>
+
+            {/* Greeting */}
+            <h1 className="text-2xl sm:text-[1.75rem] font-bold text-white tracking-tight leading-tight mb-2">
+              {greeting}, {firstName} 👋
+            </h1>
+
+            {/* Motivation line */}
+            <p className="text-sm text-gray-500 leading-relaxed max-w-md">
+              {'text' in motivation
+                ? motivation.text
+                : (
+                  <>
+                    {motivation.pre}
+                    <span className="text-white font-medium">{motivation.highlight}</span>
+                    {motivation.post}
+                  </>
+                )
+              }
+            </p>
+
+            {/* Credits bar */}
+            <div className="mt-5 max-w-[280px]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-600">Redações disponíveis</span>
+                <span className={`text-xs font-semibold tabular-nums ${
+                  creditsLeft === 0 ? 'text-red-400' : creditsLeft <= 1 ? 'text-amber-400' : 'text-gray-300'
+                }`}>
+                  {creditText}
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                  style={{ width: `${creditsPct}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-[10px] text-gray-700">
+                {creditsLeft} de {creditsTotal} neste ciclo
+              </p>
+            </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-1.5">
-            {greeting} 👋
-          </h1>
-          <p className="text-sm text-gray-500 max-w-lg leading-relaxed">{motivation}</p>
-
-          {/* Credits bar */}
-          <div className="mt-4 max-w-xs">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-gray-500">Créditos restantes</span>
-              <span className={`text-xs font-medium ${creditsLeft === 0 ? 'text-red-400' : creditsLeft === 1 ? 'text-amber-400' : 'text-gray-300'}`}>
-                {creditsLeft} / {creditsTotal}
-              </span>
-            </div>
-            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  creditsPct > 50 ? 'bg-purple-500' : creditsPct > 20 ? 'bg-amber-500' : 'bg-red-500'
-                }`}
-                style={{ width: `${creditsPct}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Right — CTAs */}
-        <div className="flex flex-col gap-2.5 sm:items-end shrink-0">
-          <Link
-            href="/aluno/redacoes/nova"
-            className="btn-primary justify-center sm:justify-start gap-2 whitespace-nowrap"
-          >
-            <Sparkles size={15} />
-            Enviar redação
-            <ArrowRight size={14} className="opacity-60" />
-          </Link>
-
-          <Link
-            href="/aluno/biia"
-            className="btn-secondary justify-center sm:justify-start gap-2 whitespace-nowrap"
-          >
-            <MessageCircle size={15} />
-            Falar com Biia
-          </Link>
-
-          {/* Upgrade nudge */}
-          {upgradeSignal && planTierNextPlan && (
-            <Link
-              href={`/checkout/${planTierNextPlan.toLowerCase().replace(' ', '-')}`}
-              className="inline-flex items-center gap-1.5 text-xs text-amber-400/80 hover:text-amber-300 transition-colors mt-1"
-            >
-              <span className="text-[10px]">⚡</span>
-              Fazer upgrade para {planTierNextPlan}
-              <ArrowRight size={10} />
+          {/* ── Right: CTAs ── */}
+          <div className="flex flex-row sm:flex-col items-start gap-2.5 sm:items-end shrink-0">
+            <Link href="/aluno/redacoes/nova" className="btn-primary gap-2 whitespace-nowrap">
+              <Sparkles size={14} />
+              Enviar redação
             </Link>
-          )}
+
+            <Link href="/aluno/biia" className="btn-secondary gap-2 whitespace-nowrap">
+              <MessageCircle size={14} />
+              Falar com Biia
+            </Link>
+
+            {upgradeSignal && planTierNextPlan && (
+              <Link
+                href={`/checkout/${planTierNextPlan.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`}
+                className="flex items-center gap-1.5 text-[11px] font-medium text-amber-400/80 hover:text-amber-300 transition-colors"
+              >
+                <Zap size={11} />
+                Upgrade para {planTierNextPlan}
+                <ArrowRight size={10} />
+              </Link>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

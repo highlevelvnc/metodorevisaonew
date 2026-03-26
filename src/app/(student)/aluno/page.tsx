@@ -2,17 +2,17 @@ import type { Metadata }   from 'next'
 import { redirect }        from 'next/navigation'
 import { createClient }    from '@/lib/supabase/server'
 
-import { DashboardHero }       from './_components/DashboardHero'
-import { StatsRow }            from './_components/StatsRow'
-import { CorrectionsList }     from './_components/CorrectionsList'
-import { BiiaCard }            from './_components/BiiaCard'
-import { AdaptiveContent }     from './_components/AdaptiveContent'
-import { ThemesSection }       from './_components/ThemesSection'
-import { LessonsGrid }         from './_components/LessonsGrid'
-import { SimuladosSection }    from './_components/SimuladosSection'
-import { MentoriasSection }    from './_components/MentoriasSection'
-import { ClubeLivroSection }   from './_components/ClubeLivroSection'
-import { CorrectorSelection }  from './_components/CorrectorSelection'
+import { DashboardHero }      from './_components/DashboardHero'
+import { StatsRow }           from './_components/StatsRow'
+import { CorrectionsList }    from './_components/CorrectionsList'
+import { BiiaCard }           from './_components/BiiaCard'
+import { AdaptiveContent }    from './_components/AdaptiveContent'
+import { ThemesSection }      from './_components/ThemesSection'
+import { LessonsGrid }        from './_components/LessonsGrid'
+import { SimuladosSection }   from './_components/SimuladosSection'
+import { MentoriasSection }   from './_components/MentoriasSection'
+import { ClubeLivroSection }  from './_components/ClubeLivroSection'
+import { CorrectorSelection } from './_components/CorrectorSelection'
 
 export const metadata: Metadata = {
   title: 'Painel do Aluno',
@@ -39,23 +39,33 @@ type SubData = {
 
 const compKeys: CompKey[] = ['c1_score', 'c2_score', 'c3_score', 'c4_score', 'c5_score']
 
-// ─── Plan tier metadata ────────────────────────────────────────────────────────
+// ─── Coaching tips ────────────────────────────────────────────────────────────
 
-const PLAN_TIERS: Record<string, { nextPlan: string | null; nextEssays: number | null }> = {
-  'Trial':      { nextPlan: 'Evolução',   nextEssays: 3  },
-  'Evolução':   { nextPlan: 'Estratégia', nextEssays: 5  },
-  'Estratégia': { nextPlan: 'Intensivo',  nextEssays: 8  },
-  'Intensivo':  { nextPlan: null,         nextEssays: null },
+const NEXT_STEP: Record<string, { focus: string; tip: string }> = {
+  c1_score: { focus: 'Norma Culta',             tip: 'Releia em voz alta para capturar erros de concordância e pontuação.' },
+  c2_score: { focus: 'Compreensão do Tema',     tip: 'Escreva sua tese em uma frase antes de começar — garante foco total.' },
+  c3_score: { focus: 'Seleção de Argumentos',   tip: 'Pesquise 2–3 dados ou referências antes de escrever qualquer parágrafo.' },
+  c4_score: { focus: 'Mecanismos de Coesão',    tip: 'Varie os conectivos: "Ademais", "Nesse sentido", "Por outro lado".' },
+  c5_score: { focus: 'Proposta de Intervenção', tip: 'Inclua explicitamente: agente, ação, modo/meio e finalidade.' },
 }
 
-// ─── Next-step coaching tip per competency ────────────────────────────────────
+// ─── Plan tiers ───────────────────────────────────────────────────────────────
 
-const NEXT_STEP_SHORT: Record<string, { focus: string; tip: string }> = {
-  c1_score: { focus: 'Norma culta',             tip: 'Releia em voz alta para capturar erros de concordância e pontuação.' },
-  c2_score: { focus: 'Compreensão do tema',     tip: 'Escreva sua tese em uma frase antes de começar — garante foco total.' },
-  c3_score: { focus: 'Seleção de argumentos',   tip: 'Pesquise 2–3 dados ou referências antes de escrever qualquer parágrafo.' },
-  c4_score: { focus: 'Mecanismos de coesão',    tip: 'Varie os conectivos: "Ademais", "Nesse sentido", "Por outro lado".' },
-  c5_score: { focus: 'Proposta de intervenção', tip: 'Inclua explicitamente: agente, ação, modo/meio e finalidade.' },
+const PLAN_TIERS: Record<string, { nextPlan: string | null }> = {
+  'Trial':      { nextPlan: 'Evolução'   },
+  'Evolução':   { nextPlan: 'Estratégia' },
+  'Estratégia': { nextPlan: 'Intensivo'  },
+  'Intensivo':  { nextPlan: null         },
+}
+
+// ─── Section label ────────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-700 mb-3 px-0.5">
+      {children}
+    </p>
+  )
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -88,7 +98,7 @@ export default async function AlunoDashboardPage() {
   const sub      = subRaw as SubData | null
   const essays   = (essaysRaw as EssayData[]) ?? []
 
-  // ── Derived values ───────────────────────────────────────────────────────────
+  // ── Derived values ────────────────────────────────────────────────────────
 
   const firstName    = profile?.full_name?.split(' ')[0] ?? 'Aluno'
   const planName     = sub?.plans?.name ?? 'Trial'
@@ -112,13 +122,13 @@ export default async function AlunoDashboardPage() {
       (correctedEssays[correctedEssays.length - 1].corrections[0]?.total_score ?? 0)
     : null
 
-  // Weakest competency from most recent correction
+  // Weakest competency
   const worstCompKey: CompKey | null = lastCorrection
     ? compKeys.reduce((a, b) => (lastCorrection[a] ?? 0) <= (lastCorrection[b] ?? 0) ? a : b)
     : null
-  const nextStep = worstCompKey ? NEXT_STEP_SHORT[worstCompKey] : null
+  const nextStep = worstCompKey ? NEXT_STEP[worstCompKey] : null
 
-  // Patterns: competencies averaging below 100 across all corrected essays
+  // Patterns: competencies averaging below 100
   const patterns = correctedEssays.length >= 2
     ? compKeys
         .map(key => ({
@@ -129,15 +139,14 @@ export default async function AlunoDashboardPage() {
     : []
 
   // Upgrade signal
-  const creditsPct      = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
-  const planTier        = PLAN_TIERS[planName] ?? PLAN_TIERS['Evolução']
+  const creditsPct       = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
+  const planTier         = PLAN_TIERS[planName] ?? PLAN_TIERS['Evolução']
   const upgradeAvailable = planTier.nextPlan !== null
-  const isEvolving      = (overallDelta !== null && overallDelta > 60) || (avgScore !== null && avgScore >= 560)
+  const isEvolving       = (overallDelta !== null && overallDelta > 60) || (avgScore !== null && avgScore >= 560)
 
-  // Cycle intensity (30-day)
-  const thirtyDaysAgo   = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const cycleEssays     = essays.filter(e => e.submitted_at >= thirtyDaysAgo)
-  const cycleIsIntense  = cycleEssays.length >= Math.max(2, Math.ceil(creditsTotal * 0.66))
+  const thirtyDaysAgo  = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const cycleEssays    = essays.filter(e => e.submitted_at >= thirtyDaysAgo)
+  const cycleIsIntense = cycleEssays.length >= Math.max(2, Math.ceil(creditsTotal * 0.66))
 
   type UpgradeSignal = 'last_credit_evolving' | 'exhausted' | 'halfway_evolving' | null
   const upgradeSignal: UpgradeSignal = (() => {
@@ -148,14 +157,12 @@ export default async function AlunoDashboardPage() {
     return null
   })()
 
-  const isVip = planName === 'Intensivo'
-
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-6xl space-y-0">
+    <div className="max-w-6xl">
 
-      {/* ── Hero ────────────────────────────────────────────────────────────── */}
+      {/* ── 1. Hero ─────────────────────────────────────────────────────────── */}
       <DashboardHero
         firstName={firstName}
         planName={planName}
@@ -168,7 +175,7 @@ export default async function AlunoDashboardPage() {
         planTierNextPlan={planTier.nextPlan}
       />
 
-      {/* ── Stats row ───────────────────────────────────────────────────────── */}
+      {/* ── 2. Stats ────────────────────────────────────────────────────────── */}
       <StatsRow
         totalEssays={essays.length}
         correctedCount={correctedEssays.length}
@@ -178,12 +185,13 @@ export default async function AlunoDashboardPage() {
         pendingCount={pendingCount}
       />
 
-      {/* ── Main grid: Correções (2/3) + Biia (1/3) ─────────────────────────── */}
-      <div className="grid lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-2">
+      {/* ── 3. Core: Correções + Biia ────────────────────────────────────────
+           Correções takes 3/5 of the width (more important), Biia takes 2/5   */}
+      <div className="grid lg:grid-cols-5 gap-4 mb-6">
+        <div className="lg:col-span-3">
           <CorrectionsList essays={essays} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-2">
           <BiiaCard
             worstCompKey={worstCompKey}
             avgScore={avgScore}
@@ -192,7 +200,7 @@ export default async function AlunoDashboardPage() {
         </div>
       </div>
 
-      {/* ── Adaptive content — data-driven recommendations ───────────────────── */}
+      {/* ── 4. Adaptive content ─────────────────────────────────────────────── */}
       <AdaptiveContent
         patterns={patterns}
         worstCompKey={worstCompKey}
@@ -200,24 +208,24 @@ export default async function AlunoDashboardPage() {
         lastCorrectionDate={lastCorrection?.corrected_at ?? null}
       />
 
-      {/* ── Resources: Temas + Aulas + Simulados ────────────────────────────── */}
+      {/* ── 5. Resources ────────────────────────────────────────────────────── */}
+      <SectionLabel>Recursos de estudo</SectionLabel>
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
         <ThemesSection />
         <LessonsGrid />
         <SimuladosSection />
       </div>
 
-      {/* ── Community: Mentorias + Clube do Livro ───────────────────────────── */}
+      {/* ── 6. Community ────────────────────────────────────────────────────── */}
+      <SectionLabel>Comunidade e aprofundamento</SectionLabel>
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
         <MentoriasSection />
         <ClubeLivroSection />
       </div>
 
-      {/* ── VIP: Escolha de Corretor ─────────────────────────────────────────── */}
-      {/* Shown to all users — non-VIP see upgrade nudge inside the component */}
-      <div className="mb-6">
-        <CorrectorSelection />
-      </div>
+      {/* ── 7. Corretor VIP ──────────────────────────────────────────────────── */}
+      <SectionLabel>Plano Intensivo</SectionLabel>
+      <CorrectorSelection />
 
     </div>
   )
