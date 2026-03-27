@@ -1,3 +1,9 @@
+'use client'
+
+import { GradientCard } from '@/components/ui/gradient-card'
+
+// ─── Feature data ─────────────────────────────────────────────────────────────
+
 const diferenciais = [
   {
     title: 'Correção humana e estratégica',
@@ -55,10 +61,14 @@ const diferenciais = [
   },
 ]
 
+// ─── Section ──────────────────────────────────────────────────────────────────
+
 export default function Diferenciais() {
   return (
     <section className="section-padding" style={{ background: 'rgba(255,255,255,0.01)' }}>
       <div className="section-container">
+
+        {/* Header */}
         <div className="text-center mb-14">
           <div className="section-label justify-center">Por que a Método Revisão?</div>
           <h2 className="section-title mb-3">
@@ -68,23 +78,27 @@ export default function Diferenciais() {
           </h2>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {diferenciais.map((d, i) => (
-            <div key={d.title} className="card-feature group">
-              <div className="icon-box-purple mb-4 group-hover:shadow-glow-purple-xs transition-all duration-300">
-                {d.icon}
-              </div>
-              <h3 className="text-sm font-bold text-white mb-2">{d.title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">{d.desc}</p>
-            </div>
+        {/* Premium 3D cards grid */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {diferenciais.map((d) => (
+            <GradientCard
+              key={d.title}
+              title={d.title}
+              desc={d.desc}
+              icon={d.icon}
+              href="#como-funciona"
+              ctaLabel="Ver como funciona"
+            />
           ))}
         </div>
 
-        {/* VS banner */}
-        <div className="mt-10 rounded-2xl border border-white/[0.06] overflow-hidden">
+        {/* VS comparison banner */}
+        <div className="mt-12 rounded-2xl border border-white/[0.06] overflow-hidden">
           <div className="grid grid-cols-3 text-center divide-x divide-white/[0.06]">
             <div className="px-4 py-5">
-              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-3">Cursinho tradicional</p>
+              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-3">
+                Cursinho tradicional
+              </p>
               <ul className="space-y-2 text-xs text-gray-600">
                 <li>Feedback genérico</li>
                 <li>Sem histórico do aluno</li>
@@ -93,7 +107,9 @@ export default function Diferenciais() {
               </ul>
             </div>
             <div className="px-4 py-5 bg-purple-600/[0.06]">
-              <p className="text-xs text-purple-400 font-bold uppercase tracking-wide mb-3">Método Revisão</p>
+              <p className="text-xs text-purple-400 font-bold uppercase tracking-wide mb-3">
+                Método Revisão
+              </p>
               <ul className="space-y-2 text-xs text-gray-300">
                 <li className="font-medium">Especialista humana</li>
                 <li className="font-medium">Acompanhamento contínuo</li>
@@ -102,7 +118,9 @@ export default function Diferenciais() {
               </ul>
             </div>
             <div className="px-4 py-5">
-              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-3">Correção por IA</p>
+              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-3">
+                Correção por IA
+              </p>
               <ul className="space-y-2 text-xs text-gray-600">
                 <li>Sem leitura real</li>
                 <li>Não entende contexto</li>
@@ -112,6 +130,7 @@ export default function Diferenciais() {
             </div>
           </div>
         </div>
+
       </div>
     </section>
   )
