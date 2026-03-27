@@ -1,48 +1,97 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
-import { Search, BookOpen, ArrowRight } from 'lucide-react'
+import { BookOpen, ArrowRight, TrendingUp, Sparkles, PenLine } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
-interface Theme {
-  id: string
-  title: string
-  tags: string[]
-  difficulty: 'Básico' | 'Médio' | 'Avançado'
+// Competency-targeted theme suggestions
+const COMP_THEMES: Record<string, { title: string; trains: string; reason: string }> = {
+  c1_score: {
+    title: 'O impacto das redes sociais na língua portuguesa',
+    trains: 'C1',
+    reason: 'Tema linguístico — escrever sobre linguagem exige atenção máxima à norma culta.',
+  },
+  c2_score: {
+    title: 'Os desafios da educação ambiental no Brasil',
+    trains: 'C2',
+    reason: 'Múltiplas perspectivas exigem tese clara e foco constante no tema proposto.',
+  },
+  c3_score: {
+    title: 'A influência da inteligência artificial no mercado de trabalho',
+    trains: 'C3',
+    reason: 'Amplo repertório disponível — dados, estudos e referências entram naturalmente.',
+  },
+  c4_score: {
+    title: 'O papel da cultura popular na construção da identidade nacional',
+    trains: 'C4',
+    reason: 'Conectar exemplos variados treina o uso de conectivos e coesão entre parágrafos.',
+  },
+  c5_score: {
+    title: 'A violência contra a mulher no Brasil: causas e soluções',
+    trains: 'C5',
+    reason: 'Tema social concreto que exige proposta de intervenção precisa com os 4 elementos.',
+  },
 }
 
-const SEED_THEMES: Theme[] = [
-  { id: '1', title: 'O impacto das redes sociais na língua portuguesa',        tags: ['C1', 'Linguagem'],     difficulty: 'Médio'    },
-  { id: '2', title: 'Desafios da educação ambiental no Brasil',                tags: ['C2', 'Meio ambiente'], difficulty: 'Médio'    },
-  { id: '3', title: 'A influência da IA no mercado de trabalho',               tags: ['C3', 'Tecnologia'],    difficulty: 'Avançado' },
-  { id: '4', title: 'O papel da cultura popular na identidade nacional',       tags: ['C4', 'Cultura'],       difficulty: 'Médio'    },
-  { id: '5', title: 'Violência contra a mulher: causas e soluções',            tags: ['C5', 'Sociedade'],     difficulty: 'Avançado' },
-  { id: '6', title: 'Mobilidade urbana e desigualdade social',                 tags: ['C3', 'Urbanismo'],     difficulty: 'Básico'   },
-  { id: '7', title: 'O avanço das fake news e a desinformação',                tags: ['C2', 'Mídia'],         difficulty: 'Médio'    },
-  { id: '8', title: 'Saúde mental dos jovens no Brasil pós-pandemia',          tags: ['C5', 'Saúde'],         difficulty: 'Médio'    },
-  { id: '9', title: 'Desigualdade no acesso à tecnologia no Brasil',           tags: ['C3', 'Tecnologia'],    difficulty: 'Básico'   },
+// Fallback when DB has no community data yet
+const FALLBACK_THEMES = [
+  'Desafios para a inclusão digital no Brasil',
+  'Saúde mental dos jovens no Brasil pós-pandemia',
+  'Fake news e a crise da democracia brasileira',
+  'Desigualdade racial no sistema educacional',
+  'O impacto das redes sociais na saúde mental',
 ]
 
-const DIFFICULTY_CONFIG = {
-  Básico:   'text-green-400  bg-green-500/10  border-green-500/20',
-  Médio:    'text-amber-400  bg-amber-500/10  border-amber-500/20',
-  Avançado: 'text-red-400    bg-red-500/10    border-red-500/20',
+function normalizeTitle(t: string): string {
+  return t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
-const TAG_FILTERS = ['Todos', 'C1', 'C2', 'C3', 'C4', 'C5']
+export async function ThemesSection({ worstCompKey }: { worstCompKey: string | null }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = (await createClient()) as any
 
-export function ThemesSection() {
-  const [query,     setQuery]     = useState('')
-  const [activeTag, setActiveTag] = useState('Todos')
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  const filtered = SEED_THEMES.filter(t => {
-    const matchQ   = !query || t.title.toLowerCase().includes(query.toLowerCase())
-    const matchTag = activeTag === 'Todos' || t.tags.includes(activeTag)
-    return matchQ && matchTag
-  })
+  // Fetch community trending themes (platform-wide, last 30 days)
+  const { data: rawTrending } = await db
+    .from('essays')
+    .select('theme_title')
+    .is('theme_id', null)
+    .not('theme_title', 'is', null)
+    .gte('submitted_at', thirtyDaysAgo)
+    .limit(300)
+
+  // Aggregate with deduplication
+  const countMap = new Map<string, { title: string; count: number }>()
+  for (const row of (rawTrending ?? []) as { theme_title: string }[]) {
+    const raw = row.theme_title?.trim()
+    if (!raw || raw.length < 25 || raw.split(/\s+/).length < 5) continue
+    const norm = normalizeTitle(raw)
+    const existing = countMap.get(norm)
+    if (existing) {
+      countMap.set(norm, { title: existing.title, count: existing.count + 1 })
+    } else {
+      countMap.set(norm, { title: raw, count: 1 })
+    }
+  }
+
+  const trending = Array.from(countMap.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  const displayThemes = trending.length >= 3
+    ? trending
+    : FALLBACK_THEMES.slice(0, 5).map(title => ({ title, count: 0 }))
+
+  const recommended = worstCompKey ? COMP_THEMES[worstCompKey] : null
 
   return (
-    <div className="card-dark rounded-2xl p-5 flex flex-col">
+    <div className="card-dark rounded-2xl p-5 flex flex-col h-full">
+
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2.5">
@@ -51,76 +100,81 @@ export function ThemesSection() {
           </div>
           <div>
             <h2 className="text-[13px] font-semibold text-white">Banco de Temas</h2>
-            <p className="text-[11px] text-gray-600 mt-0.5">Temas selecionados para o ENEM</p>
+            <p className="text-[11px] text-gray-600 mt-0.5">
+              {trending.length >= 3 ? 'Em alta na plataforma · últimos 30 dias' : 'Temas recomendados para o ENEM'}
+            </p>
           </div>
         </div>
         <Link
           href="/aluno/temas"
           className="flex items-center gap-1 text-[11px] text-gray-600 hover:text-purple-400 transition-colors"
         >
-          Ver todos <ArrowRight size={10} />
+          Biblioteca <ArrowRight size={10} />
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-3">
-        <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
-        <input
-          type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Buscar tema…"
-          className="w-full h-9 pl-8 pr-3 rounded-xl border border-white/[0.07] bg-white/[0.03] text-[13px] text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
-        />
-      </div>
-
-      {/* Tag pills */}
-      <div className="flex gap-1.5 flex-wrap mb-4">
-        {TAG_FILTERS.map(tag => (
-          <button
-            key={tag}
-            onClick={() => setActiveTag(tag)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${
-              activeTag === tag
-                ? 'bg-purple-600/25 text-purple-300 border-purple-500/40 shadow-[0_0_0_1px_rgba(124,58,237,0.2)]'
-                : 'bg-transparent text-gray-600 border-white/[0.06] hover:border-white/[0.12] hover:text-gray-400'
-            }`}
+      {/* Recommended — personalised to weakest competency */}
+      {recommended && (
+        <div className="mb-4 rounded-xl border border-purple-500/20 bg-purple-500/[0.05] p-3 flex-shrink-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Sparkles size={9} className="text-purple-400" />
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-400">
+              Recomendado · treina {recommended.trains}
+            </p>
+          </div>
+          <p className="text-[12px] font-semibold text-white leading-snug mb-1">
+            {recommended.title}
+          </p>
+          <p className="text-[11px] text-gray-600 leading-relaxed mb-2.5">
+            {recommended.reason}
+          </p>
+          <Link
+            href={`/aluno/redacoes/nova?tema_livre=${encodeURIComponent(recommended.title)}`}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
           >
-            {tag}
-          </button>
+            <PenLine size={10} />
+            Escrever este tema
+          </Link>
+        </div>
+      )}
+
+      {/* Trending / popular list */}
+      <div className="flex-1 space-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-700 mb-2">
+          {trending.length >= 3 ? 'Mais praticados' : 'Sugeridos para praticar'}
+        </p>
+        {displayThemes.map((theme, i) => (
+          <Link
+            key={i}
+            href={`/aluno/redacoes/nova?tema_livre=${encodeURIComponent(theme.title)}`}
+            className="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.04] border border-transparent hover:border-white/[0.07] transition-all"
+          >
+            <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center group-hover:border-purple-500/20 transition-all">
+              {theme.count >= 3 ? (
+                <TrendingUp size={10} className="text-amber-400" />
+              ) : (
+                <span className="text-[10px] font-bold text-gray-700">{i + 1}</span>
+              )}
+            </div>
+            <p className="flex-1 text-[12px] font-medium text-gray-400 group-hover:text-gray-200 transition-colors leading-snug line-clamp-2">
+              {theme.title}
+            </p>
+            {theme.count >= 2 && (
+              <span className="shrink-0 text-[10px] text-gray-700 tabular-nums">{theme.count}×</span>
+            )}
+          </Link>
         ))}
       </div>
 
-      {/* Theme list */}
-      <div className="flex-1 space-y-1">
-        {filtered.length === 0 ? (
-          <p className="text-[12px] text-gray-700 text-center py-6">
-            Nenhum tema encontrado{query ? ` para "${query}"` : ''}.
-          </p>
-        ) : (
-          filtered.slice(0, 5).map(theme => (
-            <Link
-              key={theme.id}
-              href={`/aluno/temas/${theme.id}`}
-              className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] border border-transparent hover:border-white/[0.07] transition-all"
-            >
-              {/* Comp badge */}
-              <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-[10px] font-bold text-gray-500 group-hover:border-purple-500/20 group-hover:text-purple-400 transition-all">
-                {theme.tags[0]}
-              </span>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium text-gray-400 group-hover:text-gray-200 transition-colors leading-snug line-clamp-1">
-                  {theme.title}
-                </p>
-              </div>
-
-              <span className={`shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded border ${DIFFICULTY_CONFIG[theme.difficulty]}`}>
-                {theme.difficulty}
-              </span>
-            </Link>
-          ))
-        )}
+      {/* Footer */}
+      <div className="mt-4 pt-3 border-t border-white/[0.05]">
+        <Link
+          href="/aluno/temas"
+          className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-gray-600 hover:text-gray-300 transition-colors"
+        >
+          Ver biblioteca completa de temas
+          <ArrowRight size={10} />
+        </Link>
       </div>
     </div>
   )

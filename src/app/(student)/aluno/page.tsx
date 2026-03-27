@@ -2,7 +2,7 @@ import type { Metadata }   from 'next'
 import { redirect }        from 'next/navigation'
 import Link                from 'next/link'
 import { createClient }    from '@/lib/supabase/server'
-import { Calendar, CheckCircle2, Target } from 'lucide-react'
+import { PenLine, FileText, Target, Clock, ArrowRight, Flame } from 'lucide-react'
 
 import { DashboardHero }      from './_components/DashboardHero'
 import { StatsRow }           from './_components/StatsRow'
@@ -76,85 +76,123 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function WeeklyFocusBar({
+// ─── Streak engine ─────────────────────────────────────────────────────────────
+
+function computeWeekStreak(essayList: { submitted_at: string }[]): number {
+  if (essayList.length === 0) return 0
+  const MS_WEEK = 7 * 24 * 60 * 60 * 1000
+  const now = Date.now()
+  const activeWeeks = new Set<number>()
+  for (const e of essayList) {
+    activeWeeks.add(Math.floor((now - new Date(e.submitted_at).getTime()) / MS_WEEK))
+  }
+  // Grace: start from this week (0) if active, else last week (1)
+  const start = activeWeeks.has(0) ? 0 : 1
+  let streak = 0, i = start
+  while (activeWeeks.has(i)) { streak++; i++ }
+  return streak
+}
+
+// ─── Daily action engine ───────────────────────────────────────────────────────
+
+type DailyActionKind = 'write' | 'review' | 'practice' | 'wait'
+type DailyAction = { label: string; sub: string; href: string; kind: DailyActionKind }
+
+const ACTION_CFG: Record<DailyActionKind, { icon: React.ElementType; color: string; bg: string; card: string }> = {
+  write:   { icon: PenLine,   color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20', card: 'border-purple-500/15 bg-purple-500/[0.04]' },
+  review:  { icon: FileText,  color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',     card: 'border-blue-500/15 bg-blue-500/[0.03]'    },
+  practice:{ icon: Target,    color: 'text-amber-400',  bg: 'bg-amber-500/10 border-amber-500/20',   card: 'border-amber-500/15 bg-amber-500/[0.03]'  },
+  wait:    { icon: Clock,     color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20',   card: 'border-green-500/15 bg-green-500/[0.03]'  },
+}
+
+// ─── Habit bar ─────────────────────────────────────────────────────────────────
+
+function HabitBar({
+  streak,
   weeklyCount,
-  daysSinceLastCorrection,
-  nextStep,
+  weeklyGoal,
+  recommendedAction,
 }: {
+  streak: number
   weeklyCount: number
-  daysSinceLastCorrection: number | null
-  nextStep: { focus: string; tip: string } | null
+  weeklyGoal: number
+  recommendedAction: DailyAction
 }) {
+  const cfg      = ACTION_CFG[recommendedAction.kind]
+  const ActionIcon = cfg.icon
+  const goalPct  = Math.min(100, Math.round((weeklyCount / weeklyGoal) * 100))
+  const goalMet  = weeklyCount >= weeklyGoal
+
   return (
     <div className="mb-6 grid sm:grid-cols-3 gap-3">
-      {/* Activity this week */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-          <Calendar size={14} className="text-blue-400" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Esta semana</p>
-          {weeklyCount > 0 ? (
-            <p className="text-sm font-bold text-white leading-none">
-              {weeklyCount}{' '}
-              <span className="font-normal text-gray-600 text-xs">
-                redaç{weeklyCount !== 1 ? 'ões' : 'ão'}
-              </span>
-            </p>
-          ) : (
-            <Link href="/aluno/redacoes/nova" className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors">
-              Enviar agora →
+
+      {/* Streak */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-1.5">Sequência</p>
+        {streak > 0 ? (
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold text-white tabular-nums leading-none">{streak}</span>
+            <span className="text-[11px] text-gray-600">semana{streak !== 1 ? 's' : ''}</span>
+            <Flame size={14} className="text-amber-400 mb-0.5" />
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm font-semibold text-gray-400 leading-none mb-1">Sem sequência</p>
+            <Link href="/aluno/redacoes/nova" className="text-[11px] text-purple-400 hover:text-purple-300 transition-colors font-medium">
+              Iniciar agora →
             </Link>
-          )}
-        </div>
+          </div>
+        )}
+        {streak > 0 && (
+          <p className="text-[10px] text-gray-700 mt-1">
+            {streak === 1 ? 'semana ativa' : 'semanas consecutivas'}
+          </p>
+        )}
       </div>
 
-      {/* Last correction */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-          <CheckCircle2 size={14} className="text-green-400" />
+      {/* Weekly goal */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3.5">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">Meta semanal</p>
+          <span className={`text-[11px] font-bold tabular-nums ${goalMet ? 'text-green-400' : 'text-gray-500'}`}>
+            {weeklyCount}/{weeklyGoal}
+          </span>
         </div>
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Última devolutiva</p>
-          <p className="text-sm font-bold text-white leading-none">
-            {daysSinceLastCorrection === null
-              ? <span className="font-normal text-gray-600 text-xs">Nenhuma ainda</span>
-              : daysSinceLastCorrection === 0
-                ? 'Hoje'
-                : daysSinceLastCorrection === 1
-                  ? 'Ontem'
-                  : daysSinceLastCorrection <= 7
-                    ? `${daysSinceLastCorrection} dias atrás`
-                    : `há ${daysSinceLastCorrection}d`
-            }
+        <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden mb-1.5">
+          <div
+            className={`h-full rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-purple-500'}`}
+            style={{ width: `${goalPct}%` }}
+          />
+        </div>
+        <p className="text-[11px] leading-snug">
+          {goalMet
+            ? <span className="text-green-400 font-medium">Meta atingida esta semana ✓</span>
+            : <span className="text-gray-600">
+                {weeklyGoal - weeklyCount} redaç{weeklyGoal - weeklyCount === 1 ? 'ão' : 'ões'} para a meta
+              </span>
+          }
+        </p>
+      </div>
+
+      {/* Recommended action */}
+      <Link
+        href={recommendedAction.href}
+        className={`group rounded-2xl border px-4 py-3.5 flex items-center gap-3 hover:opacity-90 transition-all ${cfg.card}`}
+      >
+        <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
+          <ActionIcon size={14} className={cfg.color} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Ação de hoje</p>
+          <p className="text-xs font-semibold text-white leading-snug line-clamp-1 group-hover:text-white/90">
+            {recommendedAction.label}
+          </p>
+          <p className="text-[10px] text-gray-600 leading-snug line-clamp-1 mt-0.5">
+            {recommendedAction.sub}
           </p>
         </div>
-      </div>
-
-      {/* Weekly focus */}
-      <div className="rounded-2xl border border-purple-500/15 bg-purple-500/[0.04] px-4 py-3.5 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
-          <Target size={14} className="text-purple-400" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-0.5">Foco da semana</p>
-          {nextStep ? (
-            <Link
-              href="/aluno/biia"
-              className="text-xs font-medium text-purple-300 hover:text-purple-200 transition-colors leading-snug line-clamp-1"
-            >
-              {nextStep.focus} →
-            </Link>
-          ) : (
-            <Link
-              href="/aluno/redacoes/nova"
-              className="text-xs font-medium text-purple-300 hover:text-purple-200 transition-colors"
-            >
-              Enviar redação →
-            </Link>
-          )}
-        </div>
-      </div>
+        <ArrowRight size={12} className="text-gray-700 group-hover:text-gray-400 flex-shrink-0 transition-colors" />
+      </Link>
     </div>
   )
 }
@@ -237,6 +275,28 @@ export default async function AlunoDashboardPage() {
     : null
   const lastCorrectedEssayId    = correctedEssays[0]?.id ?? null
 
+  // ── Streak & weekly goal ────────────────────────────────────────────────────
+  const weekStreak  = computeWeekStreak(essays)
+  const weeklyGoal  = (['Intensivo', 'Estratégia'] as string[]).includes(planName) ? 2 : 1
+
+  // ── Recommended daily action ─────────────────────────────────────────────────
+  const COMP_SHORT_MAP: Record<CompKey, string> = {
+    c1_score: 'C1', c2_score: 'C2', c3_score: 'C3', c4_score: 'C4', c5_score: 'C5',
+  }
+  const recommendedAction: DailyAction = (() => {
+    if (pendingCount > 0)
+      return { label: 'Devolutiva chegando em breve', sub: 'Pratique com a Biia enquanto aguarda', href: '/aluno/biia', kind: 'wait' }
+    if (creditsLeft > 0 && weeklyCount < weeklyGoal)
+      return { label: weeklyCount === 0 ? 'Enviar redação desta semana' : 'Enviar mais uma redação', sub: `Meta: ${weeklyCount}/${weeklyGoal} redaç${weeklyGoal === 1 ? 'ão' : 'ões'} esta semana`, href: '/aluno/redacoes/nova', kind: 'write' }
+    if (weeklyCount >= weeklyGoal && creditsLeft > 0)
+      return { label: 'Meta semanal atingida 🎉', sub: 'Envie mais para acelerar sua evolução', href: '/aluno/redacoes/nova', kind: 'write' }
+    if (daysSinceLastCorrection !== null && daysSinceLastCorrection <= 4 && lastCorrectedEssayId)
+      return { label: 'Revisar sua última devolutiva', sub: daysSinceLastCorrection === 0 ? 'Recebida hoje' : `Recebida há ${daysSinceLastCorrection} dia${daysSinceLastCorrection !== 1 ? 's' : ''}`, href: `/aluno/redacoes/${lastCorrectedEssayId}`, kind: 'review' }
+    if (worstCompKey)
+      return { label: `Treinar ${COMP_SHORT_MAP[worstCompKey]} com a Biia`, sub: 'Exercício direcionado na competência mais fraca', href: '/aluno/biia', kind: 'practice' }
+    return { label: 'Enviar nova redação', sub: 'Cada envio traz um diagnóstico de evolução', href: '/aluno/redacoes/nova', kind: 'write' }
+  })()
+
   // Upgrade signal
   const creditsPct       = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
   const planTier         = PLAN_TIERS[planName] ?? PLAN_TIERS['Evolução']
@@ -297,11 +357,12 @@ export default async function AlunoDashboardPage() {
         pendingCount={pendingCount}
       />
 
-      {/* ── 3. Weekly focus bar ─────────────────────────────────────────────── */}
-      <WeeklyFocusBar
+      {/* ── 3. Habit bar — streak · weekly goal · recommended action ─────────── */}
+      <HabitBar
+        streak={weekStreak}
         weeklyCount={weeklyCount}
-        daysSinceLastCorrection={daysSinceLastCorrection}
-        nextStep={nextStep}
+        weeklyGoal={weeklyGoal}
+        recommendedAction={recommendedAction}
       />
 
       {/* ── 4. Core: Correções + Biia ────────────────────────────────────────
@@ -315,6 +376,9 @@ export default async function AlunoDashboardPage() {
             worstCompKey={worstCompKey}
             avgScore={avgScore}
             firstName={firstName}
+            daysSinceLastCorrection={daysSinceLastCorrection}
+            lastCorrectedEssayId={lastCorrectedEssayId}
+            streak={weekStreak}
           />
         </div>
       </div>
@@ -330,7 +394,7 @@ export default async function AlunoDashboardPage() {
       {/* ── 6. Resources ────────────────────────────────────────────────────── */}
       <SectionLabel>Recursos de estudo</SectionLabel>
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
-        <ThemesSection />
+        <ThemesSection worstCompKey={worstCompKey} />
         <LessonsGrid />
         <SimuladosSection />
       </div>

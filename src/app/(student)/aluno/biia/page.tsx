@@ -16,13 +16,6 @@ export const metadata: Metadata = {
 type CompKey = 'c1_score' | 'c2_score' | 'c3_score' | 'c4_score' | 'c5_score'
 const compKeys: CompKey[] = ['c1_score', 'c2_score', 'c3_score', 'c4_score', 'c5_score']
 
-const COMP_NAMES: Record<CompKey, string> = {
-  c1_score: 'Norma Culta',
-  c2_score: 'Compreensão do Tema',
-  c3_score: 'Seleção de Argumentos',
-  c4_score: 'Proposta de Intervenção',
-  c5_score: 'Mecanismos de Coesão',
-}
 
 const COMP_LABELS: Record<CompKey, string> = {
   c1_score: 'C1',
@@ -32,7 +25,6 @@ const COMP_LABELS: Record<CompKey, string> = {
   c5_score: 'C5',
 }
 
-// Fix: correct mapping to match actual competency order
 const COMP_DISPLAY: Record<CompKey, string> = {
   c1_score: 'Norma Culta (C1)',
   c2_score: 'Compreensão do Tema (C2)',
@@ -179,9 +171,8 @@ export default async function BiiaPage() {
   const compAverages = corrected.length >= 1
     ? compKeys.map(key => ({
         key,
-        label: COMP_LABELS[key],
-        name: COMP_NAMES[key],
-        full: COMP_DISPLAY[key],
+        label: COMP_LABELS[key],       // short: C1 … C5
+        full: COMP_DISPLAY[key],       // full: Norma Culta (C1) …
         avg: Math.round(corrected.reduce((s, e) => s + (e.corrections[0]?.[key] ?? 0), 0) / corrected.length),
       }))
     : null

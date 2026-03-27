@@ -56,6 +56,24 @@ function normalizeTitle(t: string): string {
     .trim()
 }
 
+// Noise filter: returns true only for titles that look like real ENEM themes
+function isQualityTitle(raw: string): boolean {
+  const t = raw.trim()
+  // Must have at least 5 words (short phrases are rarely real themes)
+  if (t.split(/\s+/).length < 5) return false
+  // Must have at least 25 characters
+  if (t.length < 25) return false
+  // Reject all-uppercase (copy-paste garbage / test submissions)
+  if (t === t.toUpperCase() && /[A-ZÁÀÃÂÉÊÍÓÔÕÚÇ]{4,}/.test(t)) return false
+  // Reject obvious test/placeholder titles
+  if (/^(teste|test\s|redaç[aã]o\s|minha\s|exerc[ií]cio|treino|tema\s(livre|do)\s|escreva|dissert)/i.test(t)) return false
+  // Reject titles that are just repeated characters or numbers
+  if (/^[\W\d\s]+$/.test(t)) return false
+  // Must contain at least one word ≥ 4 letters (filters "a b c d e f")
+  if (!/[a-záàãâéêíóôõúüç]{4,}/i.test(t)) return false
+  return true
+}
+
 type SourceTag = 'oficial' | 'mais-praticado' | 'recente' | 'comunidade'
 
 interface CommunityTheme {
@@ -174,7 +192,7 @@ export default async function TemasPage({
 
   // Tag community themes by usage/recency and filter noise
   const communityThemes: CommunityTheme[] = Array.from(communityMap.values())
-    .filter(t => t.title.length > 15) // filter very short/noise titles
+    .filter(t => isQualityTitle(t.title))
     .map(t => {
       let source: SourceTag = 'comunidade'
       if (t.count >= 5) source = 'mais-praticado'

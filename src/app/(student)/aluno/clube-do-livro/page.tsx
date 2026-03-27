@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Library, Star, BookOpen, ChevronRight, ArrowRight,
   CalendarDays, Users, Bookmark, Quote, Flame,
+  MessageCircle, Copy, Check, PenLine,
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -77,30 +78,30 @@ const LIBRARY: Book[] = [
   {
     id: 'democracia-em-vertigem',
     title: 'Democracia em Vertigem',
-    author: 'Petra Costa',
+    author: 'Petra Costa (documentário Netflix, 2019)',
     comp: 'C2',
     rating: 4.6,
     reviews: 142,
     pages: 0,
-    description: 'Documentário e livro sobre a crise democrática brasileira. Perspectiva sobre polarização, desinformação e participação cidadã.',
-    how_to_use: 'Perfeito para temas de democracia, fake news ou participação política. Conecta história recente ao tema de forma objetiva.',
-    quote: '"A democracia não é uma conquista definitiva."',
+    description: 'Documentário indicado ao Oscar sobre a crise democrática brasileira — impeachment, polarização e desinformação. Perspectiva narrativa e histórica sobre a democracia como processo frágil.',
+    how_to_use: 'Cite como referência audiovisual contemporânea para temas de democracia, fake news ou participação política. "Democracia como conquista histórica, não garantia permanente" é argumento central e citável.',
+    quote: '"A democracia não é uma conquista definitiva — é um processo que pode ser revertido."',
     gradient: 'from-violet-700 to-purple-900',
-    tags: ['Democracia', 'Política', 'Desinformação'],
+    tags: ['Democracia', 'Política', 'Desinformação', 'Brasil contemporâneo'],
   },
   {
-    id: 'vale-lagrimas',
-    title: 'Vale de Lágrimas',
-    author: 'Afonso Arinos',
+    id: 'os-sertoes',
+    title: 'Os Sertões',
+    author: 'Euclides da Cunha',
     comp: 'C3',
-    rating: 4.5,
-    reviews: 98,
-    pages: 384,
-    description: 'Obra clássica sobre a formação do sertão brasileiro e as desigualdades regionais. Essencial para temas sobre nordeste, seca e exclusão.',
-    how_to_use: 'Use para conectar desigualdades regionais e históricas do Brasil. Ótimo para temas de migração, exclusão social e seca.',
-    quote: '"O sertão é o Brasil esquecido por si mesmo."',
+    rating: 4.8,
+    reviews: 201,
+    pages: 632,
+    description: 'Obra monumental sobre a Guerra de Canudos e o sertão nordestino. Euclides da Cunha revela a exclusão estrutural do nordeste e a brutalidade do Estado republicano — repertório indispensável para desigualdade regional.',
+    how_to_use: 'Cite "o sertanejo é, antes de tudo, um forte" para temas de nordeste ou resiliência. O argumento de que "o Estado virou as costas para o sertão" funciona em qualquer tema de desigualdade regional.',
+    quote: '"O sertanejo é, antes de tudo, um forte."',
     gradient: 'from-yellow-700 to-amber-900',
-    tags: ['Desigualdade regional', 'Nordeste', 'Exclusão social'],
+    tags: ['Nordeste', 'Desigualdade regional', 'Exclusão social', 'Identidade brasileira'],
   },
   {
     id: 'pedagogy-oppressed',
@@ -309,18 +310,18 @@ const LIBRARY: Book[] = [
     tags: ['Meio ambiente', 'Agrotóxicos', 'Biodiversidade', 'Sustentabilidade'],
   },
   {
-    id: 'amazonia-perdida',
-    title: 'A Floresta e o Poder',
-    author: 'Binka Le Breton',
+    id: 'krenak-ideias',
+    title: 'Ideias para Adiar o Fim do Mundo',
+    author: 'Ailton Krenak',
     comp: 'C5',
-    rating: 4.5,
-    reviews: 89,
-    pages: 274,
-    description: 'Análise da luta pelo controle da Amazônia entre interesses econômicos, comunidades tradicionais e preservação ambiental. Base para temas ambientais brasileiros.',
-    how_to_use: 'Use para temas sobre desmatamento e conflitos agrários. O argumento de que "desenvolvimento sem proteção ambiental é destruição disfarçada" é forte para C5.',
-    quote: '"Preservar a Amazônia é uma questão de sobrevivência — não apenas ecológica, mas civilizatória."',
+    rating: 4.8,
+    reviews: 312,
+    pages: 96,
+    description: 'O filósofo e líder indígena Ailton Krenak questiona a ideia de "humanidade" que destruiu o planeta e propõe uma relação radicalmente diferente com a natureza. Leitura breve (96 páginas) de alto impacto para temas ambientais.',
+    how_to_use: '"Adiar o fim do mundo" como metáfora é diretamente citável. Funciona para temas de meio ambiente, sustentabilidade e direitos indígenas. Mostrar que você leu pensadores indígenas eleva o nível cultural da redação.',
+    quote: '"Enquanto a humanidade dançar sua dança, o mundo não vai acabar."',
     gradient: 'from-teal-700 to-green-900',
-    tags: ['Amazônia', 'Desmatamento', 'Desenvolvimento sustentável'],
+    tags: ['Meio ambiente', 'Povos indígenas', 'Sustentabilidade', 'Cosmovisão'],
   },
   {
     id: 'era-do-capital',
@@ -531,7 +532,7 @@ const LIBRARY: Book[] = [
 
   // ── CIDADANIA E PARTICIPAÇÃO ──────────────────────────────────────────────
   {
-    id: 'cabanas-tio-tom',
+    id: 'cidadania-brasil',
     title: 'Cidadania no Brasil: O Longo Caminho',
     author: 'José Murilo de Carvalho',
     comp: 'C3',
@@ -569,6 +570,50 @@ const COMP_COLOR: Record<string, string> = {
   Geral: 'text-gray-400 bg-white/[0.04] border-white/[0.08]',
 }
 
+// ─── Library sections — controls UI grouping order ────────────────────────────
+
+const LIBRARY_SECTIONS: Array<{ label: string; ids: string[] }> = [
+  {
+    label: 'Clássicos da literatura brasileira',
+    ids: ['morte-e-vida-severina', 'vidas-secas', 'os-sertoes', 'quarto-de-despejo', 'macunaima', 'o-cortico', 'hora-da-estrela'],
+  },
+  {
+    label: 'Formação e identidade do Brasil',
+    ids: ['povo-brasileiro', 'casa-grande-senzala', 'elite-do-atraso', 'abolicionismo-nabuco', 'cidadania-brasil'],
+  },
+  {
+    label: 'Racismo, gênero e interseccionalidade',
+    ids: ['racismo-estrutural', 'mulheres-raca-classe', 'avesso-da-pele', 'torto-arado'],
+  },
+  {
+    label: 'Democracia e política',
+    ids: ['democracia-em-vertigem', '1984', 'como-democracias-morrem', 'condicao-humana', 'era-do-capital'],
+  },
+  {
+    label: 'Desigualdade e meritocracia',
+    ids: ['capital-seculo21', 'riqueza-miseraveis', 'tributacao-riqueza', 'bem-comum'],
+  },
+  {
+    label: 'Meio ambiente e sustentabilidade',
+    ids: ['primavera-silenciosa', 'krenak-ideias'],
+  },
+  {
+    label: 'Tecnologia e sociedade',
+    ids: ['sapiens', 'admiravel-mundo-novo', 'sociedade-cansaco'],
+  },
+  {
+    label: 'Educação',
+    ids: ['pedagogy-oppressed', 'pedagogia-autonomia', 'escola-desigualdade'],
+  },
+  {
+    label: 'Direitos humanos e filosofia',
+    ids: ['justica-sandel', 'direitos-humanos-constituicao'],
+  },
+]
+
+// Fast lookup by id
+const LIBRARY_BY_ID = new Map(LIBRARY.map(b => [b.id, b]))
+
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function StarRating({ rating, reviews }: { rating: number; reviews: number }) {
@@ -584,6 +629,29 @@ function StarRating({ rating, reviews }: { rating: number; reviews: number }) {
       <span className="text-[11px] font-semibold text-gray-300 ml-0.5">{rating}</span>
       <span className="text-[10px] text-gray-700">({reviews})</span>
     </div>
+  )
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [text])
+  return (
+    <button
+      onClick={handleCopy}
+      className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border transition-all ${
+        copied
+          ? 'border-green-500/30 bg-green-500/10 text-green-400'
+          : 'border-white/[0.09] bg-white/[0.03] text-gray-500 hover:text-gray-200 hover:border-white/[0.18]'
+      }`}
+    >
+      {copied ? <Check size={10} /> : <Copy size={10} />}
+      {copied ? 'Copiado!' : 'Copiar citação'}
+    </button>
   )
 }
 
@@ -648,12 +716,36 @@ function BookCard({ book, expanded, onToggle }: { book: Book; expanded: boolean;
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 mb-4">
             {book.tags.map(t => (
               <span key={t} className="text-[10px] px-2 py-0.5 rounded-full border border-white/[0.07] text-gray-600 bg-white/[0.02]">
                 {t}
               </span>
             ))}
+          </div>
+
+          {/* Action row — writing tool integration */}
+          <div className="pt-3 border-t border-white/[0.05] flex flex-wrap items-center gap-2">
+            {/* Copy quote to clipboard */}
+            <CopyButton text={book.quote} />
+
+            {/* Write essay about this book's theme */}
+            <Link
+              href={`/aluno/redacoes/nova?tema_livre=${encodeURIComponent(book.tags[0] + ' — ' + book.title)}`}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-white/[0.09] bg-white/[0.03] text-gray-500 hover:text-gray-200 hover:border-white/[0.18] transition-all"
+            >
+              <PenLine size={10} />
+              Escrever redação
+            </Link>
+
+            {/* Generate arguments with Biia */}
+            <Link
+              href={`/aluno/biia?prompt=${encodeURIComponent(`Me dê 3 argumentos prontos para usar em redação ENEM usando "${book.title}" de ${book.author}. Para cada argumento: cite a obra, explique o raciocínio e mostre como conectar ao tema.`)}`}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-purple-500/20 bg-purple-500/[0.06] text-purple-400 hover:bg-purple-500/[0.12] hover:border-purple-500/35 transition-all"
+            >
+              <MessageCircle size={10} />
+              Gerar argumentos com Biia
+            </Link>
           </div>
         </div>
       )}
@@ -705,7 +797,7 @@ export default function ClubeLivroPage() {
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-gray-600">
                   <CalendarDays size={9} />
-                  Março 2026
+                  {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                 </div>
               </div>
 
@@ -740,12 +832,24 @@ export default function ClubeLivroPage() {
                     <p className="text-[12px] text-gray-300 leading-relaxed">{MONTHLY_PICK.how_to_use}</p>
                   </div>
 
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 mb-4">
                     {MONTHLY_PICK.tags.map(t => (
                       <span key={t} className="text-[10px] px-2 py-0.5 rounded-full border border-white/[0.08] text-gray-500 bg-white/[0.03]">
                         {t}
                       </span>
                     ))}
+                  </div>
+
+                  {/* Writing tool actions for monthly pick */}
+                  <div className="pt-3 border-t border-white/[0.06] flex flex-wrap items-center gap-2">
+                    <CopyButton text={MONTHLY_PICK.quote} />
+                    <Link
+                      href={`/aluno/biia?prompt=${encodeURIComponent(`Me dê 3 argumentos prontos para usar em redação ENEM usando "${MONTHLY_PICK.title}" de ${MONTHLY_PICK.author}. Para cada argumento: cite a obra, explique o raciocínio e mostre como conectar ao tema.`)}`}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-purple-500/25 bg-purple-500/[0.08] text-purple-300 hover:bg-purple-500/[0.15] transition-all"
+                    >
+                      <MessageCircle size={10} />
+                      Gerar argumentos com Biia
+                    </Link>
                   </div>
                 </div>
               )}
@@ -760,21 +864,37 @@ export default function ClubeLivroPage() {
             </div>
           </div>
 
-          {/* Library */}
+          {/* Library — grouped by category */}
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-700">Biblioteca de repertório</p>
               <span className="text-[11px] text-gray-600">{LIBRARY.length} obras</span>
             </div>
-            <div className="space-y-2">
-              {LIBRARY.map(book => (
-                <BookCard
-                  key={book.id}
-                  book={book}
-                  expanded={expandedId === book.id}
-                  onToggle={() => toggle(book.id)}
-                />
-              ))}
+            <div className="space-y-6">
+              {LIBRARY_SECTIONS.map(section => {
+                const books = section.ids.map(id => LIBRARY_BY_ID.get(id)).filter(Boolean) as Book[]
+                if (books.length === 0) return null
+                return (
+                  <div key={section.label}>
+                    <div className="flex items-center gap-3 mb-2.5 px-0.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-gray-600 whitespace-nowrap">
+                        {section.label}
+                      </p>
+                      <div className="flex-1 h-px bg-white/[0.04]" />
+                    </div>
+                    <div className="space-y-2">
+                      {books.map(book => (
+                        <BookCard
+                          key={book.id}
+                          book={book}
+                          expanded={expandedId === book.id}
+                          onToggle={() => toggle(book.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>

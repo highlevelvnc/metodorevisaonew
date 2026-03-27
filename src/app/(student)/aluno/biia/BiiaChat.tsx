@@ -531,6 +531,16 @@ function TypingIndicator() {
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
+// Detect if the user pasted an essay (long text with multiple paragraphs / sentences)
+function looksLikeEssay(text: string): boolean {
+  const trimmed = text.trim()
+  if (trimmed.length < 250) return false
+  const paragraphs = trimmed.split(/\n\n+/).filter(p => p.trim().length > 30)
+  if (paragraphs.length >= 2) return true
+  const sentences = trimmed.split(/[.!?]+/).filter(s => s.trim().length > 20)
+  return sentences.length >= 5
+}
+
 export function BiiaChat({ firstName, worstCompKey, avgScore, lastTheme, isNewUser, recentThemes }: BiiaChatProps) {
   const suggestions = getSuggestedPrompts(worstCompKey, lastTheme, avgScore, isNewUser)
 
@@ -649,6 +659,23 @@ export function BiiaChat({ firstName, worstCompKey, avgScore, lastTheme, isNewUs
                 </span>
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Essay paste detection banner */}
+      {looksLikeEssay(input) && (
+        <div className="py-2 px-1">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-purple-500/25 bg-purple-500/[0.07] px-3 py-2">
+            <p className="text-[11px] text-purple-300 font-medium leading-snug">
+              Parece que você colou um texto — quer que eu analise pelas 5 competências?
+            </p>
+            <button
+              onClick={() => sendMessage(`Analise o seguinte texto pelas 5 competências do ENEM (C1 a C5) e me dê feedback específico para cada uma:\n\n${input}`)}
+              className="shrink-0 text-[11px] font-semibold text-white bg-purple-700 hover:bg-purple-600 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Analisar
+            </button>
           </div>
         </div>
       )}
