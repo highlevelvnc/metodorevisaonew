@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import CorrectionForm, { type EssayForCorrection } from './CorrectionForm'
+import type { Annotation } from '@/lib/annotations'
 
 export default async function ProfessorCorrigirPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -26,7 +27,7 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
     .select(`
       id, theme_title, content_text, notes, status, student_id, upload_type, original_file_url,
       student:users!essays_student_id_fkey(id, full_name),
-      corrections(c1_score, c2_score, c3_score, c4_score, c5_score, general_feedback)
+      corrections(c1_score, c2_score, c3_score, c4_score, c5_score, general_feedback, annotations)
     `)
     .eq('id', params.id)
     .single()
@@ -54,6 +55,7 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
     corrections: {
       c1_score: number; c2_score: number; c3_score: number
       c4_score: number; c5_score: number; general_feedback: string
+      annotations?: unknown  // JSONB — validated when constructing EssayForCorrection
     }[]
   }
 
@@ -113,12 +115,16 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
     plan:               planName,
     existingCorrection: existingCorrection
       ? {
-          c1_score: existingCorrection.c1_score,
-          c2_score: existingCorrection.c2_score,
-          c3_score: existingCorrection.c3_score,
-          c4_score: existingCorrection.c4_score,
-          c5_score: existingCorrection.c5_score,
+          c1_score:         existingCorrection.c1_score,
+          c2_score:         existingCorrection.c2_score,
+          c3_score:         existingCorrection.c3_score,
+          c4_score:         existingCorrection.c4_score,
+          c5_score:         existingCorrection.c5_score,
           general_feedback: existingCorrection.general_feedback,
+          // Normalize annotations: JSONB may be null or a legacy non-array value
+          annotations: Array.isArray(existingCorrection.annotations)
+            ? (existingCorrection.annotations as Annotation[])
+            : [],
         }
       : null,
   }

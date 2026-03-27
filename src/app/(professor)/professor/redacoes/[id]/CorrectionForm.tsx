@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { Save, Send, ChevronDown, ChevronUp, Clock, Wand2, ArrowRight, History, Search, AlertTriangle } from 'lucide-react'
+import { Save, Send, ChevronDown, ChevronUp, Clock, Wand2, ArrowRight, History, Search, AlertTriangle, Crosshair } from 'lucide-react'
 import { saveCorrection, type Scores } from '@/lib/actions/corrections'
 import { COMP_COLORS, type CompKey } from '@/lib/competency-colors'
+import { type Annotation } from '@/lib/annotations'
 import { ReadyComments } from './ReadyComments'
 import { StudentHistoryPanel } from './StudentHistoryPanel'
 import { ZeroEssayModal } from './ZeroEssayModal'
 import { SimilarityPanel } from './SimilarityPanel'
+import { AnnotationLayer, AnnotationList } from './AnnotationLayer'
 
 const COMPETENCIES = [
   {
@@ -199,6 +201,7 @@ export type EssayForCorrection = {
   existingCorrection: {
     c1_score: number; c2_score: number; c3_score: number
     c4_score: number; c5_score: number; general_feedback: string
+    annotations?: Annotation[]
   } | null
 }
 
@@ -260,6 +263,25 @@ export default function CorrectionForm({
   const [lastSaved, setLastSaved]         = useState<Date | null>(existing ? new Date() : null)
   const [isDirty, setIsDirty]             = useState(false)
 
+  // ── Annotations ────────────────────────────────────────────────────────────
+  const [annotations, setAnnotations] = useState<Annotation[]>(
+    () => existing?.annotations ?? []
+  )
+  const [annotating, setAnnotating] = useState(false)
+
+  function addAnnotation(ann: Annotation) {
+    setAnnotations(prev => [...prev, ann])
+    markDirty()
+  }
+  function removeAnnotation(id: string) {
+    setAnnotations(prev => prev.filter(a => a.id !== id))
+    markDirty()
+  }
+  function focusCompetency(key: CompKey) {
+    const el = document.getElementById(`competency-${key}`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
   // ── Operational tool panel state ──────────────────────────────────────────
   const [showHistory,    setShowHistory]    = useState(false)
   const [showSimilarity, setShowSimilarity] = useState(false)
@@ -280,7 +302,7 @@ export default function CorrectionForm({
   const doAutoSave = useCallback(async () => {
     if (!isDirty) return
     setSaveStatus('saving')
-    const result = await saveCorrection(essay.id, true, scores, feedback)
+    const result = await saveCorrection(essay.id, true, scores, feedback, undefined, annotations)
     if (result?.error) {
       setSaveStatus('error')
     } else {
@@ -288,7 +310,7 @@ export default function CorrectionForm({
       setLastSaved(new Date())
       setIsDirty(false)
     }
-  }, [essay.id, scores, feedback, isDirty])
+  }, [essay.id, scores, feedback, annotations, isDirty])
 
   useEffect(() => {
     if (!isDirty) return
@@ -373,7 +395,7 @@ export default function CorrectionForm({
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
     setSaving(true)
     setError(null)
-    const result = await saveCorrection(essay.id, true, scores, feedback)
+    const result = await saveCorrection(essay.id, true, scores, feedback, undefined, annotations)
     setSaving(false)
     if (result?.error) {
       setError(result.error)
@@ -392,7 +414,7 @@ export default function CorrectionForm({
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
     setSending(true)
     setError(null)
-    const result = await saveCorrection(essay.id, false, scores, feedback, nextEssayId)
+    const result = await saveCorrection(essay.id, false, scores, feedback, nextEssayId, annotations)
     if (result?.error) {
       setError(result.error)
       setSending(false)
@@ -518,85 +540,116 @@ export default function CorrectionForm({
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     {headerLabel}
                   </span>
-                  {wordCount !== null && (
-                    <span className="text-xs text-gray-600">{wordCount} palavras</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {wordCount !== null && (
+                      <span className="text-xs text-gray-600">{wordCount} palavras</span>
+                    )}
+                    {/* Annotation mode toggle — only for file-based essays */}
+                    {isFile && (
+                      <button
+                        type="button"
+                        onClick={() => setAnnotating(a => !a)}
+                        className={`flex items-center gap-1 text-[10px] font-semibold rounded-lg px-2 py-1 border transition-all ${
+                          annotating
+                            ? 'bg-purple-600/20 text-purple-300 border-purple-500/40 shadow-sm shadow-purple-900/30'
+                            : 'bg-white/[0.03] text-gray-500 border-white/[0.07] hover:text-gray-300 hover:bg-white/[0.06]'
+                        }`}
+                        title={annotating ? 'Sair do modo de anotação' : 'Ativar anotações — clique para pin, arraste para destaque'}
+                      >
+                        <Crosshair size={10} />
+                        {annotating
+                          ? `Anotar${annotations.length > 0 ? ` · ${annotations.length}` : ''}`
+                          : 'Anotar'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="p-5 max-h-[60vh] overflow-y-auto">
-                  {isFile && fileType === 'pdf' ? (
-                    /* ── PDF renderer ─────────────────────────────────── */
-                    <div className="space-y-3">
-                      <object
-                        data={fileUrl!}
-                        type="application/pdf"
-                        className="w-full rounded-xl border border-white/[0.08]"
-                        style={{ height: '55vh', minHeight: '320px' }}
-                        aria-label="PDF da redação"
-                      >
-                        {/* Shown when browser cannot embed the PDF */}
-                        <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                          </svg>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-amber-300">Pré-visualização de PDF não suportada neste navegador</p>
-                            <p className="text-xs text-gray-500 mt-0.5">Abra o PDF diretamente pelo link abaixo.</p>
+                  {isFile ? (
+                    /* ── File renderer wrapped in AnnotationLayer ─────── */
+                    <AnnotationLayer
+                      annotations={annotations}
+                      onAdd={addAnnotation}
+                      onRemove={removeAnnotation}
+                      onCompetencyFocus={focusCompetency}
+                      isAnnotating={annotating}
+                    >
+                      {fileType === 'pdf' ? (
+                        /* ── PDF renderer ──────────────────────────────── */
+                        <div className="space-y-3">
+                          <object
+                            data={fileUrl!}
+                            type="application/pdf"
+                            className="w-full rounded-xl border border-white/[0.08]"
+                            style={{ height: '55vh', minHeight: '320px' }}
+                            aria-label="PDF da redação"
+                          >
+                            {/* Shown when browser cannot embed the PDF */}
+                            <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                              </svg>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-amber-300">Pré-visualização de PDF não suportada neste navegador</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Abra o PDF diretamente pelo link abaixo.</p>
+                              </div>
+                            </div>
+                          </object>
+                          <a
+                            href={fileUrl!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                            Abrir PDF em nova aba
+                          </a>
+                        </div>
+                      ) : (
+                        /* ── Image renderer ────────────────────────────── */
+                        <div className="space-y-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={fileUrl!}
+                            alt="Redação enviada pelo aluno"
+                            className="w-full rounded-xl border border-white/[0.08] object-contain"
+                            onError={e => {
+                              const el = e.currentTarget
+                              el.style.display = 'none'
+                              const fallback = el.nextElementSibling as HTMLElement | null
+                              if (fallback) fallback.style.display = 'flex'
+                            }}
+                          />
+                          {/* Fallback — hidden until onError fires */}
+                          <div className="hidden items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
+                              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                              <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-amber-300">Não foi possível carregar a imagem</p>
+                              <p className="text-xs text-gray-500 mt-0.5">O arquivo original está disponível no link abaixo.</p>
+                            </div>
                           </div>
+                          <a
+                            href={fileUrl!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                            Abrir em nova aba
+                          </a>
                         </div>
-                      </object>
-                      <a
-                        href={fileUrl!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                          <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                        </svg>
-                        Abrir PDF em nova aba
-                      </a>
-                    </div>
-                  ) : isFile && fileType === 'image' ? (
-                    /* ── Image renderer ───────────────────────────────── */
-                    <div className="space-y-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={fileUrl!}
-                        alt="Redação enviada pelo aluno"
-                        className="w-full rounded-xl border border-white/[0.08] object-contain"
-                        onError={e => {
-                          const el = e.currentTarget
-                          el.style.display = 'none'
-                          const fallback = el.nextElementSibling as HTMLElement | null
-                          if (fallback) fallback.style.display = 'flex'
-                        }}
-                      />
-                      {/* Fallback — hidden until onError fires */}
-                      <div className="hidden items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
-                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                          <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                        </svg>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-amber-300">Não foi possível carregar a imagem</p>
-                          <p className="text-xs text-gray-500 mt-0.5">O arquivo original está disponível no link abaixo.</p>
-                        </div>
-                      </div>
-                      <a
-                        href={fileUrl!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                          <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                        </svg>
-                        Abrir em nova aba
-                      </a>
-                    </div>
+                      )}
+                    </AnnotationLayer>
                   ) : essay.content_text ? (
                     /* ── Plain text ───────────────────────────────────── */
                     <p className="text-sm text-gray-300 leading-[1.9] whitespace-pre-wrap">{essay.content_text}</p>
@@ -750,6 +803,13 @@ export default function CorrectionForm({
           </div>
         )}
 
+        {/* ── Anotações (only shown when there are annotations) ─────────────── */}
+        <AnnotationList
+          annotations={annotations}
+          onRemove={removeAnnotation}
+          onCompetencyFocus={focusCompetency}
+        />
+
         {/* ── Pontuação ─────────────────────────────────────────────────────── */}
         <div className="card-dark rounded-2xl overflow-hidden">
           <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
@@ -780,7 +840,7 @@ export default function CorrectionForm({
 
           <div className="p-4 space-y-5">
             {COMPETENCIES.map(c => (
-              <div key={c.key}>
+              <div key={c.key} id={`competency-${c.key}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-0.5">

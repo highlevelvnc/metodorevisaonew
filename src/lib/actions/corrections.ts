@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import type { Annotation } from '@/lib/annotations'
 
 export type ScoreKey = 'c1' | 'c2' | 'c3' | 'c4' | 'c5'
 export type Scores = Record<ScoreKey, number>
@@ -16,6 +17,7 @@ export async function saveCorrection(
   scores: Scores,
   feedback: string,
   nextEssayId?: string,
+  annotations?: Annotation[],
 ): Promise<CorrectionState> {
   if (!essayId) return { error: 'ID da redação inválido.' }
 
@@ -64,6 +66,10 @@ export async function saveCorrection(
     total_score:      total,
     general_feedback: feedback,
     corrected_at:     now,
+    // annotations: JSONB column from migration 004.
+    // Only update if the caller passed an array (preserves existing value during
+    // legacy calls that don't yet pass annotations).
+    ...(annotations !== undefined ? { annotations: annotations ?? [] } : {}),
   }
 
   const { data: existing } = await supabase

@@ -1,0 +1,590 @@
+'use client'
+
+/**
+ * AnnotationLayer — interactive overlay for essay correction.
+ *
+ * Renders on top of any essay content (image, PDF, or plain text).
+ * Converts click → pin and drag → highlight box.
+ * All coordinates are stored as fractions (x_pct, y_pct, w_pct, h_pct)
+ * so annotations survive container resizes and different screen widths.
+ *
+ * Structure:
+ *   <AnnotationLayer>
+ *     {essay preview content}   ← sits below the overlay layers
+ *   </AnnotationLayer>
+ *
+ * The component renders three layers stacked on top of content:
+ *   1. Annotation marks (pins & highlight boxes) — pointer-events off by
+ *      default, on per-mark for hover/delete.
+ *   2. Live drag preview rectangle (while dragging in annotation mode).
+ *   3. Interaction capture div (only active while annotation mode is ON).
+ *
+ * The popover is rendered as position:fixed to escape overflow:hidden parents.
+ */
+
+import { useState, useRef, useCallback, useEffect, type MouseEvent } from 'react'
+import { X, Crosshair } from 'lucide-react'
+import { COMP_COLORS, type CompKey } from '@/lib/competency-colors'
+import { type Annotation, type AnnotationType, newAnnotationId } from '@/lib/annotations'
+
+// ── Ready comments per competency ────────────────────────────────────────────
+
+const COMP_KEYS: CompKey[] = ['c1', 'c2', 'c3', 'c4', 'c5']
+
+export const READY_COMMENTS: Record<CompKey, Array<{ id: string; label: string; text: string }>> = {
+  c1: [
+    { id: 'c1-1', label: 'Ortografia',   text: 'Erro ortográfico neste trecho.' },
+    { id: 'c1-2', label: 'Gramática',    text: 'Problema de gramática — verifique a regência.' },
+    { id: 'c1-3', label: 'Concordância', text: 'Concordância nominal ou verbal inadequada.' },
+    { id: 'c1-4', label: 'Sintaxe',      text: 'Estrutura sintática comprometida.' },
+    { id: 'c1-5', label: 'Pontuação',    text: 'Pontuação incorreta nesta passagem.' },
+  ],
+  c2: [
+    { id: 'c2-1', label: 'Proposta',     text: 'Compreensão parcial da proposta neste ponto.' },
+    { id: 'c2-2', label: 'Aderência',    text: 'Tangência ao tema — retome o recorte proposto.' },
+    { id: 'c2-3', label: 'Tipo textual', text: 'Desvio do tipo textual dissertativo-argumentativo.' },
+    { id: 'c2-4', label: 'Repertório',   text: 'Repertório mal conectado à proposta.' },
+  ],
+  c3: [
+    { id: 'c3-1', label: 'Superficial',  text: 'Argumentação superficial — aprofunde esta ideia.' },
+    { id: 'c3-2', label: 'Aprofund.',    text: 'Argumento não desenvolvido suficientemente.' },
+    { id: 'c3-3', label: 'Tese',         text: 'Tese pouco sustentada aqui.' },
+    { id: 'c3-4', label: 'Repertório',   text: 'Repertório pouco explorado ou genérico.' },
+  ],
+  c4: [
+    { id: 'c4-1', label: 'Conectivos',   text: 'Repetição de conectivos — varie os operadores.' },
+    { id: 'c4-2', label: 'Progressão',   text: 'Progressão temática fraca nesta transição.' },
+    { id: 'c4-3', label: 'Articulação',  text: 'Articulação insuficiente entre os parágrafos.' },
+    { id: 'c4-4', label: 'Coesão',       text: 'Coesão comprometida nesta passagem.' },
+  ],
+  c5: [
+    { id: 'c5-1', label: 'Agente',       text: 'Agente da intervenção ausente ou vago.' },
+    { id: 'c5-2', label: 'Ação',         text: 'Ação muito genérica — especifique o que será feito.' },
+    { id: 'c5-3', label: 'Meio',         text: 'Meio/modo da intervenção pouco detalhado.' },
+    { id: 'c5-4', label: 'Finalidade',   text: 'Finalidade da intervenção vaga.' },
+    { id: 'c5-5', label: 'Incompleta',   text: 'Proposta de intervenção incompleta — faltam elementos.' },
+  ],
+}
+
+// ── Drag state helpers ────────────────────────────────────────────────────────
+
+const DRAG_THRESHOLD_PX = 8
+
+interface DragState {
+  startXPct: number; startYPct: number
+  curXPct:   number; curYPct:   number
+  startRawX: number; startRawY: number
+  curRawX:   number; curRawY:   number
+}
+
+interface PendingMark {
+  type: AnnotationType
+  x_pct: number; y_pct: number
+  w_pct: number; h_pct: number
+  /** Viewport-relative position for the fixed popover */
+  popX: number; popY: number
+}
+
+// ── AnnotationLayer (main export) ────────────────────────────────────────────
+
+interface AnnotationLayerProps {
+  annotations: Annotation[]
+  onAdd: (ann: Annotation) => void
+  onRemove: (id: string) => void
+  onCompetencyFocus?: (key: CompKey) => void
+  /** Controlled from outside so the toggle can live in the card header */
+  isAnnotating: boolean
+  children: React.ReactNode
+}
+
+export function AnnotationLayer({
+  annotations,
+  onAdd,
+  onRemove,
+  onCompetencyFocus,
+  isAnnotating,
+  children,
+}: AnnotationLayerProps) {
+  const containerRef          = useRef<HTMLDivElement>(null)
+  const [drag, setDrag]       = useState<DragState | null>(null)
+  const [pending, setPending] = useState<PendingMark | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  // Popover fields
+  const [popComp, setPopComp] = useState<CompKey>('c1')
+  const [popText, setPopText] = useState('')
+
+  // Close active tooltip when clicking outside
+  useEffect(() => {
+    if (!activeId) return
+    function handler(e: globalThis.MouseEvent) {
+      const t = e.target as Node
+      const container = containerRef.current
+      if (container && !container.contains(t)) setActiveId(null)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [activeId])
+
+  // Close popover on Escape
+  useEffect(() => {
+    if (!pending) return
+    function handler(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setPending(null); setPopText('') }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [pending])
+
+  // ── Coordinate helpers ──────────────────────────────────────────────────────
+
+  function getRelative(e: MouseEvent<HTMLDivElement>) {
+    const rect = containerRef.current!.getBoundingClientRect()
+    return {
+      x_pct: Math.max(0, Math.min(1, (e.clientX - rect.left)  / rect.width)),
+      y_pct: Math.max(0, Math.min(1, (e.clientY - rect.top)   / rect.height)),
+      rawX:  e.clientX,
+      rawY:  e.clientY,
+    }
+  }
+
+  // ── Mouse handlers (annotation mode only) ────────────────────────────────
+
+  function handleMouseDown(e: MouseEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const { x_pct, y_pct, rawX, rawY } = getRelative(e)
+    setDrag({ startXPct: x_pct, startYPct: y_pct, curXPct: x_pct, curYPct: y_pct, startRawX: rawX, startRawY: rawY, curRawX: rawX, curRawY: rawY })
+  }
+
+  function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
+    if (!drag) return
+    const { x_pct, y_pct, rawX, rawY } = getRelative(e)
+    setDrag(d => d ? { ...d, curXPct: x_pct, curYPct: y_pct, curRawX: rawX, curRawY: rawY } : null)
+  }
+
+  function handleMouseUp(e: MouseEvent<HTMLDivElement>) {
+    if (!drag) return
+    const dx = drag.curRawX - drag.startRawX
+    const dy = drag.curRawY - drag.startRawY
+    const isDrag = Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD_PX
+
+    // Constrain popover to viewport
+    const popX = Math.min(e.clientX + 14, window.innerWidth  - 296 - 16)
+    const popY = Math.min(e.clientY + 14, window.innerHeight - 380 - 16)
+
+    if (isDrag) {
+      setPending({
+        type:  'highlight',
+        x_pct: Math.min(drag.startXPct, drag.curXPct),
+        y_pct: Math.min(drag.startYPct, drag.curYPct),
+        w_pct: Math.abs(drag.curXPct - drag.startXPct),
+        h_pct: Math.abs(drag.curYPct - drag.startYPct),
+        popX, popY,
+      })
+    } else {
+      setPending({ type: 'pin', x_pct: drag.startXPct, y_pct: drag.startYPct, w_pct: 0, h_pct: 0, popX, popY })
+    }
+
+    setDrag(null)
+    setPopText('')
+  }
+
+  // ── Save / cancel ──────────────────────────────────────────────────────────
+
+  const handleSave = useCallback(() => {
+    if (!pending || !popText.trim()) return
+    onAdd({
+      id:          newAnnotationId(),
+      type:        pending.type,
+      competency:  popComp,
+      text:        popText.trim(),
+      x_pct:       pending.x_pct,
+      y_pct:       pending.y_pct,
+      w_pct:       pending.w_pct,
+      h_pct:       pending.h_pct,
+      created_at:  new Date().toISOString(),
+    })
+    setPending(null)
+    setPopText('')
+  }, [pending, popComp, popText, onAdd])
+
+  function handleCancel() {
+    setPending(null)
+    setPopText('')
+  }
+
+  // ── Live drag preview rect ─────────────────────────────────────────────────
+
+  const liveRect = drag
+    ? {
+        left:   `${Math.min(drag.startXPct, drag.curXPct) * 100}%`,
+        top:    `${Math.min(drag.startYPct, drag.curYPct) * 100}%`,
+        width:  `${Math.abs(drag.curXPct  - drag.startXPct) * 100}%`,
+        height: `${Math.abs(drag.curYPct  - drag.startYPct) * 100}%`,
+      }
+    : null
+
+  return (
+    <>
+      {/* ── Content + overlays ───────────────────────────────────────────── */}
+      <div ref={containerRef} className="relative" style={{ userSelect: isAnnotating ? 'none' : undefined }}>
+        {children}
+
+        {/* Layer 1: existing annotation marks (pointer-events off except per-mark) */}
+        <div className="absolute inset-0 pointer-events-none overflow-visible" style={{ zIndex: 5 }}>
+          {annotations.map(ann => (
+            <AnnotationMark
+              key={ann.id}
+              annotation={ann}
+              isActive={activeId === ann.id}
+              onActivate={(id) => setActiveId(activeId === id ? null : id)}
+              onRemove={onRemove}
+              onCompetencyFocus={onCompetencyFocus}
+            />
+          ))}
+
+          {/* Live drag preview */}
+          {liveRect && (
+            <div
+              className="absolute border-2 border-dashed border-purple-400/60 bg-purple-500/10 pointer-events-none rounded"
+              style={liveRect}
+            />
+          )}
+        </div>
+
+        {/* Layer 2: interaction capture (annotation mode only, no pending popover) */}
+        {isAnnotating && !pending && (
+          <div
+            className="absolute inset-0"
+            style={{ cursor: 'crosshair', zIndex: 10 }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+          />
+        )}
+      </div>
+
+      {/* ── Popover (fixed, escapes overflow containers) ─────────────────── */}
+      {pending && (
+        <AnnotationPopover
+          type={pending.type}
+          x={pending.popX}
+          y={pending.popY}
+          selectedComp={popComp}
+          text={popText}
+          onCompChange={(k) => { setPopComp(k); setPopText('') }}
+          onTextChange={setPopText}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
+    </>
+  )
+}
+
+// ── AnnotationMark ────────────────────────────────────────────────────────────
+
+function AnnotationMark({
+  annotation: ann,
+  isActive,
+  onActivate,
+  onRemove,
+  onCompetencyFocus,
+}: {
+  annotation: Annotation
+  isActive: boolean
+  onActivate: (id: string) => void
+  onRemove: (id: string) => void
+  onCompetencyFocus?: (key: CompKey) => void
+}) {
+  const colors = COMP_COLORS[ann.competency]
+
+  const tooltip = isActive ? (
+    <AnnotationTooltip
+      annotation={ann}
+      onRemove={onRemove}
+      onCompetencyFocus={onCompetencyFocus}
+    />
+  ) : null
+
+  if (ann.type === 'highlight') {
+    return (
+      <div
+        className={`absolute pointer-events-auto rounded cursor-pointer border ${colors.border}`}
+        style={{
+          left:   `${ann.x_pct * 100}%`,
+          top:    `${ann.y_pct * 100}%`,
+          width:  `${ann.w_pct * 100}%`,
+          height: `${ann.h_pct * 100}%`,
+          backgroundColor: `color-mix(in srgb, currentColor 6%, transparent)`,
+        }}
+        title={ann.text}
+        onClick={() => onActivate(ann.id)}
+      >
+        {/* Competency badge on top-left of highlight */}
+        <span
+          className={`absolute -top-3 left-0 text-[8px] font-bold px-1 py-0 rounded ${colors.bg} ${colors.text} border ${colors.border}`}
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          {ann.competency.toUpperCase()}
+        </span>
+        {tooltip}
+      </div>
+    )
+  }
+
+  // pin / note
+  return (
+    <div
+      className="absolute pointer-events-auto"
+      style={{
+        left:      `${ann.x_pct * 100}%`,
+        top:       `${ann.y_pct * 100}%`,
+        transform: 'translate(-50%, -50%)',
+        zIndex:    isActive ? 20 : 6,
+      }}
+    >
+      <button
+        type="button"
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-extrabold border-2 border-white/30 shadow-lg transition-transform hover:scale-110 ${colors.bar}`}
+        onClick={() => onActivate(ann.id)}
+        title={ann.text}
+      >
+        {ann.competency.toUpperCase().replace('C', '')}
+      </button>
+      {tooltip}
+    </div>
+  )
+}
+
+// ── AnnotationTooltip ─────────────────────────────────────────────────────────
+
+function AnnotationTooltip({ annotation: ann, onRemove, onCompetencyFocus }: {
+  annotation: Annotation
+  onRemove: (id: string) => void
+  onCompetencyFocus?: (key: CompKey) => void
+}) {
+  const colors = COMP_COLORS[ann.competency]
+  return (
+    <div
+      className={`absolute z-30 w-48 bg-[#0d1520] border ${colors.border} rounded-xl p-3 shadow-2xl`}
+      style={{ top: 'calc(100% + 4px)', left: '50%', transform: 'translateX(-50%)' }}
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <span className={`text-[10px] font-extrabold uppercase ${colors.text}`}>
+          {ann.competency.toUpperCase()}
+        </span>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onRemove(ann.id) }}
+          className="text-gray-600 hover:text-red-400 transition-colors"
+        >
+          <X size={11} />
+        </button>
+      </div>
+      <p className="text-xs text-gray-300 leading-relaxed">{ann.text}</p>
+      {onCompetencyFocus && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onCompetencyFocus(ann.competency) }}
+          className={`mt-2 text-[9px] font-semibold ${colors.text} hover:opacity-70 transition-opacity`}
+        >
+          → ir para pontuação {ann.competency.toUpperCase()}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── AnnotationPopover ─────────────────────────────────────────────────────────
+
+function AnnotationPopover({
+  type, x, y,
+  selectedComp, text,
+  onCompChange, onTextChange,
+  onSave, onCancel,
+}: {
+  type: AnnotationType
+  x: number; y: number
+  selectedComp: CompKey; text: string
+  onCompChange: (k: CompKey) => void
+  onTextChange: (t: string) => void
+  onSave: () => void
+  onCancel: () => void
+}) {
+  const colors        = COMP_COLORS[selectedComp]
+  const readyComments = READY_COMMENTS[selectedComp]
+  const taRef         = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-focus text field when popover opens or competency changes
+  useEffect(() => { taRef.current?.focus() }, [selectedComp])
+
+  return (
+    <div
+      className="fixed z-50 w-72 bg-[#0b1119] border border-white/[0.10] rounded-2xl shadow-2xl overflow-hidden"
+      style={{ left: x, top: y }}
+      onMouseDown={e => e.stopPropagation()} // prevent essay layer from catching these
+    >
+      {/* Header */}
+      <div className="px-3 pt-3 pb-2 border-b border-white/[0.06] flex items-center justify-between">
+        <span className={`text-[10px] font-bold uppercase tracking-wide ${colors.text}`}>
+          {type === 'pin' ? '📍 Pin' : '▬ Destaque'}
+        </span>
+        <button type="button" onClick={onCancel} className="text-gray-600 hover:text-gray-300 transition-colors">
+          <X size={12} />
+        </button>
+      </div>
+
+      {/* Competency tabs */}
+      <div className="px-3 pt-2.5 flex gap-1">
+        {COMP_KEYS.map(k => {
+          const c = COMP_COLORS[k]
+          return (
+            <button
+              key={k}
+              type="button"
+              onClick={() => onCompChange(k)}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold border transition-all ${
+                selectedComp === k
+                  ? `${c.bg} ${c.border} ${c.text}`
+                  : 'bg-white/[0.03] border-white/[0.06] text-gray-600 hover:text-gray-400 hover:bg-white/[0.05]'
+              }`}
+            >
+              {k.toUpperCase()}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Ready comments */}
+      <div className="px-3 pt-2.5 pb-1">
+        <p className="text-[9px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Comentários rápidos</p>
+        <div className="flex flex-wrap gap-1">
+          {readyComments.map(rc => (
+            <button
+              key={rc.id}
+              type="button"
+              onClick={() => onTextChange(rc.text)}
+              className={`text-[9px] font-medium px-2 py-0.5 rounded-full border transition-all ${
+                text === rc.text
+                  ? `${colors.bg} ${colors.border} ${colors.text}`
+                  : 'bg-white/[0.03] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:bg-white/[0.05]'
+              }`}
+            >
+              {rc.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Custom text */}
+      <div className="px-3 pb-2">
+        <textarea
+          ref={taRef}
+          value={text}
+          onChange={e => onTextChange(e.target.value)}
+          placeholder="Escreva o comentário... (⌘↵ para salvar)"
+          className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-white placeholder:text-gray-700 resize-none focus:outline-none focus:ring-1 focus:ring-purple-500/40 leading-relaxed"
+          rows={3}
+          onKeyDown={e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onSave() }
+            if (e.key === 'Escape') { e.preventDefault(); onCancel() }
+          }}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="px-3 pb-3 flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold text-gray-500 border border-white/[0.06] hover:text-gray-300 hover:bg-white/[0.04] transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!text.trim()}
+          className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold text-white border transition-all ${
+            text.trim()
+              ? `${colors.bg} ${colors.border} hover:opacity-80`
+              : 'bg-white/[0.03] border-white/[0.06] text-gray-700 cursor-not-allowed'
+          }`}
+        >
+          Salvar ⌘↵
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── AnnotationList (right-panel summary) ──────────────────────────────────────
+
+export function AnnotationList({
+  annotations,
+  onRemove,
+  onCompetencyFocus,
+}: {
+  annotations: Annotation[]
+  onRemove: (id: string) => void
+  onCompetencyFocus: (key: CompKey) => void
+}) {
+  if (annotations.length === 0) return null
+
+  const grouped = COMP_KEYS.reduce<Partial<Record<CompKey, Annotation[]>>>((acc, key) => {
+    const items = annotations.filter(a => a.competency === key)
+    if (items.length > 0) acc[key] = items
+    return acc
+  }, {})
+
+  return (
+    <div className="card-dark rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Anotações</span>
+        <span className="text-[10px] text-gray-700 tabular-nums">{annotations.length}</span>
+      </div>
+      <div className="p-3 space-y-3 max-h-52 overflow-y-auto">
+        {COMP_KEYS.map(key => {
+          const items = grouped[key]
+          if (!items) return null
+          const colors = COMP_COLORS[key]
+          return (
+            <div key={key}>
+              {/* Competency group header */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <button
+                  type="button"
+                  onClick={() => onCompetencyFocus(key)}
+                  className={`text-[10px] font-extrabold uppercase ${colors.text} hover:opacity-70 transition-opacity`}
+                >
+                  {key.toUpperCase()}
+                </button>
+                <span className={`text-[9px] font-bold px-1.5 py-px rounded-full ${colors.bg} ${colors.text} border ${colors.border}`}>
+                  {items.length}
+                </span>
+              </div>
+              {/* Annotation items */}
+              {items.map(ann => (
+                <div key={ann.id} className="flex items-start gap-2 pl-3 py-0.5">
+                  <span
+                    className={`w-1 h-1 rounded-full flex-shrink-0 mt-1.5 ${colors.bar}`}
+                  />
+                  <p className="text-[10px] text-gray-400 leading-relaxed flex-1 min-w-0">{ann.text}</p>
+                  <button
+                    type="button"
+                    onClick={() => onRemove(ann.id)}
+                    className="text-gray-700 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"
+                    title="Remover anotação"
+                  >
+                    <X size={9} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
