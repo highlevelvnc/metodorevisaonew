@@ -252,7 +252,7 @@ export default function Hero() {
 
             {/* Micro-trust */}
             <p className="text-xs text-gray-700">
-              Sem fidelidade &nbsp;·&nbsp; Cancele quando quiser &nbsp;·&nbsp; Devolutiva em até 48h
+              Sem fidelidade &nbsp;·&nbsp; Cancele quando quiser &nbsp;·&nbsp; Devolutiva em até 24h
             </p>
 
             {/* Returning user link */}

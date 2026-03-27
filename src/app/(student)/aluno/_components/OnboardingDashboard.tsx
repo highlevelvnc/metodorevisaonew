@@ -27,7 +27,7 @@ const STEPS = [
   {
     num: '03',
     label: 'Envie para correção',
-    desc: 'Professor especialista avalia em até 48h',
+    desc: 'Professor especialista avalia em até 24h',
     href: '/aluno/redacoes/nova',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10 border-amber-500/20',

@@ -83,7 +83,7 @@ export default function CTAFinal() {
 
           {/* Micro trust */}
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-700">
-            <span>+2.000 redações corrigidas</span>
+            <span>+10.000 redações corrigidas</span>
             <span className="text-gray-800">·</span>
             <span>Evolução média de +180 pontos</span>
             <span className="text-gray-800">·</span>

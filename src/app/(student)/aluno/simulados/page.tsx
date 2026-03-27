@@ -40,7 +40,7 @@ const STEPS = [
       </svg>
     ),
     title: 'Receba devolutiva completa',
-    desc: 'Corretora especialista avalia as 5 competências e entrega análise detalhada em até 48h.',
+    desc: 'Corretora especialista avalia as 5 competências e entrega análise detalhada em até 24h.',
   },
 ]
 
@@ -190,7 +190,7 @@ export default async function SimuladosPage() {
           </div>
           <p className="text-base font-bold text-white mb-2">Sem simulados ainda</p>
           <p className="text-sm text-gray-500 leading-relaxed mb-6 max-w-sm mx-auto">
-            Escreva sua primeira redação agora e receba uma devolutiva completa nas 5 competências do ENEM — em até 48h.
+            Escreva sua primeira redação agora e receba uma devolutiva completa nas 5 competências do ENEM — em até 24h.
           </p>
           <Link href="/aluno/redacoes/nova" className="btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

@@ -5,11 +5,11 @@ import { trackEvent } from '@/components/Analytics'
 const faqs = [
   {
     q: 'Como funciona a correção na prática?',
-    a: 'Você escreve sua redação, envia pelo canal de entrega e recebe a devolutiva completa em até 48 horas. A devolutiva inclui nota por competência, anotações no texto, diagnóstico dos seus padrões de erro e orientação específica para a próxima redação.',
+    a: 'Você escreve sua redação, envia pelo canal de entrega e recebe a devolutiva completa em até 24 horas. A devolutiva inclui nota por competência, anotações no texto, diagnóstico dos seus padrões de erro e orientação específica para a próxima redação.',
   },
   {
     q: 'Quem corrige minha redação?',
-    a: 'Uma especialista em redação ENEM com mais de 4 anos de experiência e mais de 2.000 redações corrigidas. Não usamos IA para corrigir. Cada texto é lido, analisado e comentado por uma pessoa real.',
+    a: 'Uma especialista em redação ENEM com mais de 4 anos de experiência e mais de 10.000 redações corrigidas. Não usamos IA para corrigir. Cada texto é lido, analisado e comentado por uma pessoa real.',
   },
   {
     q: 'Posso cancelar quando quiser?',

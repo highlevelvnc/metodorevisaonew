@@ -298,7 +298,7 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
           <h3 className="text-white font-semibold mb-1">
             {essay.status === 'in_review' ? 'A corretora está revisando sua redação' : 'Redação na fila de correção'}
           </h3>
-          <p className="text-gray-600 text-sm">Sua devolutiva estará pronta em até 48h a partir do envio.</p>
+          <p className="text-gray-600 text-sm">Sua devolutiva estará pronta em até 24h a partir do envio.</p>
         </div>
 
         {essay.content_text && (() => {

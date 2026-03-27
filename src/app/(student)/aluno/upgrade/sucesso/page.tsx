@@ -96,7 +96,7 @@ export default async function SucessoPage({
             </h1>
             <p className="text-sm text-gray-400 leading-relaxed">
               {subscriptionActive
-                ? `Você tem ${creditsAvailable} ${creditsAvailable === 1 ? 'crédito' : 'créditos'} disponíveis. Envie sua primeira redação hoje e receba a devolutiva em até 48h.`
+                ? `Você tem ${creditsAvailable} ${creditsAvailable === 1 ? 'crédito' : 'créditos'} disponíveis. Envie sua primeira redação hoje e receba a devolutiva em até 24h.`
                 : `Seu plano ${finalPlanName} está sendo ativado. Em instantes seus créditos estarão disponíveis.`
               }
             </p>
@@ -158,7 +158,7 @@ export default async function SucessoPage({
                 {
                   n: '2',
                   color: 'bg-white/[0.06]',
-                  text: 'A especialista lê, analisa e anota em até 48h',
+                  text: 'A especialista lê, analisa e anota em até 24h',
                   active: false,
                 },
                 {

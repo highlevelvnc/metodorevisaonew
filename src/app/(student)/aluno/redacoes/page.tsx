@@ -107,7 +107,7 @@ function EssayCardContent({
       {/* Pending info */}
       {!isCorrected && (
         <p className="text-xs text-gray-600 sm:text-right flex-shrink-0">
-          {essay.status === 'in_review' ? 'Corretora está trabalhando' : 'Entrega em até 48h'}
+          {essay.status === 'in_review' ? 'Corretora está trabalhando' : 'Entrega em até 24h'}
         </p>
       )}
     </>
@@ -217,7 +217,7 @@ export default async function RedacoesPage() {
           </div>
           <h3 className="text-white font-semibold mb-1">Nenhuma redação ainda</h3>
           <p className="text-gray-600 text-sm mb-5 max-w-xs mx-auto">
-            Envie sua primeira redação e receba uma análise detalhada em até 48h
+            Envie sua primeira redação e receba uma análise detalhada em até 24h
           </p>
           <Link href="/aluno/redacoes/nova" className="btn-primary text-sm">
             Enviar primeira redação

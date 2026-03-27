@@ -152,7 +152,7 @@ export default function Especialista() {
             </svg>
           </Link>
           <p className="text-xs text-gray-700 mt-3">
-            Sem fidelidade · Devolutiva em até 48h
+            Sem fidelidade · Devolutiva em até 24h
           </p>
         </div>
 

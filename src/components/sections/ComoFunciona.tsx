@@ -25,7 +25,7 @@ const steps = [
   {
     n: '03',
     title: 'Receba a devolutiva',
-    desc: 'Em até 48h: nota por competência, anotações no texto e diagnóstico dos seus padrões.',
+    desc: 'Em até 24h: nota por competência, anotações no texto e diagnóstico dos seus padrões.',
     color: 'text-indigo-400',
     bg: 'bg-indigo-600/10 border-indigo-500/20',
   },
@@ -70,7 +70,7 @@ const trustBadges = [
         <path d="M12 6v6l4 2" />
       </svg>
     ),
-    text: 'Entregue em até 48h',
+    text: 'Entregue em até 24h',
     color: 'text-emerald-400',
     bg: 'bg-emerald-500/8 border-emerald-500/20',
   },
@@ -241,7 +241,7 @@ const metodoProceso = [
     title: 'Devolutiva',
     date: 'Passo 4',
     content:
-      'Em até 48h: nota por competência C1–C5, anotações em cada parágrafo e diagnóstico dos padrões de erro que se repetem.',
+      'Em até 24h: nota por competência C1–C5, anotações em cada parágrafo e diagnóstico dos padrões de erro que se repetem.',
     category: 'Correção',
     icon: Star,
     relatedIds: [3, 5],
@@ -464,7 +464,7 @@ export default function ComoFunciona() {
 
               {/* Trust micro-copy below CTA */}
               <p className="text-xs text-gray-700 mt-3">
-                Sem fidelidade · Cancele quando quiser · Devolutiva em até 48h
+                Sem fidelidade · Cancele quando quiser · Devolutiva em até 24h
               </p>
             </div>
           </div>

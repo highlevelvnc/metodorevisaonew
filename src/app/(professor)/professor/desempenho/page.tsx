@@ -113,7 +113,7 @@ export default async function ProfessorDesempenhoPage() {
   const c4Avg = avg(corrections.map(c => c.c4_score))
   const c5Avg = avg(corrections.map(c => c.c5_score))
 
-  // On-time rate (corrected within 48h of submission)
+  // On-time rate (corrected within 24h of submission)
   const withTimes = corrections.filter(c => c.essays?.submitted_at)
   const onTime    = withTimes.filter(c => {
     const diff = new Date(c.corrected_at).getTime() - new Date(c.essays!.submitted_at).getTime()
@@ -232,7 +232,7 @@ export default async function ProfessorDesempenhoPage() {
           <p className="text-2xl font-bold text-white tabular-nums">
             {onTimeRate !== null ? `${onTimeRate}%` : '—'}
           </p>
-          <p className="text-[10px] text-gray-600 mt-0.5">Entrega no prazo (48h)</p>
+          <p className="text-[10px] text-gray-600 mt-0.5">Entrega no prazo (24h)</p>
         </div>
       </div>
 
@@ -331,7 +331,7 @@ export default async function ProfessorDesempenhoPage() {
             {onTimeRate !== null ? `${onTimeRate}%` : '—'}
           </p>
           <p className="text-xs text-gray-700 mt-2">
-            {onTime.length} de {withTimes.length} correções entregues em até 48h
+            {onTime.length} de {withTimes.length} correções entregues em até 24h
           </p>
         </div>
       </div>

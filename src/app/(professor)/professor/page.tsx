@@ -352,11 +352,11 @@ export default async function ProfessorDashboardPage() {
           <p className="text-[10px] text-gray-700 mt-1">{weeklyGoalPct}% da meta</p>
         </div>
 
-        {/* Entrega 48h */}
+        {/* Entrega 24h */}
         <div className="card-dark rounded-2xl p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <Clock size={12} className="text-gray-600" />
-            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Entrega 48h</p>
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Entrega 24h</p>
           </div>
           <p className={`text-xl font-bold ${
             onTimeRate === null ? 'text-white' :

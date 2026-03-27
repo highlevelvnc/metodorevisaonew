@@ -166,7 +166,7 @@ export function DashboardHero({
                 <span className="text-xs text-amber-300 font-medium">
                   {pendingCount} redaç{pendingCount === 1 ? 'ão' : 'ões'} em análise
                 </span>
-                <span className="text-xs text-amber-400/50">·&nbsp;devolutiva em até 48h</span>
+                <span className="text-xs text-amber-400/50">·&nbsp;devolutiva em até 24h</span>
               </div>
             )}
 
@@ -201,7 +201,7 @@ export function DashboardHero({
                   {([
                     { n: 1, text: 'Explore os temas disponíveis',       href: '/aluno/temas' },
                     { n: 2, text: 'Escreva e envie sua primeira redação', href: '/aluno/redacoes/nova' },
-                    { n: 3, text: 'Receba sua devolutiva em até 48h',    href: null },
+                    { n: 3, text: 'Receba sua devolutiva em até 24h',    href: null },
                   ] as { n: number; text: string; href: string | null }[]).map(step => (
                     <div key={step.n} className="flex items-center gap-3">
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-purple-600/20 border border-purple-500/30 text-[10px] font-bold text-purple-400 flex items-center justify-center">

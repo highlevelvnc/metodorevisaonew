@@ -1,7 +1,7 @@
 const metrics = [
-  { value: '2.000+', label: 'redações corrigidas',     icon: '📄' },
+  { value: '10.000+', label: 'redações corrigidas',     icon: '📄' },
   { value: '+180',   label: 'pontos de evolução média', icon: '📈' },
-  { value: '48h',    label: 'prazo de devolutiva',      icon: '⚡' },
+  { value: '24h',    label: 'prazo de devolutiva',      icon: '⚡' },
   { value: '4.9/5',  label: 'avaliação dos alunos',     icon: '⭐' },
 ]
 

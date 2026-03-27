@@ -28,7 +28,7 @@ const pilares = [
       </svg>
     ),
     title: 'Entrega pontual garantida',
-    desc: 'Comprometemos com devolutiva em até 48h. Se não cumprirmos, você recebe uma correção extra sem custo.',
+    desc: 'Comprometemos com devolutiva em até 24h. Se não cumprirmos, você recebe uma correção extra sem custo.',
     color: 'text-sky-400',
     bg: 'bg-sky-500/[0.07] border-sky-500/20',
   },

@@ -20,7 +20,7 @@ const planos = [
       'Anotações no texto parágrafo a parágrafo',
       'Diagnóstico de padrões de erro',
       'Orientação para a próxima redação',
-      'Devolutiva em até 48h',
+      'Devolutiva em até 24h',
     ],
     cta: 'Assinar Evolução — R$ 97',
     sub: 'Uma redação por semana, com feedback real.',
@@ -187,7 +187,7 @@ export default function Planos() {
               { icon: '🔒', text: 'Pagamento seguro' },
               { icon: '📄', text: 'Sem contrato ou fidelidade' },
               { icon: '↩', text: 'Cancele quando quiser' },
-              { icon: '⚡', text: 'Devolutiva em até 48h' },
+              { icon: '⚡', text: 'Devolutiva em até 24h' },
               { icon: '💬', text: 'Suporte humano' },
             ].map((b) => (
               <div key={b.text} className="flex items-center gap-1.5">

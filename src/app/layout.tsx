@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: '%s | Método Revisão',
   },
   description:
-    'Correção estratégica de redação com acompanhamento real. Entenda seus erros, quebre padrões e suba sua nota no ENEM. Especialista humana, devolutiva em até 48h.',
+    'Correção estratégica de redação com acompanhamento real. Entenda seus erros, quebre padrões e suba sua nota no ENEM. Especialista humana, devolutiva em até 24h.',
   keywords: [
     'correção de redação enem',
     'correção estratégica redação',

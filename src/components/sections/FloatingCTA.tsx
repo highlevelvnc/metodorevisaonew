@@ -30,7 +30,7 @@ export default function FloatingCTA() {
       >
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-sm leading-tight">Começar minha evolução</p>
-          <p className="text-purple-200 text-xs mt-0.5">Devolutiva em até 48h · Sem fidelidade</p>
+          <p className="text-purple-200 text-xs mt-0.5">Devolutiva em até 24h · Sem fidelidade</p>
         </div>
         <a
           href="#planos"

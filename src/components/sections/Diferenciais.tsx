@@ -42,8 +42,8 @@ const diferenciais = [
     ),
   },
   {
-    title: 'Devolutiva em até 48h',
-    desc: 'Você não fica semanas esperando. Em até 48 horas tem seu feedback completo para já aplicar na próxima.',
+    title: 'Devolutiva em até 24h',
+    desc: 'Você não fica semanas esperando. Em até 24 horas tem seu feedback completo para já aplicar na próxima.',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -114,7 +114,7 @@ export default function Diferenciais() {
                 <li className="font-medium">Especialista humana</li>
                 <li className="font-medium">Acompanhamento contínuo</li>
                 <li className="font-medium">Diagnóstico de padrões</li>
-                <li className="font-medium">Devolutiva em 48h</li>
+                <li className="font-medium">Devolutiva em 24h</li>
               </ul>
             </div>
             <div className="px-4 py-5">

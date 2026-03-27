@@ -161,7 +161,7 @@ export default function NovaRedacaoForm({
         <div>
           <h1 className="text-2xl font-bold text-white leading-none">Enviar redação</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Devolutiva em até 48h
+            Devolutiva em até 24h
             {creditsLeft > 0 ? (
               <> · <span className={creditsLeft <= 1 ? 'text-amber-400' : 'text-gray-400'}>
                 {creditsLeft} crédito{creditsLeft !== 1 ? 's' : ''} restante{creditsLeft !== 1 ? 's' : ''}

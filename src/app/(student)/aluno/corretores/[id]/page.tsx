@@ -69,7 +69,7 @@ const CORRECTORS: Record<string, Corrector> = {
     avatarGradient: 'from-rose-600 to-pink-800',
     rating: 4.8,
     reviews: 167,
-    avgTime: '48h',
+    avgTime: '24h',
     specialties: ['C2', 'C3'],
     tags: ['Compreensão do tema', 'Tangenciamento', 'Argumentação'],
     bio: 'Foco em C2 — identifica quando a redação foge do tema antes que isso custe 200 pontos.',

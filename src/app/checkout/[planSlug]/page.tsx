@@ -164,7 +164,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
     'Anotações direto no texto parágrafo a parágrafo',
     'Diagnóstico dos seus padrões de erro',
     'Orientação personalizada para a próxima redação',
-    'Entregue em até 48 horas',
+    'Entregue em até 24 horas',
   ],
   estrategia: [
     '8 redações corrigidas por ciclo',
@@ -228,7 +228,7 @@ function PlanCard({ plan }: { plan: PlanData }) {
       {/* ── Social proof bar ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3 px-1">
         {[
-          { value: '+2.000', label: 'redações corrigidas' },
+          { value: '+10.000', label: 'redações corrigidas' },
           { value: '+180 pts', label: 'evolução média' },
           { value: '4.9/5', label: 'avaliação dos alunos' },
         ].map((s) => (
