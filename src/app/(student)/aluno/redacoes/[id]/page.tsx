@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { TrendingUp, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { CompetencyCards, type CompCardData } from './CompetencyCards'
+import { type CompKey } from '@/lib/competency-colors'
 
 export const metadata: Metadata = {
   title: 'Devolutiva',
@@ -18,8 +20,9 @@ const COMPETENCIES = [
 ]
 
 // 3 specific actions per competency — shown in "Plano para a próxima"
+// Keys use the short form (c1, c2, ...) matching CompKey
 const PLAN_ACTIONS: Record<string, { weekFocus: string; actions: string[] }> = {
-  c1_score: {
+  c1: {
     weekFocus: 'Domínio da Norma Culta',
     actions: [
       'Releia em voz alta antes de entregar — o ouvido detecta erros que o olho ignora',
@@ -27,7 +30,7 @@ const PLAN_ACTIONS: Record<string, { weekFocus: string; actions: string[] }> = {
       'Use vírgula apenas onde há pausa natural — evite excesso ou falta',
     ],
   },
-  c2_score: {
+  c2: {
     weekFocus: 'Compreensão da Proposta',
     actions: [
       'Escreva sua tese em uma frase antes de começar — ela deve responder exatamente ao tema',
@@ -35,7 +38,7 @@ const PLAN_ACTIONS: Record<string, { weekFocus: string; actions: string[] }> = {
       'Releia o enunciado na metade da escrita para verificar que ainda está no foco',
     ],
   },
-  c3_score: {
+  c3: {
     weekFocus: 'Seleção de Argumentos',
     actions: [
       'Pesquise 2–3 dados, estudos ou referências históricas antes de escrever',
@@ -43,7 +46,7 @@ const PLAN_ACTIONS: Record<string, { weekFocus: string; actions: string[] }> = {
       'Argumentos sem embasamento raramente passam de 80/200 — sempre fundamente',
     ],
   },
-  c4_score: {
+  c4: {
     weekFocus: 'Mecanismos de Coesão',
     actions: [
       'Varie os conectivos: "Ademais", "Nesse sentido", "Por outro lado", "Desse modo"',
@@ -51,7 +54,7 @@ const PLAN_ACTIONS: Record<string, { weekFocus: string; actions: string[] }> = {
       'Substitua "porém" e "mas" repetidos por "todavia", "entretanto", "contudo"',
     ],
   },
-  c5_score: {
+  c5: {
     weekFocus: 'Proposta de Intervenção',
     actions: [
       'Use a estrutura: Quem age (agente)? O quê (ação)? Como (modo/meio)? Para quê (finalidade)?',
@@ -63,11 +66,11 @@ const PLAN_ACTIONS: Record<string, { weekFocus: string; actions: string[] }> = {
 
 // Maintenance tip per competency when score >= 140 — "O que manter"
 const MAINTAIN_TIPS: Record<string, string> = {
-  c1_score: 'Domínio consistente da norma culta — continue revisando antes de entregar.',
-  c2_score: 'Você mantém o foco no tema com clareza — essa disciplina é rara e valiosa.',
-  c3_score: 'Argumentação sólida com repertório — continue embasando com dados e referências.',
-  c4_score: 'Boa coesão textual — a variedade de conectivos já é parte do seu estilo.',
-  c5_score: 'Proposta de intervenção completa e específica — mantenha os 4 elementos sempre explícitos.',
+  c1: 'Domínio consistente da norma culta — continue revisando antes de entregar.',
+  c2: 'Você mantém o foco no tema com clareza — essa disciplina é rara e valiosa.',
+  c3: 'Argumentação sólida com repertório — continue embasando com dados e referências.',
+  c4: 'Boa coesão textual — a variedade de conectivos já é parte do seu estilo.',
+  c5: 'Proposta de intervenção completa e específica — mantenha os 4 elementos sempre explícitos.',
 }
 
 // Contextual first-person phrase from reviewer — shown inside the feedback card header
@@ -127,33 +130,33 @@ function generateReviewerNote(
   // First essay — competency-specific coaching
   if (delta === null) {
     const FIRST: Record<string, string> = {
-      c1_score: `Na sua primeira redação já identifiquei o padrão: a norma culta precisa de atenção sistemática. A técnica mais eficaz é simples — leia em voz alta antes de entregar. O ouvido pega o que o olho ignora. Quero ver esse cuidado na próxima.`,
-      c2_score: `O que mais chamou minha atenção foi a âncora da tese ao enunciado. Antes de escrever a próxima, escreva sua tese em uma frase e pergunte: ela responde diretamente ao que foi pedido? Se não, reescreva antes de avançar.`,
-      c3_score: `O potencial argumentativo aparece — mas precisa de embasamento concreto. Antes de começar a próxima redação, anote 2–3 dados, referências ou exemplos históricos que vão sustentar sua tese. Argumento sem apoio raramente passa de 80/200.`,
-      c4_score: `Percebi que a coesão ainda está em desenvolvimento — os parágrafos precisam se conectar melhor entre si. Na próxima, preste atenção à última frase de cada parágrafo: ela deve criar uma ponte natural para o seguinte.`,
-      c5_score: `A proposta de intervenção é o ponto que mais cresce com prática dirigida. Memorize a estrutura: agente, ação, modo e finalidade — todos os quatro precisam aparecer de forma explícita, sem subentendidos.`,
+      c1: `Na sua primeira redação já identifiquei o padrão: a norma culta precisa de atenção sistemática. A técnica mais eficaz é simples — leia em voz alta antes de entregar. O ouvido pega o que o olho ignora. Quero ver esse cuidado na próxima.`,
+      c2: `O que mais chamou minha atenção foi a âncora da tese ao enunciado. Antes de escrever a próxima, escreva sua tese em uma frase e pergunte: ela responde diretamente ao que foi pedido? Se não, reescreva antes de avançar.`,
+      c3: `O potencial argumentativo aparece — mas precisa de embasamento concreto. Antes de começar a próxima redação, anote 2–3 dados, referências ou exemplos históricos que vão sustentar sua tese. Argumento sem apoio raramente passa de 80/200.`,
+      c4: `Percebi que a coesão ainda está em desenvolvimento — os parágrafos precisam se conectar melhor entre si. Na próxima, preste atenção à última frase de cada parágrafo: ela deve criar uma ponte natural para o seguinte.`,
+      c5: `A proposta de intervenção é o ponto que mais cresce com prática dirigida. Memorize a estrutura: agente, ação, modo e finalidade — todos os quatro precisam aparecer de forma explícita, sem subentendidos.`,
     }
     return FIRST[weakestKey] ?? `Esta foi sua redação de partida, e o mapa já está claro. Foco em ${weakestName} vai trazer os maiores ganhos nas próximas redações.`
   }
 
   // Returning student — per-weakness coaching note
   const RETURNING: Record<string, string> = {
-    c1_score: `Quero ver uma revisão mais cuidadosa da norma culta na próxima. Reserve os últimos 5 minutos da escrita só para reler em busca de concordância e pontuação — esse hábito vale pontos diretos.`,
-    c2_score: `Meu ponto de atenção para a próxima é a aderência ao tema. Antes de começar, escreva sua tese em uma frase. Se ela não responder diretamente ao enunciado, reescreva antes de avançar.`,
-    c3_score: `Quero ver argumentação com mais embasamento na próxima. Antes de escrever, anote pelo menos dois dados ou referências concretas que vão sustentar sua tese. Argumento sem embasamento raramente passa de 80/200.`,
-    c4_score: `Na próxima redação, quero ver mais variedade nos conectivos e melhor articulação entre parágrafos. Releia a última frase de cada parágrafo separadamente — ela deve criar uma ponte natural para o seguinte.`,
-    c5_score: `Quero ver uma proposta de intervenção completa e específica na próxima. Anote mentalmente: agente, ação, modo, finalidade — os quatro precisam estar lá, de forma explícita, sem subentendidos.`,
+    c1: `Quero ver uma revisão mais cuidadosa da norma culta na próxima. Reserve os últimos 5 minutos da escrita só para reler em busca de concordância e pontuação — esse hábito vale pontos diretos.`,
+    c2: `Meu ponto de atenção para a próxima é a aderência ao tema. Antes de começar, escreva sua tese em uma frase. Se ela não responder diretamente ao enunciado, reescreva antes de avançar.`,
+    c3: `Quero ver argumentação com mais embasamento na próxima. Antes de escrever, anote pelo menos dois dados ou referências concretas que vão sustentar sua tese. Argumento sem embasamento raramente passa de 80/200.`,
+    c4: `Na próxima redação, quero ver mais variedade nos conectivos e melhor articulação entre parágrafos. Releia a última frase de cada parágrafo separadamente — ela deve criar uma ponte natural para o seguinte.`,
+    c5: `Quero ver uma proposta de intervenção completa e específica na próxima. Anote mentalmente: agente, ação, modo, finalidade — os quatro precisam estar lá, de forma explícita, sem subentendidos.`,
   }
   return RETURNING[weakestKey] ?? `Meu foco para a próxima é ${weakestName}. Com ${gap} pontos ainda disponíveis, um trabalho direcionado aqui vai fazer diferença na nota.`
 }
 
 // Most urgent fix for weakest competency — "O que corrigir imediatamente"
 const FIX_QUICKLY: Record<string, string> = {
-  c1_score: 'Revise cada parágrafo em busca de erros de concordância e pontuação antes de entregar. Um erro evitado já vale pontos.',
-  c2_score: 'Escreva sua tese em uma frase antes de começar e releia o enunciado na metade do texto. Tangência é o erro mais caro do ENEM.',
-  c3_score: 'Escolha um dado concreto ou referência para cada argumento. Sem embasamento, dificilmente você passa de 80/200 nesta competência.',
-  c4_score: 'Substitua conectivos repetidos por variações — "todavia", "ademais", "nesse sentido". A variedade demonstra domínio linguístico.',
-  c5_score: 'Verifique explicitamente: agente, ação, modo e finalidade estão todos presentes na proposta? A falta de um elemento já reduz a nota.',
+  c1: 'Revise cada parágrafo em busca de erros de concordância e pontuação antes de entregar. Um erro evitado já vale pontos.',
+  c2: 'Escreva sua tese em uma frase antes de começar e releia o enunciado na metade do texto. Tangência é o erro mais caro do ENEM.',
+  c3: 'Escolha um dado concreto ou referência para cada argumento. Sem embasamento, dificilmente você passa de 80/200 nesta competência.',
+  c4: 'Substitua conectivos repetidos por variações — "todavia", "ademais", "nesse sentido". A variedade demonstra domínio linguístico.',
+  c5: 'Verifique explicitamente: agente, ação, modo e finalidade estão todos presentes na proposta? A falta de um elemento já reduz a nota.',
 }
 
 type PrevCorrection = {
@@ -175,6 +178,25 @@ function formatDate(iso: string | null | undefined) {
   return d.toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
+}
+
+/**
+ * Try to extract the teacher's comment for a specific competency
+ * from the general_feedback markdown. The template generator writes
+ * sections like: **C1 – Domínio da Norma Culta (160/200)**\ncomment text
+ *
+ * Returns null if the section is not found (unstructured feedback).
+ */
+function parseCompetencyFeedback(generalFeedback: string, compLabel: string): string | null {
+  if (!generalFeedback) return null
+  // Match "**C1 – ..." or "**C1–..." followed by the text until next "**" section or end
+  const regex = new RegExp(
+    `\\*\\*${compLabel}[\\s–—-][^*]+\\*\\*\\s*\\n([\\s\\S]*?)(?=\\n\\n\\*\\*[A-Z][0-9]|\\n---\\n|$)`,
+  )
+  const match = generalFeedback.match(regex)
+  if (!match) return null
+  const extracted = match[1].trim()
+  return extracted.length > 10 ? extracted : null
 }
 
 /**
@@ -316,8 +338,22 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
                 )}
               </div>
               {isImage && imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imageUrl} alt="Sua redação" className="w-full rounded-xl border border-white/[0.08] object-contain" />
+                <div className="space-y-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imageUrl} alt="Sua redação" className="w-full rounded-xl border border-white/[0.08] object-contain" />
+                  <a
+                    href={imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    Abrir em nova aba
+                  </a>
+                </div>
               ) : (
                 <div className="text-sm text-gray-300 leading-[1.9] whitespace-pre-wrap border-l-2 border-white/[0.06] pl-4">
                   {essay.content_text}
@@ -333,14 +369,19 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
   const prevCorrection = (prevRaw as { corrections: PrevCorrection[] } | null)?.corrections?.[0] ?? null
   const totalDelta     = prevCorrection ? correction.total_score - prevCorrection.total_score : null
 
-  // Per-competency scores with comparison to previous essay
-  const compData = COMPETENCIES.map(c => {
-    const score     = correction[c.key]
-    const prevScore = prevCorrection ? (prevCorrection[c.key] as number) : null
-    return { ...c, score, prevScore, delta: prevScore !== null ? score - prevScore : null }
+  // Per-competency scores with comparison to previous essay + teacher feedback snippet
+  const compData: CompCardData[] = COMPETENCIES.map(c => {
+    // Guard: DB may return undefined for partial rows — clamp to 0 for safe rendering
+    const score     = Math.max(0, Math.min(200, (correction[c.key] as number | undefined) ?? 0))
+    const prevScore = prevCorrection ? Math.max(0, Math.min(200, (prevCorrection[c.key] as number | undefined) ?? 0)) : null
+    const compKey   = c.key.replace('_score', '') as CompKey
+    const feedbackSnippet = parseCompetencyFeedback(correction.general_feedback ?? '', c.label)
+    return { ...c, key: compKey, score, prevScore, delta: prevScore !== null ? score - prevScore : null, feedbackSnippet }
   })
 
-  const weakest          = compData.reduce((a, b) => a.score <= b.score ? a : b)
+  const weakest = compData.length > 0
+    ? compData.reduce((a, b) => a.score <= b.score ? a : b)
+    : compData[0] ?? { key: 'c5' as CompKey, score: 0, name: 'Proposta de Intervenção', label: 'C5', desc: '' }
   const positiveDeltas   = compData.filter(c => (c.delta ?? 0) > 0)
   const mostImproved     = positiveDeltas.length > 0
     ? positiveDeltas.reduce((a, b) => a.delta! >= b.delta! ? a : b)
@@ -421,44 +462,16 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* 2. Competências com delta ─────────────────────────────── */}
-        <div className="sm:col-span-2 card-dark rounded-2xl p-6">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Por competência</p>
-          <div className="space-y-3.5">
-            {compData.map(c => {
-              const { bar, text } = scoreColor(c.score)
-              const pct = (c.score / 200) * 100
-              return (
-                <div key={c.key}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-gray-500 w-5">{c.label}</span>
-                      <span className="text-xs text-gray-400">{c.name}</span>
-                      {c.key === weakest.key && (
-                        <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">🎯 foco</span>
-                      )}
-                      {mostImproved && c.key === mostImproved.key && (
-                        <span className="text-[10px] text-green-400 bg-green-500/10 border border-green-500/20 rounded-full px-1.5 py-0.5">↑ evoluiu</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {c.delta !== null && c.delta !== 0 && (
-                        <span className={`text-[10px] font-bold tabular-nums ${c.delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {c.delta > 0 ? '+' : ''}{c.delta}
-                        </span>
-                      )}
-                      <span className={`text-xs font-bold ${text}`}>
-                        {c.score}<span className="text-gray-600 font-normal">/200</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${bar} transition-all`} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+        {/* 2. Competências interativas ──────────────────────────── */}
+        <div className="sm:col-span-2 card-dark rounded-2xl p-5">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            Por competência — clique para detalhes e ações
+          </p>
+          <CompetencyCards
+            compData={compData}
+            themeTitle={essay.theme_title}
+            weakestKey={weakest.key}
+          />
         </div>
       </div>
 

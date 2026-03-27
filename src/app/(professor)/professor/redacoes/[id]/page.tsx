@@ -25,7 +25,7 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
   const { data: essayRaw } = await db.from('essays')
     .select(`
       id, theme_title, content_text, notes, status, student_id,
-      student:users!essays_student_id_fkey(full_name),
+      student:users!essays_student_id_fkey(id, full_name),
       corrections(c1_score, c2_score, c3_score, c4_score, c5_score, general_feedback)
     `)
     .eq('id', params.id)
@@ -36,7 +36,7 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
   type EssayRaw = {
     id: string; theme_title: string; content_text: string | null
     notes: string | null; status: string; student_id: string
-    student: { full_name: string } | null
+    student: { id: string; full_name: string } | null
     corrections: {
       c1_score: number; c2_score: number; c3_score: number
       c4_score: number; c5_score: number; general_feedback: string

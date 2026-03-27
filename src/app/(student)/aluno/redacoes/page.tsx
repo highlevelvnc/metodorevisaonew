@@ -131,7 +131,15 @@ export default async function RedacoesPage() {
     .order('submitted_at', { ascending: false })
     .limit(200)
 
-  const essays: Essay[] = (essaysRaw ?? []).filter((e: unknown) => e && typeof (e as Essay).id === 'string')
+  const VALID_STATUSES = new Set(['pending', 'in_review', 'corrected'])
+  const essays: Essay[] = (essaysRaw ?? []).filter((e: unknown) => {
+    if (!e || typeof (e as Essay).id !== 'string') return false
+    if (typeof (e as Essay).submitted_at !== 'string') return false
+    const s = (e as Essay).status
+    if (!VALID_STATUSES.has(s)) return false
+    if (!Array.isArray((e as Essay).corrections)) return false
+    return true
+  })
   const correctedEssays = essays.filter(e => e.status === 'corrected' && (e.corrections?.length ?? 0) > 0)
 
   return (

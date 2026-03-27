@@ -26,10 +26,17 @@ type ProfessorEssay = {
   corrections: { total_score: number }[]
 }
 
-function msAgo(iso: string) { return Date.now() - new Date(iso).getTime() }
+function msAgo(iso: string | null | undefined): number {
+  if (!iso) return 0
+  const ms = new Date(iso).getTime()
+  return isNaN(ms) ? 0 : Math.max(0, Date.now() - ms)
+}
 
-function relativeDate(iso: string) {
-  const h = Math.floor(msAgo(iso) / 3_600_000)
+function relativeDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const elapsed = msAgo(iso)
+  if (elapsed === 0) return '—'
+  const h = Math.floor(elapsed / 3_600_000)
   if (h < 1) return 'há menos de 1h'
   if (h < 24) return `há ${h}h`
   const d = Math.floor(h / 24)
@@ -89,7 +96,15 @@ export default async function ProfessorRedacoesPage({
     .order('submitted_at', { ascending: false })
     .limit(300)
 
-  const essays: ProfessorEssay[] = essaysRaw ?? []
+  // Filter rows that lack the minimum shape needed to render safely.
+  // A missing submitted_at or id would crash the sort / relativeDate calls.
+  const essays: ProfessorEssay[] = (essaysRaw ?? []).filter(
+    (e: unknown) =>
+      e !== null &&
+      typeof (e as ProfessorEssay).id === 'string' &&
+      typeof (e as ProfessorEssay).submitted_at === 'string' &&
+      (e as ProfessorEssay).submitted_at.length > 0,
+  )
 
   const activeTab: TabOption = TAB_OPTIONS.includes(searchParams.tab as TabOption)
     ? (searchParams.tab as TabOption)

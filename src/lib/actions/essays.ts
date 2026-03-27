@@ -33,6 +33,11 @@ export async function submitEssay(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
+  // ── Upload tracking (hoisted so error handlers can access) ───────────────
+  let uploadedPath:   string | null = null
+  let uploadType:     'text' | 'image' | 'pdf' = 'text'
+  let originalFileUrl: string | null = null
+
   // ── Validação e preparação do conteúdo ───────────────────────────────────
   let contentText: string
 
@@ -58,12 +63,20 @@ export async function submitEssay(
     const rand = Math.random().toString(36).slice(2, 8)
     const path = `essays/${user.id}/${Date.now()}-${rand}.${ext}`
 
+    // Track upload metadata before attempting — used for cleanup on RPC failure
+    uploadedPath    = path
+    uploadType      = imageFile.type === 'application/pdf' ? 'pdf' : 'image'
+
+    console.info('[submitEssay] Uploading file:', path, '| size:', imageFile.size, '| type:', imageFile.type)
+
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, imageFile, { contentType: imageFile.type, upsert: false })
 
     if (uploadError) {
       console.error('[submitEssay] Storage upload error:', uploadError.message)
+      // Reset tracking — nothing was uploaded
+      uploadedPath = null
       return { error: 'Erro ao enviar o arquivo. Tente novamente ou use a opção "Digitar".' }
     }
 
@@ -72,7 +85,10 @@ export async function submitEssay(
       .from(STORAGE_BUCKET)
       .getPublicUrl(path)
 
+    originalFileUrl = urlData.publicUrl
     contentText = `[IMAGEM] ${urlData.publicUrl}`
+
+    console.info('[submitEssay] File uploaded successfully:', path)
 
   } else {
     const rawContent = (formData.get('content') as string)?.trim()
@@ -92,9 +108,8 @@ export async function submitEssay(
   //   3. O débito e a inserção da redação são atômicos — ou ambos persistem,
   //      ou nenhum (ex: CHECK constraint violado = rollback automático)
   //
-  // Nota sobre o upload de imagem: se o RPC falhar após o upload bem-sucedido,
-  // o arquivo ficará órfão no Storage (sem essay_id associado). Isso é aceitável —
-  // nenhum crédito é cobrado e o aluno pode tentar novamente.
+  console.info('[submitEssay] Calling submit_essay_atomic for user:', user.id)
+
   const { data: essayId, error: rpcErr } = await db.rpc('submit_essay_atomic', {
     p_user_id:      user.id,
     p_theme_title:  themeTitle,
@@ -105,6 +120,16 @@ export async function submitEssay(
 
   if (rpcErr) {
     console.error('[submitEssay] RPC error:', rpcErr.message)
+
+    // Clean up orphaned file: file was uploaded but essay row was NOT created.
+    // Best-effort — if this fails the file stays orphaned but no credit was charged.
+    if (uploadedPath) {
+      supabase.storage.from(STORAGE_BUCKET).remove([uploadedPath]).then(({ error: rmErr }) => {
+        if (rmErr) console.error('[submitEssay] Orphan cleanup failed:', uploadedPath, rmErr.message)
+        else       console.info('[submitEssay] Cleaned up orphaned file:', uploadedPath)
+      })
+    }
+
     if (rpcErr.message?.includes('NO_ACTIVE_PLAN'))
       return { error: 'Nenhum plano ativo. Adquira um plano para enviar redações.' }
     if (rpcErr.message?.includes('CREDIT_LIMIT_REACHED'))
@@ -113,9 +138,27 @@ export async function submitEssay(
   }
 
   // Validate that essayId is a non-empty string UUID before redirecting
-  const essayIdStr = typeof essayId === 'string' ? essayId : null
-  if (!essayIdStr)
+  const essayIdStr = typeof essayId === 'string' && essayId.length > 0 ? essayId : null
+  if (!essayIdStr) {
+    console.error('[submitEssay] RPC returned unexpected essayId:', essayId)
     return { error: 'Erro ao salvar redação. Tente novamente.' }
+  }
+
+  console.info('[submitEssay] Essay created:', essayIdStr)
+
+  // ── Write upload metadata to essay row (non-fatal if it fails) ───────────
+  // This backfills upload_type and original_file_url added in migration 004.
+  if (uploadType !== 'text' && originalFileUrl) {
+    const { error: metaErr } = await db
+      .from('essays')
+      .update({ upload_type: uploadType, original_file_url: originalFileUrl, processing_status: 'uploaded' })
+      .eq('id', essayIdStr)
+
+    if (metaErr) {
+      // Non-fatal: essay was created, redirect proceeds. Metadata is cosmetic for now.
+      console.error('[submitEssay] Failed to write upload metadata (non-fatal):', metaErr.message)
+    }
+  }
 
   revalidatePath('/aluno')
   revalidatePath('/aluno/redacoes')

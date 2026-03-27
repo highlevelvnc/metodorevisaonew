@@ -575,17 +575,8 @@ export function BiiaChat({ firstName, worstCompKey, avgScore, lastTheme, isNewUs
   const [isTyping, setIsTyping] = useState(false)
   const bottomRef               = useRef<HTMLDivElement>(null)
   const inputRef                = useRef<HTMLTextAreaElement>(null)
-
-  // URL param: pre-fill prompt from sidebar links
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const prompt = params.get('prompt')
-    if (prompt) {
-      setInput(decodeURIComponent(prompt))
-      inputRef.current?.focus()
-    }
-  }, [])
+  // Guard: prevent double-send on re-renders while sendMessage changes identity
+  const initialPromptSentRef    = useRef(false)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -619,6 +610,23 @@ export function BiiaChat({ firstName, worstCompKey, avgScore, lastTheme, isNewUs
       setIsTyping(false)
     }
   }, [isTyping, firstName, worstCompKey, avgScore, isNewUser])
+
+  // URL param: auto-send prompt from deep-links (e.g. CompetencyCards CTAs)
+  // Falls back to pre-fill only when called too early (isTyping guard inside sendMessage).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (initialPromptSentRef.current) return
+    const params = new URLSearchParams(window.location.search)
+    const raw = params.get('prompt')
+    if (!raw) return
+    const decoded = decodeURIComponent(raw)
+    initialPromptSentRef.current = true
+    // Small delay so the initial assistant message renders first
+    const t = setTimeout(() => {
+      sendMessage(decoded)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [sendMessage])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

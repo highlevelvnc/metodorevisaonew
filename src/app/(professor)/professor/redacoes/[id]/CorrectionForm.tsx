@@ -2,8 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { Save, Send, ChevronDown, ChevronUp, Clock, Wand2, ArrowRight } from 'lucide-react'
+import { Save, Send, ChevronDown, ChevronUp, Clock, Wand2, ArrowRight, History, Search, AlertTriangle } from 'lucide-react'
 import { saveCorrection, type Scores } from '@/lib/actions/corrections'
+import { COMP_COLORS, type CompKey } from '@/lib/competency-colors'
+import { ReadyComments } from './ReadyComments'
+import { StudentHistoryPanel } from './StudentHistoryPanel'
+import { ZeroEssayModal } from './ZeroEssayModal'
+import { SimilarityPanel } from './SimilarityPanel'
 
 const COMPETENCIES = [
   {
@@ -187,7 +192,7 @@ export type EssayForCorrection = {
   content_text: string | null
   notes: string | null
   status: string
-  student: { full_name: string } | null
+  student: { id: string; full_name: string } | null
   plan: string
   existingCorrection: {
     c1_score: number; c2_score: number; c3_score: number
@@ -235,6 +240,11 @@ export default function CorrectionForm({
   const [saveStatus, setSaveStatus]       = useState<SaveStatus>('idle')
   const [lastSaved, setLastSaved]         = useState<Date | null>(existing ? new Date() : null)
   const [isDirty, setIsDirty]             = useState(false)
+
+  // ── Operational tool panel state ──────────────────────────────────────────
+  const [showHistory,    setShowHistory]    = useState(false)
+  const [showSimilarity, setShowSimilarity] = useState(false)
+  const [showZeroModal,  setShowZeroModal]  = useState(false)
 
   const autoSaveTimerRef      = useRef<ReturnType<typeof setTimeout>>()
   const feedbackRef           = useRef<HTMLTextAreaElement>(null)
@@ -392,10 +402,35 @@ export default function CorrectionForm({
     markDirty()
   }
 
+  /** Insert a ready-comment text at cursor position (or append to end). */
+  function insertComment(text: string) {
+    const el = feedbackRef.current
+    if (!el) {
+      setFeedback(prev => prev.trim() ? prev + '\n\n' + text : text)
+      markDirty()
+      return
+    }
+    const start = el.selectionStart ?? el.value.length
+    const end   = el.selectionEnd   ?? el.value.length
+    const before = el.value.slice(0, start)
+    const after  = el.value.slice(end)
+    const separator = before.trim() ? '\n\n' : ''
+    const updated = before + separator + text + after
+    setFeedback(updated)
+    markDirty()
+    // Restore cursor after inserted text
+    setTimeout(() => {
+      el.focus()
+      const pos = (before + separator + text).length
+      el.setSelectionRange(pos, pos)
+    }, 0)
+  }
+
   const studentName       = essay.student?.full_name ?? 'Aluno'
   const firstNameNext     = nextStudentName?.split(' ')[0]
 
   return (
+    <>
     <div className="flex flex-col lg:flex-row gap-6 items-start">
       {/* ── Coluna esquerda: texto ──────────────────────────────────────────── */}
       <div className="w-full lg:w-[55%] lg:sticky lg:top-6">
@@ -463,7 +498,27 @@ export default function CorrectionForm({
                         src={imageUrl}
                         alt="Redação enviada pelo aluno"
                         className="w-full rounded-xl border border-white/[0.08] object-contain"
+                        onError={e => {
+                          // Hide broken image and show fallback notice
+                          const el = e.currentTarget
+                          el.style.display = 'none'
+                          const fallback = el.nextElementSibling as HTMLElement | null
+                          if (fallback) fallback.style.display = 'flex'
+                        }}
                       />
+                      {/* Fallback card — hidden until onError fires */}
+                      <div
+                        className="hidden items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-amber-300">Não foi possível renderizar a pré-visualização</p>
+                          <p className="text-xs text-gray-500 mt-0.5">O arquivo original está disponível no link abaixo.</p>
+                        </div>
+                      </div>
                       <a
                         href={imageUrl}
                         target="_blank"
@@ -505,6 +560,43 @@ export default function CorrectionForm({
 
       {/* ── Coluna direita: painel de correção ─────────────────────────────── */}
       <div className="w-full lg:w-[45%] space-y-4">
+
+        {/* ── Barra de ferramentas operacionais ─────────────────────────────── */}
+        <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+          <span className="text-[10px] font-semibold text-gray-700 uppercase tracking-wider mr-1">Ferramentas</span>
+          {/* Histórico do aluno */}
+          <button
+            type="button"
+            onClick={() => setShowHistory(true)}
+            disabled={!essay.student?.id}
+            className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 border border-white/[0.08] bg-white/[0.03] rounded-lg px-2.5 py-1.5 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Ver histórico de redações deste aluno"
+          >
+            <History size={11} />
+            Histórico
+          </button>
+          {/* Verificar similaridade */}
+          <button
+            type="button"
+            onClick={() => setShowSimilarity(true)}
+            className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-400 border border-amber-500/20 bg-amber-500/[0.05] rounded-lg px-2.5 py-1.5 hover:bg-amber-500/[0.12] hover:border-amber-500/35 transition-all"
+            title="Verificar similaridade com outras redações"
+          >
+            <Search size={11} />
+            Similaridade
+          </button>
+          {/* Zerar redação */}
+          <button
+            type="button"
+            onClick={() => setShowZeroModal(true)}
+            className="flex items-center gap-1.5 text-[10px] font-semibold text-red-400 border border-red-500/20 bg-red-500/[0.05] rounded-lg px-2.5 py-1.5 hover:bg-red-500/[0.12] hover:border-red-500/35 transition-all ml-auto"
+            title="Zerar esta redação com motivo estruturado"
+          >
+            <AlertTriangle size={11} />
+            Zerar
+          </button>
+        </div>
+
         {/* Queue progress header */}
         {(nextEssayId || queueCount > 0) && (
           <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
@@ -612,13 +704,7 @@ export default function CorrectionForm({
                 <span key={c.key} className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tabular-nums ${
                   !touchedScores.has(c.key)
                     ? 'text-gray-700 bg-white/[0.02] border-white/[0.04]'
-                    : scores[c.key] >= 160
-                    ? 'text-green-400 bg-green-500/10 border-green-500/20'
-                    : scores[c.key] >= 120
-                    ? 'text-purple-400 bg-purple-600/10 border-purple-500/20'
-                    : scores[c.key] > 0
-                    ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-                    : 'text-red-400 bg-red-500/10 border-red-500/20'
+                    : COMP_COLORS[c.key as CompKey].pill
                 }`}>
                   {c.label} {touchedScores.has(c.key) ? scores[c.key] : '–'}
                 </span>
@@ -632,7 +718,7 @@ export default function CorrectionForm({
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-bold text-gray-500">{c.label}</span>
+                      <span className={`text-xs font-bold ${COMP_COLORS[c.key as CompKey].text}`}>{c.label}</span>
                       <span className="text-sm font-medium text-white">{c.name}</span>
                       <button
                         type="button"
@@ -693,6 +779,12 @@ export default function CorrectionForm({
                     Inserir frase sugerida no feedback
                   </button>
                 )}
+
+                {/* Ready comments per competency */}
+                <ReadyComments
+                  compKey={c.key as CompKey}
+                  onInsert={insertComment}
+                />
               </div>
             ))}
           </div>
@@ -867,5 +959,36 @@ export default function CorrectionForm({
         )}
       </div>
     </div>
+
+    {/* ── Operational panels (rendered outside the two-column layout) ────────── */}
+
+    {showHistory && essay.student?.id && (
+      <StudentHistoryPanel
+        studentId={essay.student.id}
+        studentName={studentName}
+        currentEssayId={essay.id}
+        onClose={() => setShowHistory(false)}
+      />
+    )}
+
+    {showSimilarity && (
+      <SimilarityPanel
+        essayId={essay.id}
+        contentText={essay.content_text}
+        studentId={essay.student?.id ?? ''}
+        onClose={() => setShowSimilarity(false)}
+      />
+    )}
+
+    {showZeroModal && (
+      <ZeroEssayModal
+        essayId={essay.id}
+        studentName={studentName}
+        themeTitle={essay.theme_title}
+        reviewerName={studentName /* overridden server-side from profile */}
+        onClose={() => setShowZeroModal(false)}
+      />
+    )}
+    </>
   )
 }
