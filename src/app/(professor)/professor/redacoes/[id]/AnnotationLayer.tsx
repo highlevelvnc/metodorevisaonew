@@ -137,6 +137,17 @@ interface PendingMark {
   popX: number; popY: number
 }
 
+/** Rendered bounding box of the actual document element (img/object),
+ *  expressed in pixels relative to the AnnotationLayer container's top-left.
+ *  Used to map click coordinates to document-relative fractions and to
+ *  render annotation marks precisely over the paper — not the surrounding canvas. */
+interface DocBounds {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
 // ── AnnotationLayer (main export) ────────────────────────────────────────────
 
 interface AnnotationLayerProps {
@@ -147,6 +158,13 @@ interface AnnotationLayerProps {
   /** Controlled from outside so the toggle can live in the card header */
   isAnnotating: boolean
   children: React.ReactNode
+  /**
+   * Ref to the actual rendered document element (<img> or <object>).
+   * When provided, annotations are positioned relative to the document's
+   * rendered bounding box rather than the full canvas container.
+   * Coordinates are re-measured on mount, resize, and image load.
+   */
+  documentRef?: React.RefObject<HTMLElement>
 }
 
 export function AnnotationLayer({
@@ -156,6 +174,7 @@ export function AnnotationLayer({
   onCompetencyFocus,
   isAnnotating,
   children,
+  documentRef,
 }: AnnotationLayerProps) {
   const containerRef          = useRef<HTMLDivElement>(null)
   const [drag, setDrag]       = useState<DragState | null>(null)
@@ -165,6 +184,50 @@ export function AnnotationLayer({
   // Popover fields
   const [popComp, setPopComp] = useState<CompKey>('c1')
   const [popText, setPopText] = useState('')
+
+  // ── Document bounding box ─────────────────────────────────────────────────
+  // When a documentRef is provided (img or object element inside the canvas),
+  // we track its rendered bounding box relative to the container so that
+  // annotation coordinates are anchored to the paper, not the dark canvas.
+  const [docBounds, setDocBounds] = useState<DocBounds | null>(null)
+
+  const measureDoc = useCallback(() => {
+    if (!containerRef.current || !documentRef?.current) return
+    const cRect = containerRef.current.getBoundingClientRect()
+    const dRect = documentRef.current.getBoundingClientRect()
+    // Skip if document element has no rendered size yet (e.g. image still loading)
+    if (dRect.width === 0 || dRect.height === 0) return
+    setDocBounds({
+      left:   dRect.left - cRect.left,
+      top:    dRect.top  - cRect.top,
+      width:  dRect.width,
+      height: dRect.height,
+    })
+  }, [documentRef])
+
+  useEffect(() => {
+    if (!documentRef?.current || !containerRef.current) return
+    const docEl = documentRef.current
+
+    // ResizeObserver watches both container and document element for size changes
+    const ro = new ResizeObserver(() => measureDoc())
+    ro.observe(containerRef.current)
+    ro.observe(docEl)
+
+    // For <img> elements: also fire after the image finishes loading
+    if (docEl instanceof HTMLImageElement) {
+      docEl.addEventListener('load', measureDoc)
+    }
+
+    measureDoc() // initial measurement
+
+    return () => {
+      ro.disconnect()
+      if (docEl instanceof HTMLImageElement) {
+        docEl.removeEventListener('load', measureDoc)
+      }
+    }
+  }, [measureDoc, documentRef])
 
   // Close active tooltip when clicking outside
   useEffect(() => {
@@ -190,13 +253,47 @@ export function AnnotationLayer({
 
   // ── Coordinate helpers ──────────────────────────────────────────────────────
 
-  function getRelative(e: MouseEvent<HTMLDivElement>) {
-    const rect = containerRef.current!.getBoundingClientRect()
+  /**
+   * Convert a mouse event to document-relative fractions (0–1).
+   *
+   * When `docBounds` is available the coordinates are relative to the actual
+   * rendered document element (img / object).  Clicks outside that element
+   * return `inBounds: false` so the caller can ignore them.
+   *
+   * Falls back to container-relative fractions when no docBounds has been
+   * measured yet (e.g. during the first render before the image loads).
+   */
+  function getRelative(e: MouseEvent<HTMLDivElement>): {
+    x_pct: number; y_pct: number
+    rawX: number; rawY: number
+    inBounds: boolean
+  } {
+    const cRect = containerRef.current!.getBoundingClientRect()
+
+    if (docBounds) {
+      const docLeft = cRect.left + docBounds.left
+      const docTop  = cRect.top  + docBounds.top
+      const relX    = e.clientX - docLeft
+      const relY    = e.clientY - docTop
+      const inBounds =
+        relX >= 0 && relY >= 0 &&
+        relX <= docBounds.width && relY <= docBounds.height
+      return {
+        x_pct:    Math.max(0, Math.min(1, relX / docBounds.width)),
+        y_pct:    Math.max(0, Math.min(1, relY / docBounds.height)),
+        rawX:     e.clientX,
+        rawY:     e.clientY,
+        inBounds,
+      }
+    }
+
+    // Fallback: container-relative (used for text essays or before doc loads)
     return {
-      x_pct: Math.max(0, Math.min(1, (e.clientX - rect.left)  / rect.width)),
-      y_pct: Math.max(0, Math.min(1, (e.clientY - rect.top)   / rect.height)),
-      rawX:  e.clientX,
-      rawY:  e.clientY,
+      x_pct:    Math.max(0, Math.min(1, (e.clientX - cRect.left) / cRect.width)),
+      y_pct:    Math.max(0, Math.min(1, (e.clientY - cRect.top)  / cRect.height)),
+      rawX:     e.clientX,
+      rawY:     e.clientY,
+      inBounds: true,
     }
   }
 
@@ -204,7 +301,9 @@ export function AnnotationLayer({
 
   function handleMouseDown(e: MouseEvent<HTMLDivElement>) {
     e.preventDefault()
-    const { x_pct, y_pct, rawX, rawY } = getRelative(e)
+    const { x_pct, y_pct, rawX, rawY, inBounds } = getRelative(e)
+    // Ignore clicks outside the actual document area (e.g. canvas padding)
+    if (!inBounds) return
     setDrag({ startXPct: x_pct, startYPct: y_pct, curXPct: x_pct, curYPct: y_pct, startRawX: rawX, startRawY: rawY, curRawX: rawX, curRawY: rawY })
   }
 
@@ -269,14 +368,23 @@ export function AnnotationLayer({
   }
 
   // ── Live drag preview rect ─────────────────────────────────────────────────
+  // Use pixel positioning when docBounds is known (anchors rect to the paper),
+  // fall back to percentage-of-container when no docBounds yet.
 
   const liveRect = drag
-    ? {
-        left:   `${Math.min(drag.startXPct, drag.curXPct) * 100}%`,
-        top:    `${Math.min(drag.startYPct, drag.curYPct) * 100}%`,
-        width:  `${Math.abs(drag.curXPct  - drag.startXPct) * 100}%`,
-        height: `${Math.abs(drag.curYPct  - drag.startYPct) * 100}%`,
-      }
+    ? docBounds
+      ? {
+          left:   `${docBounds.left + Math.min(drag.startXPct, drag.curXPct) * docBounds.width}px`,
+          top:    `${docBounds.top  + Math.min(drag.startYPct, drag.curYPct) * docBounds.height}px`,
+          width:  `${Math.abs(drag.curXPct  - drag.startXPct) * docBounds.width}px`,
+          height: `${Math.abs(drag.curYPct  - drag.startYPct) * docBounds.height}px`,
+        }
+      : {
+          left:   `${Math.min(drag.startXPct, drag.curXPct) * 100}%`,
+          top:    `${Math.min(drag.startYPct, drag.curYPct) * 100}%`,
+          width:  `${Math.abs(drag.curXPct  - drag.startXPct) * 100}%`,
+          height: `${Math.abs(drag.curYPct  - drag.startYPct) * 100}%`,
+        }
     : null
 
   return (
@@ -291,6 +399,7 @@ export function AnnotationLayer({
             <AnnotationMark
               key={ann.id}
               annotation={ann}
+              docBounds={docBounds}
               isActive={activeId === ann.id}
               onActivate={(id) => setActiveId(activeId === id ? null : id)}
               onRemove={onRemove}
@@ -341,18 +450,36 @@ export function AnnotationLayer({
 
 function AnnotationMark({
   annotation: ann,
+  docBounds,
   isActive,
   onActivate,
   onRemove,
   onCompetencyFocus,
 }: {
   annotation: Annotation
+  /** When provided, positions marks in px relative to the document element.
+   *  Falls back to percentage-of-container when null. */
+  docBounds: DocBounds | null
   isActive: boolean
   onActivate: (id: string) => void
   onRemove: (id: string) => void
   onCompetencyFocus?: (key: CompKey) => void
 }) {
   const colors = COMP_COLORS[ann.competency]
+
+  // Compute CSS position values — px when docBounds is known, % otherwise
+  const posLeft   = docBounds
+    ? `${docBounds.left + ann.x_pct * docBounds.width}px`
+    : `${ann.x_pct * 100}%`
+  const posTop    = docBounds
+    ? `${docBounds.top  + ann.y_pct * docBounds.height}px`
+    : `${ann.y_pct * 100}%`
+  const posWidth  = docBounds
+    ? `${ann.w_pct * docBounds.width}px`
+    : `${ann.w_pct * 100}%`
+  const posHeight = docBounds
+    ? `${ann.h_pct * docBounds.height}px`
+    : `${ann.h_pct * 100}%`
 
   const tooltip = isActive ? (
     <AnnotationTooltip
@@ -367,10 +494,10 @@ function AnnotationMark({
       <div
         className={`absolute pointer-events-auto rounded cursor-pointer border ${colors.border}`}
         style={{
-          left:   `${ann.x_pct * 100}%`,
-          top:    `${ann.y_pct * 100}%`,
-          width:  `${ann.w_pct * 100}%`,
-          height: `${ann.h_pct * 100}%`,
+          left:   posLeft,
+          top:    posTop,
+          width:  posWidth,
+          height: posHeight,
           backgroundColor: `color-mix(in srgb, currentColor 6%, transparent)`,
         }}
         title={ann.text}
@@ -393,8 +520,8 @@ function AnnotationMark({
     <div
       className="absolute pointer-events-auto"
       style={{
-        left:      `${ann.x_pct * 100}%`,
-        top:       `${ann.y_pct * 100}%`,
+        left:      posLeft,
+        top:       posTop,
         transform: 'translate(-50%, -50%)',
         zIndex:    isActive ? 20 : 6,
       }}

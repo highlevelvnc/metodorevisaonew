@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Save, Send, ChevronDown, ChevronUp, Clock, Wand2, ArrowRight, History, Search, AlertTriangle, Crosshair } from 'lucide-react'
 import { saveCorrection, type Scores } from '@/lib/actions/corrections'
@@ -292,6 +292,11 @@ export default function CorrectionForm({
   const handleSaveRef         = useRef<() => void>(() => {})
   const hasScrolledToFeedback = useRef(false)
 
+  // Refs for the actual document elements — passed to AnnotationLayer so it can
+  // measure precise bounding boxes and anchor marks to the paper, not the canvas.
+  const imgRef = useRef<HTMLImageElement>(null)
+  const pdfRef = useRef<HTMLObjectElement>(null)
+
   // Use touchedScores for accurate progress tracking (0 is a valid score)
   const allScored = COMPETENCIES.every(c => touchedScores.has(c.key))
   const scored    = COMPETENCIES.filter(c => touchedScores.has(c.key)).length
@@ -580,6 +585,13 @@ export default function CorrectionForm({
                       onRemove={removeAnnotation}
                       onCompetencyFocus={focusCompetency}
                       isAnnotating={annotating}
+                      documentRef={
+                        (fileType === 'image'
+                          ? imgRef
+                          : fileType === 'pdf'
+                          ? pdfRef
+                          : undefined) as React.RefObject<HTMLElement> | undefined
+                      }
                     >
                       {fileType === 'pdf' ? (
                         /* ── PDF canvas ──────────────────────────────────── */
@@ -588,6 +600,7 @@ export default function CorrectionForm({
                           style={{ height: '78vh' }}
                         >
                           <object
+                            ref={pdfRef}
                             data={fileUrl!}
                             type="application/pdf"
                             aria-label="PDF da redação"
@@ -632,6 +645,7 @@ export default function CorrectionForm({
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
+                            ref={imgRef}
                             src={fileUrl!}
                             alt="Redação enviada pelo aluno"
                             className="max-h-full max-w-full object-contain rounded-lg"
