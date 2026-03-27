@@ -13,8 +13,8 @@ const FOUNDERS = [
     badge:       'Sócia fundadora',
     imageSrc:    '/patricia.jpeg',
     alt:         'Patrícia Guimarães — fundadora e professora de redação ENEM',
-    description: 'Formada em Letras pela UERJ, com duas pós-graduações e mestrado pela Universidade de Coimbra. Professora da rede pública do Rio de Janeiro há mais de 36 anos. Especialista em formação de base, estrutura textual e argumentação consistente.',
-    tags: ['36+ anos de experiência', 'UERJ + Coimbra', 'Formação sólida'],
+    description: 'Formada em Letras pela UERJ, com duas pós-graduações e mestrado pelo Instituto Politécnico do Porto (IPP). Professora da rede pública do Rio de Janeiro há mais de 36 anos. Especialista em formação de base, estrutura textual e argumentação consistente.',
+    tags: ['36+ anos de experiência', 'UERJ + IPP Porto', 'Formação sólida'],
   },
   {
     name:        'Beatriz Dias',
