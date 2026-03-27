@@ -28,15 +28,18 @@ function CardContent({
 
   return (
     <motion.div
-      className="h-full w-full rounded-2xl border p-6 flex flex-col gap-4 overflow-hidden select-none shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-md"
+      className="h-full w-full rounded-2xl border p-6 flex flex-col gap-4 overflow-hidden select-none backdrop-blur-md"
       style={{
         background: 'linear-gradient(160deg, rgba(13,19,34,0.96) 0%, rgba(10,14,26,0.98) 100%)',
-        borderColor: isActive ? 'rgba(124,58,237,0.28)' : 'rgba(255,255,255,0.055)',
+        borderColor: isActive ? 'rgba(124,58,237,0.45)' : 'rgba(255,255,255,0.06)',
+        boxShadow: isActive
+          ? '0 0 0 1px rgba(124,58,237,0.18), 0 28px 64px rgba(0,0,0,0.65), 0 0 40px rgba(124,58,237,0.08)'
+          : '0 8px 24px rgba(0,0,0,0.35)',
       }}
       animate={{
-        opacity: isActive ? 1 : 0.42,
-        scale:   isActive ? 1 : 0.95,
-        y:       isActive ? 0 : 10,
+        opacity: isActive ? 1 : 0.52,
+        scale:   isActive ? 1 : 0.93,
+        y:       isActive ? 0 : 12,
       }}
       transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
     >
@@ -148,10 +151,11 @@ export function TestimonialsCarousel({
   }, [])
 
   // ── Card dimensions ──────────────────────────────────────────────────────
-  // Leaves ~44px of peek per side (plus CARD_GAP) so both neighbours are
-  // clearly visible. On very narrow screens floor ensures at least 200px.
-  const PEEK_TOTAL = 88 // left + right (44px each)
-  const cardW = Math.max(containerW - PEEK_TOTAL - CARD_GAP * 2, 200)
+  // Responsive peek: 9% of container on desktop, floored at 36px on mobile.
+  // peek = (containerW - cardW) / 2 - CARD_GAP
+  // → cardW = containerW - 2 * (peek + CARD_GAP)
+  const peekPerSide = Math.max(Math.round(containerW * 0.09), 36)
+  const cardW = Math.max(containerW - 2 * (peekPerSide + CARD_GAP), 200)
 
   // ── Navigation state ─────────────────────────────────────────────────────
   const [activeIdx, setActiveIdx] = React.useState(0)
