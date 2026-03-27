@@ -78,22 +78,9 @@ export default function Depoimentos() {
           </div>
         </div>
 
-        {/* ── Centered deck ──────────────────────────────────────────────── */}
-        {/*
-          The fan-out extends 231px to the right of the 350px-wide deck container
-          (back card at x=66% = 231px). We wrap in overflow-hidden so the fan is
-          visible within the section (which itself is overflow-hidden) but doesn't
-          push or collapse the layout below.
-        */}
-        <div className="flex justify-center mb-14 overflow-hidden">
-          {/*
-            Negative margin shifts the deck slightly left so the visual centre of
-            the fan (front card left edge + ~115px) sits at the viewport centre,
-            mirroring the original demo's -ml-[100px] trick.
-          */}
-          <div className="relative h-[450px] w-[350px] -ml-[80px] sm:-ml-[120px]">
-            <ShuffleCards testimonials={depoimentos} />
-          </div>
+        {/* ── Horizontal carousel ────────────────────────────────────────── */}
+        <div className="mb-14">
+          <ShuffleCards testimonials={depoimentos} />
         </div>
 
         {/* ── Social proof strip ─────────────────────────────────────────── */}

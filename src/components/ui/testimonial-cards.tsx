@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { motion } from 'framer-motion'
+import { motion, PanInfo } from 'framer-motion'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,151 +15,296 @@ export interface Testimonial {
   highlight?: string | null
 }
 
-interface TestimonialCardProps {
-  handleShuffle: () => void
-  testimonial: Testimonial
-  position: 'front' | 'middle' | 'back'
-}
+// ─── Single card content ──────────────────────────────────────────────────────
 
-// ─── Single draggable card ────────────────────────────────────────────────────
-
-export function TestimonialCard({ handleShuffle, testimonial, position }: TestimonialCardProps) {
-  const dragRef = React.useRef(0)
-  const isFront = position === 'front'
+function CardContent({
+  t,
+  isActive,
+}: {
+  t: Testimonial
+  isActive: boolean
+}) {
+  const delta = t.metric ? t.metric.after - t.metric.before : 0
 
   return (
     <motion.div
+      className="h-full w-full rounded-2xl border p-6 flex flex-col gap-4 overflow-hidden select-none shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-md"
       style={{
-        zIndex: position === 'front' ? 2 : position === 'middle' ? 1 : 0,
+        background: 'linear-gradient(160deg, rgba(13,19,34,0.96) 0%, rgba(10,14,26,0.98) 100%)',
+        borderColor: isActive ? 'rgba(124,58,237,0.28)' : 'rgba(255,255,255,0.055)',
       }}
       animate={{
-        rotate: position === 'front' ? '-6deg' : position === 'middle' ? '0deg' : '6deg',
-        x:      position === 'front' ? '0%'    : position === 'middle' ? '33%'  : '66%',
+        opacity: isActive ? 1 : 0.42,
+        scale:   isActive ? 1 : 0.95,
+        y:       isActive ? 0 : 10,
       }}
-      drag={true}
-      dragElastic={0.35}
-      dragListener={isFront}
-      dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-      onDragStart={(e: MouseEvent) => {
-        dragRef.current = e.clientX
-      }}
-      onDragEnd={(e: MouseEvent) => {
-        if (dragRef.current - e.clientX > 150) {
-          handleShuffle()
-        }
-        dragRef.current = 0
-      }}
-      transition={{ duration: 0.35 }}
-      className={`absolute left-0 top-0 grid h-[450px] w-[350px] select-none place-content-center space-y-5 rounded-2xl border border-white/[0.08] bg-[#0d1320]/80 p-6 shadow-2xl backdrop-blur-md ${
-        isFront ? 'cursor-grab active:cursor-grabbing' : ''
-      }`}
+      transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
     >
-      {/* Avatar */}
-      <div className="mx-auto">
-        {testimonial.avatarUrl ? (
+      {/* ── Header: avatar + author info + stars ─────────────────────── */}
+      <div className="flex items-center gap-3.5 flex-shrink-0">
+        {t.avatarUrl ? (
           <img
-            src={testimonial.avatarUrl}
-            alt={`Foto de ${testimonial.author}`}
-            className="pointer-events-none mx-auto h-24 w-24 rounded-full border-2 border-purple-500/30 object-cover"
+            src={t.avatarUrl}
+            alt={`Foto de ${t.author}`}
+            className="w-11 h-11 rounded-full object-cover border border-purple-500/30 flex-shrink-0"
           />
         ) : (
-          <div className="mx-auto h-24 w-24 rounded-full border-2 border-purple-500/30 bg-purple-600/20 flex items-center justify-center">
-            <span className="text-3xl font-bold text-purple-300">
-              {testimonial.author[0]}
+          <div className="w-11 h-11 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+            <span className="text-base font-extrabold text-purple-300">
+              {t.author[0]}
             </span>
           </div>
         )}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-white leading-tight truncate">{t.author}</p>
+          <p className="text-[11px] text-gray-500 leading-tight mt-0.5 truncate">{t.role}</p>
+        </div>
+        {/* Stars */}
+        <div className="flex gap-0.5 flex-shrink-0">
+          {[...Array(5)].map((_, i) => (
+            <svg key={i} className="w-3 h-3 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+          ))}
+        </div>
       </div>
 
-      {/* Star rating */}
-      <div className="flex justify-center gap-0.5">
-        {[...Array(5)].map((_, i) => (
-          <svg key={i} className="w-4 h-4 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        ))}
-      </div>
-
-      {/* Metric badge (when present) */}
-      {testimonial.metric && (
-        <div className="flex items-center justify-center gap-2 bg-green-500/[0.08] border border-green-500/20 rounded-xl px-4 py-2.5">
-          <span className="text-gray-500 text-xs line-through tabular-nums">{testimonial.metric.before}</span>
-          <svg className="w-3 h-3 text-green-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-          <span className="text-green-400 font-extrabold text-base tabular-nums">{testimonial.metric.after}</span>
-          <span className="text-xs text-gray-500">{testimonial.metric.label}</span>
-          <span className="ml-auto text-xs font-bold text-green-400">+{testimonial.metric.after - testimonial.metric.before} pts</span>
+      {/* ── Score progression ─────────────────────────────────────────── */}
+      {t.metric && (
+        <div className="flex items-center gap-2.5 bg-green-500/[0.07] border border-green-500/[0.15] rounded-xl px-4 py-2.5 flex-shrink-0">
+          {/* Before */}
+          <div className="text-center">
+            <p className="text-[9px] text-gray-700 font-semibold uppercase tracking-wider mb-0.5">Antes</p>
+            <span className="text-sm text-gray-500 line-through tabular-nums font-semibold">{t.metric.before}</span>
+          </div>
+          {/* Arrow + line */}
+          <div className="flex-1 flex items-center gap-1.5">
+            <div className="h-px flex-1 bg-gradient-to-r from-gray-700 to-green-500/50" />
+            <svg className="w-3.5 h-3.5 text-green-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </div>
+          {/* After */}
+          <div className="text-center">
+            <p className="text-[9px] text-gray-700 font-semibold uppercase tracking-wider mb-0.5">Depois</p>
+            <span className="text-xl font-extrabold text-green-400 tabular-nums leading-none">{t.metric.after}</span>
+          </div>
+          {/* Delta pill */}
+          <div className="ml-1 bg-green-500/10 border border-green-500/20 rounded-lg px-2.5 py-1.5 flex-shrink-0">
+            <span className="text-xs font-extrabold text-green-400 tabular-nums">+{delta}&thinsp;pts</span>
+          </div>
         </div>
       )}
 
-      {/* Highlight badge */}
-      {!testimonial.metric && testimonial.highlight && (
-        <div className="flex justify-center">
-          <span className="text-xs font-semibold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-full">
-            {testimonial.highlight}
+      {/* ── Highlight pill (no metric) ────────────────────────────────── */}
+      {!t.metric && t.highlight && (
+        <div className="flex-shrink-0">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            {t.highlight}
           </span>
         </div>
       )}
 
-      {/* Quote */}
-      <p className="text-center text-sm italic text-gray-300 leading-relaxed line-clamp-4">
-        &ldquo;{testimonial.testimonial}&rdquo;
+      {/* ── Quote ────────────────────────────────────────────────────── */}
+      <p className="text-sm text-gray-300 leading-[1.75] flex-1 line-clamp-[7]">
+        &ldquo;{t.testimonial}&rdquo;
       </p>
-
-      {/* Author */}
-      <div className="text-center">
-        <p className="text-sm font-semibold text-white">{testimonial.author}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{testimonial.role}</p>
-      </div>
-
-      {/* Drag hint (front card only) */}
-      {isFront && (
-        <p className="text-center text-[10px] text-gray-700 flex items-center justify-center gap-1.5">
-          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 8l4 4-4 4M7 8l-4 4 4 4" />
-          </svg>
-          Arraste para ver o próximo
-        </p>
-      )}
     </motion.div>
   )
 }
 
-// ─── Shuffle deck ─────────────────────────────────────────────────────────────
+// ─── Gap between cards (px) ───────────────────────────────────────────────────
 
-interface ShuffleCardsProps {
+const CARD_GAP = 20
+
+// ─── Main carousel ───────────────────────────────────────────────────────────
+
+export interface TestimonialsCarouselProps {
   testimonials: Testimonial[]
+  /** Fixed card height in px. Default 360 desktop, 320 mobile handled via CSS. */
+  cardHeight?: number
 }
 
-export function ShuffleCards({ testimonials }: ShuffleCardsProps) {
-  // positions array: one entry per testimonial — cycles through front/middle/back/hidden
-  const [positions, setPositions] = React.useState<string[]>(
-    testimonials.map((_, i) => (i === 0 ? 'front' : i === 1 ? 'middle' : 'back'))
+export function TestimonialsCarousel({
+  testimonials,
+}: TestimonialsCarouselProps) {
+  const n = testimonials.length
+
+  // ── Measure container width ──────────────────────────────────────────────
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [containerW, setContainerW] = React.useState(0)
+
+  React.useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const update = () => setContainerW(el.clientWidth)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // ── Card dimensions ──────────────────────────────────────────────────────
+  // Leaves ~44px of peek per side (plus CARD_GAP) so both neighbours are
+  // clearly visible. On very narrow screens floor ensures at least 200px.
+  const PEEK_TOTAL = 88 // left + right (44px each)
+  const cardW = Math.max(containerW - PEEK_TOTAL - CARD_GAP * 2, 200)
+
+  // ── Navigation state ─────────────────────────────────────────────────────
+  const [activeIdx, setActiveIdx] = React.useState(0)
+  const [isDragging, setIsDragging] = React.useState(false)
+
+  // ── Track X position ─────────────────────────────────────────────────────
+  // Centers card[idx] within the viewport container.
+  const trackXFor = React.useCallback(
+    (idx: number) => -(idx * (cardW + CARD_GAP)) + (containerW - cardW) / 2,
+    [cardW, containerW],
   )
 
-  const handleShuffle = () => {
-    setPositions((prev) => {
-      const next = [...prev]
-      next.push(next.shift()!)     // move first → last
-      // Re-map: first 3 visible, rest hidden (same as back visually)
-      return next.map((_, i) => (i === 0 ? 'front' : i === 1 ? 'middle' : 'back'))
-    })
+  // targetX drives the animate prop — framer-motion springs to it.
+  const [targetX, setTargetX] = React.useState(0)
+
+  React.useEffect(() => {
+    if (containerW > 0) setTargetX(trackXFor(activeIdx))
+  }, [activeIdx, containerW, trackXFor])
+
+  // ── Go to index ──────────────────────────────────────────────────────────
+  const goTo = React.useCallback(
+    (idx: number) => {
+      const next = Math.max(0, Math.min(n - 1, idx))
+      setActiveIdx(next)
+      setTargetX(trackXFor(next))
+    },
+    [n, trackXFor],
+  )
+
+  // ── Drag handlers ────────────────────────────────────────────────────────
+  const OFFSET_THRESHOLD   = 55   // px to count as intentional swipe
+  const VELOCITY_THRESHOLD = 350  // px/s flick threshold
+
+  function handleDragStart() {
+    setIsDragging(true)
   }
 
-  // Show only first 3 visible cards (front/middle/back)
-  const visibleTestimonials = testimonials.slice(0, 3)
+  function handleDragEnd(_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) {
+    setIsDragging(false)
+
+    const wentLeft  = info.offset.x < -OFFSET_THRESHOLD || info.velocity.x < -VELOCITY_THRESHOLD
+    const wentRight = info.offset.x >  OFFSET_THRESHOLD || info.velocity.x >  VELOCITY_THRESHOLD
+
+    if (wentLeft)       goTo(activeIdx + 1)
+    else if (wentRight) goTo(activeIdx - 1)
+    else                setTargetX(trackXFor(activeIdx)) // snap back
+  }
+
+  // Drag bounds: allow tiny elastic overshoot at extremes
+  const ELASTIC_OVERSHOOT = 32
+  const dragLeft  = trackXFor(n - 1) - ELASTIC_OVERSHOOT
+  const dragRight = trackXFor(0)      + ELASTIC_OVERSHOOT
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="relative h-[450px] w-[350px]">
-      {visibleTestimonials.map((testimonial, index) => (
-        <TestimonialCard
-          key={testimonial.id}
-          testimonial={testimonial}
-          handleShuffle={handleShuffle}
-          position={positions[index] as 'front' | 'middle' | 'back'}
-        />
-      ))}
+    <div className="w-full select-none">
+
+      {/* ── Carousel viewport ──────────────────────────────────────────── */}
+      <div
+        ref={containerRef}
+        className="w-full overflow-hidden"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      >
+        {/* Render the track only once containerW is known to avoid a layout
+            flash where all cards appear at x=0 before measurement. */}
+        {containerW > 0 && (
+          <motion.div
+            className="flex"
+            style={{ gap: CARD_GAP }}
+            animate={{ x: targetX }}
+            transition={{ type: 'spring', stiffness: 380, damping: 38, mass: 0.85 }}
+            drag="x"
+            dragConstraints={{ left: dragLeft, right: dragRight }}
+            dragElastic={0.10}
+            dragMomentum={false}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            {testimonials.map((t, i) => (
+              <div
+                key={t.id}
+                style={{ width: cardW, height: 360, flexShrink: 0 }}
+                // Clicking a non-active card navigates to it
+                onClick={() => { if (!isDragging && i !== activeIdx) goTo(i) }}
+              >
+                <CardContent t={t} isActive={i === activeIdx} />
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Skeleton height while containerW is being measured */}
+        {containerW === 0 && <div style={{ height: 360 }} />}
+      </div>
+
+      {/* ── Navigation ─────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-center gap-4 mt-7">
+
+        {/* Prev arrow — desktop only */}
+        <button
+          type="button"
+          aria-label="Depoimento anterior"
+          onClick={() => goTo(activeIdx - 1)}
+          disabled={activeIdx === 0}
+          className="hidden sm:flex w-9 h-9 rounded-full border border-white/[0.09] bg-white/[0.04] items-center justify-center text-gray-500 hover:text-white hover:border-white/[0.18] hover:bg-white/[0.08] transition-all disabled:opacity-20 disabled:cursor-not-allowed flex-shrink-0"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+
+        {/* Dot indicators */}
+        <div className="flex items-center gap-2">
+          {testimonials.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Ir para depoimento ${i + 1} de ${n}`}
+              onClick={() => goTo(i)}
+              className={`rounded-full transition-all duration-300 ${
+                i === activeIdx
+                  ? 'w-6 h-[7px] bg-purple-500 shadow-[0_0_8px_rgba(124,58,237,0.6)]'
+                  : 'w-[7px] h-[7px] bg-white/[0.18] hover:bg-white/[0.35]'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Next arrow — desktop only */}
+        <button
+          type="button"
+          aria-label="Próximo depoimento"
+          onClick={() => goTo(activeIdx + 1)}
+          disabled={activeIdx === n - 1}
+          className="hidden sm:flex w-9 h-9 rounded-full border border-white/[0.09] bg-white/[0.04] items-center justify-center text-gray-500 hover:text-white hover:border-white/[0.18] hover:bg-white/[0.08] transition-all disabled:opacity-20 disabled:cursor-not-allowed flex-shrink-0"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Swipe hint — mobile only, unobtrusive ────────────────────────── */}
+      <p className="flex sm:hidden items-center justify-center gap-1.5 mt-3 text-[10px] text-gray-700">
+        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M17 8l4 4-4 4M7 8l-4 4 4 4" />
+        </svg>
+        Arraste para ver o próximo resultado
+      </p>
     </div>
   )
 }
+
+// Backward-compat alias (ShuffleCards is still imported by Depoimentos)
+export const ShuffleCards = TestimonialsCarousel
