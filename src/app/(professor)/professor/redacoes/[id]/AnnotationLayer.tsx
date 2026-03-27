@@ -70,6 +70,58 @@ export const READY_COMMENTS: Record<CompKey, Array<{ id: string; label: string; 
 
 const DRAG_THRESHOLD_PX = 8
 
+// ── Popover geometry ─────────────────────────────────────────────────────────
+// Measured from the rendered popover: w-72 = 288px, rows sum to ~320px.
+const POPOVER_W  = 288
+const POPOVER_H  = 320
+const POP_GAP    = 10   // gap between anchor point and popover edge
+const POP_MARGIN = 10   // minimum distance from viewport edge
+
+/**
+ * Compute the (fixed) screen position for the annotation popover.
+ *
+ * Strategy — 4-quadrant preference:
+ *   1. Try to open to the RIGHT  of the anchor.
+ *   2. If there isn't enough horizontal space, open to the LEFT.
+ *   3. Try to open BELOW the anchor.
+ *   4. If there isn't enough vertical space, open ABOVE.
+ *   5. Final clamp keeps the popover inside the visible viewport in all cases.
+ *
+ * This means on a wide desktop the popover almost always opens bottom-right
+ * (the natural quadrant), flips left near the right edge, and flips up near
+ * the bottom — the professor never has to hunt for it.
+ */
+function computePopoverPos(anchorX: number, anchorY: number): { x: number; y: number } {
+  // Horizontal
+  let x: number
+  const spaceRight = window.innerWidth - anchorX - POP_GAP - POP_MARGIN
+  const spaceLeft  = anchorX           - POP_GAP - POP_MARGIN
+  if (spaceRight >= POPOVER_W) {
+    x = anchorX + POP_GAP
+  } else if (spaceLeft >= POPOVER_W) {
+    x = anchorX - POP_GAP - POPOVER_W
+  } else {
+    // Neither side has clean room — center on anchor, then clamp
+    x = anchorX - POPOVER_W / 2
+  }
+  x = Math.max(POP_MARGIN, Math.min(window.innerWidth - POPOVER_W - POP_MARGIN, x))
+
+  // Vertical
+  let y: number
+  const spaceBelow = window.innerHeight - anchorY - POP_GAP - POP_MARGIN
+  const spaceAbove = anchorY            - POP_GAP - POP_MARGIN
+  if (spaceBelow >= POPOVER_H) {
+    y = anchorY + POP_GAP
+  } else if (spaceAbove >= POPOVER_H) {
+    y = anchorY - POP_GAP - POPOVER_H
+  } else {
+    y = anchorY - POPOVER_H / 2
+  }
+  y = Math.max(POP_MARGIN, Math.min(window.innerHeight - POPOVER_H - POP_MARGIN, y))
+
+  return { x, y }
+}
+
 interface DragState {
   startXPct: number; startYPct: number
   curXPct:   number; curYPct:   number
@@ -168,11 +220,12 @@ export function AnnotationLayer({
     const dy = drag.curRawY - drag.startRawY
     const isDrag = Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD_PX
 
-    // Constrain popover to viewport
-    const popX = Math.min(e.clientX + 14, window.innerWidth  - 296 - 16)
-    const popY = Math.min(e.clientY + 14, window.innerHeight - 380 - 16)
-
     if (isDrag) {
+      // For a highlight, anchor the popover at the top-center of the drawn box
+      // so it opens above or below the selection, not obscuring it.
+      const boxCenterX = (drag.startRawX + drag.curRawX) / 2
+      const boxTopY    = Math.min(drag.startRawY, drag.curRawY)
+      const { x: popX, y: popY } = computePopoverPos(boxCenterX, boxTopY)
       setPending({
         type:  'highlight',
         x_pct: Math.min(drag.startXPct, drag.curXPct),
@@ -182,6 +235,8 @@ export function AnnotationLayer({
         popX, popY,
       })
     } else {
+      // For a pin, anchor at the exact click point
+      const { x: popX, y: popY } = computePopoverPos(e.clientX, e.clientY)
       setPending({ type: 'pin', x_pct: drag.startXPct, y_pct: drag.startYPct, w_pct: 0, h_pct: 0, popX, popY })
     }
 

@@ -564,9 +564,16 @@ export default function CorrectionForm({
                     )}
                   </div>
                 </div>
-                <div className="p-5 max-h-[60vh] overflow-y-auto">
-                  {isFile ? (
-                    /* ── File renderer wrapped in AnnotationLayer ─────── */
+                {isFile ? (
+                  <>
+                    {/*
+                      ── Correction canvas ─────────────────────────────────
+                      Dark, padded workspace that makes the essay feel like a
+                      real paper on a desk. AnnotationLayer wraps only the
+                      canvas so it captures the full 78vh hit area precisely.
+                      The "open in new tab" link lives OUTSIDE the annotation
+                      layer so it remains clickable even in annotation mode.
+                    */}
                     <AnnotationLayer
                       annotations={annotations}
                       onAdd={addAnnotation}
@@ -575,48 +582,62 @@ export default function CorrectionForm({
                       isAnnotating={annotating}
                     >
                       {fileType === 'pdf' ? (
-                        /* ── PDF renderer ──────────────────────────────── */
-                        <div className="space-y-3">
+                        /* ── PDF canvas ──────────────────────────────────── */
+                        <div
+                          className="bg-[#060c14] px-4 pt-4"
+                          style={{ height: '78vh' }}
+                        >
                           <object
                             data={fileUrl!}
                             type="application/pdf"
-                            className="w-full rounded-xl border border-white/[0.08]"
-                            style={{ height: '55vh', minHeight: '320px' }}
                             aria-label="PDF da redação"
+                            style={{
+                              display:   'block',
+                              width:     '100%',
+                              height:    'calc(78vh - 32px)',
+                              minHeight: '420px',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                            }}
                           >
-                            {/* Shown when browser cannot embed the PDF */}
-                            <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                              </svg>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-amber-300">Pré-visualização de PDF não suportada neste navegador</p>
-                                <p className="text-xs text-gray-500 mt-0.5">Abra o PDF diretamente pelo link abaixo.</p>
+                            {/* Shown only when browser can't embed the PDF */}
+                            <div className="h-full flex items-center justify-center p-8">
+                              <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4 max-w-sm">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
+                                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                  <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                                <div>
+                                  <p className="text-xs font-medium text-amber-300">PDF não suportado neste navegador</p>
+                                  <p className="text-xs text-gray-500 mt-0.5">Use o link abaixo para abrir.</p>
+                                </div>
                               </div>
                             </div>
                           </object>
-                          <a
-                            href={fileUrl!}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                            Abrir PDF em nova aba
-                          </a>
                         </div>
                       ) : (
-                        /* ── Image renderer ────────────────────────────── */
-                        <div className="space-y-3">
+                        /* ── Image canvas ────────────────────────────────── */
+                        /*
+                          Flex-centered inside the dark workspace so the paper
+                          is always visually large and centered, with generous
+                          breathing room. The annotation layer's coordinate
+                          reference is this entire container, so annotations at
+                          the paper's edge stay precisely attached even after
+                          window resize (fractions are stable regardless of
+                          absolute canvas dimensions).
+                        */
+                        <div
+                          className="relative flex items-center justify-center bg-[#060c14]"
+                          style={{ height: '78vh', padding: '28px' }}
+                        >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={fileUrl!}
                             alt="Redação enviada pelo aluno"
-                            className="w-full rounded-xl border border-white/[0.08] object-contain"
+                            className="max-h-full max-w-full object-contain rounded-lg"
+                            style={{
+                              boxShadow: '0 4px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)',
+                            }}
                             onError={e => {
                               const el = e.currentTarget
                               el.style.display = 'none'
@@ -625,38 +646,55 @@ export default function CorrectionForm({
                             }}
                           />
                           {/* Fallback — hidden until onError fires */}
-                          <div className="hidden items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
-                              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                              <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                            </svg>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-amber-300">Não foi possível carregar a imagem</p>
-                              <p className="text-xs text-gray-500 mt-0.5">O arquivo original está disponível no link abaixo.</p>
+                          <div className="hidden absolute inset-0 items-center justify-center p-8">
+                            <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4 max-w-sm">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                              </svg>
+                              <div>
+                                <p className="text-xs font-medium text-amber-300">Não foi possível carregar a imagem</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Use o link abaixo para abrir o original.</p>
+                              </div>
                             </div>
                           </div>
-                          <a
-                            href={fileUrl!}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                            Abrir em nova aba
-                          </a>
                         </div>
                       )}
                     </AnnotationLayer>
-                  ) : essay.content_text ? (
-                    /* ── Plain text ───────────────────────────────────── */
+
+                    {/* ── Open-in-new-tab link ──────────────────────────── */}
+                    {/* Outside AnnotationLayer so it's always clickable,
+                        even while annotation mode is active. */}
+                    <div className="px-5 py-2.5 bg-[#060c14] border-t border-white/[0.04] flex items-center justify-between">
+                      <a
+                        href={fileUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-purple-400 transition-colors"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                          <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                        Abrir {fileType === 'pdf' ? 'PDF' : 'imagem'} em nova aba
+                      </a>
+                      {annotating && (
+                        <span className="text-[9px] text-gray-700">
+                          Clique para pin · Arraste para destaque
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : essay.content_text ? (
+                  /* ── Plain text ─────────────────────────────────────────── */
+                  <div className="p-5 max-h-[75vh] overflow-y-auto">
                     <p className="text-sm text-gray-300 leading-[1.9] whitespace-pre-wrap">{essay.content_text}</p>
-                  ) : (
+                  </div>
+                ) : (
+                  <div className="p-5">
                     <p className="text-sm text-gray-600 italic">Texto não disponível.</p>
-                  )}
-                </div>
+                  </div>
+                )}
               </>
             )
           })()}
