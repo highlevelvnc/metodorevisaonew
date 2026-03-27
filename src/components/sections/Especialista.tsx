@@ -1,7 +1,10 @@
 'use client'
-import Image from 'next/image'
+
 import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
+import WaveVisualizer from '@/components/ui/wave-visualizer'
+
+// ─── Credentials list ─────────────────────────────────────────────────────────
 
 const credentials = [
   {
@@ -26,7 +29,15 @@ const credentials = [
         <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
       </svg>
     ),
-    label: 'Mais de 2.000 redações corrigidas',
+    label: '+5.000 redações corrigidas',
+  },
+  {
+    icon: (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+      </svg>
+    ),
+    label: '+10.000 alunos na plataforma',
   },
   {
     icon: (
@@ -38,51 +49,25 @@ const credentials = [
   },
 ]
 
+// ─── Section ──────────────────────────────────────────────────────────────────
+
 export default function Especialista() {
   return (
     <section className="section-padding relative overflow-hidden">
-      {/* Subtle top border glow */}
+      {/* Top border glow */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-600/30 to-transparent" />
+      {/* Bottom border glow */}
       <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-600/20 to-transparent" />
 
       <div className="section-container">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-5xl mx-auto">
 
-          {/* Photo */}
-          <div className="flex justify-center lg:justify-start order-2 lg:order-1">
-            <div className="relative">
-              {/* Glow */}
-              <div className="absolute inset-0 bg-purple-600/20 blur-3xl scale-90 rounded-full pointer-events-none" />
-              {/* Frame */}
-              <div className="relative w-56 h-56 sm:w-72 sm:h-72 rounded-3xl overflow-hidden border-2 border-purple-500/20 shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
-                <Image
-                  src="/bia.jpg"
-                  alt="Especialista da Método Revisão"
-                  fill
-                  sizes="(max-width: 640px) 224px, 288px"
-                  className="object-cover object-top"
-                />
-                {/* Bottom gradient */}
-                <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
-              </div>
-              {/* Rating badge */}
-              <div className="absolute -bottom-4 -right-4 bg-black/90 backdrop-blur border border-white/10 rounded-2xl px-4 py-3 shadow-xl">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <svg key={i} className="w-3.5 h-3.5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <span className="text-white font-bold text-sm">4.9</span>
-                </div>
-                <div className="text-[10px] text-gray-500 mt-0.5">+2.000 correções</div>
-              </div>
-            </div>
+          {/* ── LEFT: wave visualizer with specialist card ─── */}
+          <div className="order-2 lg:order-1">
+            <WaveVisualizer />
           </div>
 
-          {/* Content */}
+          {/* ── RIGHT: copy + credentials + CTA ─────────── */}
           <div className="order-1 lg:order-2">
             <div className="section-label">A especialista</div>
             <h2 className="section-title mb-4">
@@ -90,13 +75,14 @@ export default function Especialista() {
               <span className="gradient-text">Não um algoritmo.</span>
             </h2>
             <p className="section-subtitle mb-8 max-w-md">
-              Cada redação é lida, analisada e comentada por quem entende profundamente as competências do ENEM — e sabe exatamente o que faz uma redação subir de nota.
+              Cada redação é lida, analisada e comentada por quem entende profundamente
+              as competências do ENEM — e sabe exatamente o que faz uma redação subir de nota.
             </p>
 
             <ul className="space-y-4 mb-8">
               {credentials.map((c) => (
                 <li key={c.label} className="flex items-center gap-3">
-                  <div className="icon-box-purple w-9 h-9 rounded-lg">
+                  <div className="icon-box-purple w-9 h-9 rounded-lg flex-shrink-0">
                     {c.icon}
                   </div>
                   <span className="text-sm text-gray-300">{c.label}</span>
@@ -110,11 +96,20 @@ export default function Especialista() {
               onClick={() => trackEvent('cta_click', { source: 'especialista' })}
             >
               Quero a correção desta especialista
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                aria-hidden="true"
+              >
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
           </div>
+
         </div>
       </div>
     </section>
