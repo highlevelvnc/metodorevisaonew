@@ -5,7 +5,7 @@ import { trackEvent } from '@/components/Analytics'
 const faqs = [
   {
     q: 'Como funciona a correção na prática?',
-    a: 'Você escreve sua redação, envia pelo canal de entrega e recebe a devolutiva completa em até 24 horas. A devolutiva inclui nota por competência, anotações no texto, diagnóstico dos seus padrões de erro e orientação específica para a próxima redação.',
+    a: 'Você escreve sua redação, envia pelo canal de entrega e recebe a devolutiva completa em até 48 horas. A devolutiva inclui nota por competência, anotações no texto, diagnóstico dos seus padrões de erro e orientação específica para a próxima redação.',
   },
   {
     q: 'Quem corrige minha redação?',

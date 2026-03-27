@@ -10,7 +10,7 @@ const depoimentos: Testimonial[] = [
     id: 1,
     author:      'Aline R.',
     role:        'Ensino Médio — ENEM',
-    testimonial: 'Depois de 6 correções, finalmente entendi o que estava travando minha nota na C3. Fui de 620 para 780 em dois meses.',
+    testimonial: 'Eu achava que sabia escrever, mas estava repetindo os mesmos erros em todas as redações. Depois de 6 correções, finalmente entendi o que estava travando minha nota na C3. Fui de 620 para 780 em dois meses.',
     metric:      { before: 620, after: 780, label: 'na redação' },
     highlight:   null,
   },
@@ -18,15 +18,15 @@ const depoimentos: Testimonial[] = [
     id: 2,
     author:      'Lucas M.',
     role:        'Vestibulando',
-    testimonial: 'Já tinha feito cursinho e assistido aula de tudo que é tipo. Nada funcionava porque ninguém olhava para a minha redação de verdade. A devolutiva da Método Revisão é outra coisa.',
+    testimonial: 'Já tinha feito cursinho e assistido aula de tudo que é tipo. Nada funcionava porque ninguém olhava para a minha redação de verdade. A devolutiva da Método Revisão é outra coisa. Você sente que alguém leu, entendeu e te explicou o caminho.',
     metric:      { before: 520, after: 820, label: 'na redação' },
     highlight:   null,
   },
   {
     id: 3,
     author:      'Fernanda S.',
-    role:        'Mãe de aluno',
-    testimonial: 'Meu filho odiava escrever. Em 30 dias de acompanhamento, ele já estava pedindo tema novo. A diferença foi ele finalmente entender onde errava.',
+    role:        'Mãe de aluno (9º ano)',
+    testimonial: 'Meu filho odiava escrever. Em 30 dias de acompanhamento, ele já estava pedindo tema novo. A diferença foi ele finalmente entender onde errava, em vez de só receber nota baixa sem explicação.',
     metric:      null,
     highlight:   '30 dias de mudança',
   },
@@ -34,7 +34,7 @@ const depoimentos: Testimonial[] = [
     id: 4,
     author:      'Rafael T.',
     role:        'Treineiro ENEM',
-    testimonial: 'Comecei com medo de redação. Hoje é a parte da prova que eu mais confio. O plano Estratégia me deu a estrutura que eu precisava.',
+    testimonial: 'Comecei com medo de redação. Hoje é a parte da prova que eu mais confio. O plano Estratégia me deu a estrutura que eu precisava: escrever, receber correção real e melhorar toda semana.',
     metric:      null,
     highlight:   'Plano Estratégia',
   },
@@ -66,7 +66,7 @@ export default function Depoimentos() {
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="text-center mb-14">
           <div className="section-label justify-center">Resultados</div>
-          <h2 className="section-title mb-5">Quem usa, evolui.</h2>
+          <h2 className="section-title mb-5">Mais de 10.000 redações corrigidas. Essas são algumas das histórias.</h2>
 
           {/* Rating summary */}
           <div className="inline-flex items-center gap-3 bg-white/[0.04] border border-white/[0.07] rounded-xl px-5 py-3">
@@ -131,9 +131,9 @@ export default function Depoimentos() {
           {/* Trust stats */}
           <div className="grid grid-cols-3 gap-3 pt-1">
             {[
-              { value: '+5.000', label: 'redações corrigidas' },
-              { value: '+10.000', label: 'alunos ativos'     },
-              { value: '4.9 ★',  label: 'avaliação média'   },
+              { value: '10.000+', label: 'redações corrigidas' },
+              { value: '+180',   label: 'pts de evolução média' },
+              { value: '4.9 ★',  label: 'avaliação média dos alunos' },
             ].map((s) => (
               <div key={s.label} className="text-center rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-3">
                 <p className="text-sm font-extrabold text-white tabular-nums leading-none mb-1">{s.value}</p>

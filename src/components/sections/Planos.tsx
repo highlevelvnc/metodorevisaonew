@@ -22,7 +22,7 @@ const planos = [
       'Orientação para a próxima redação',
       'Devolutiva em até 24h',
     ],
-    cta: 'Assinar Evolução — R$ 97',
+    cta: 'Começar com o Evolução →',
     sub: 'Uma redação por semana, com feedback real.',
   },
   {
@@ -43,8 +43,8 @@ const planos = [
       'Propostas de tema direcionadas',
       'Prioridade na devolutiva',
     ],
-    cta: 'Assinar Estratégia — R$ 167',
-    sub: 'O plano que mais gera resultado.',
+    cta: 'Quero o plano Estratégia →',
+    sub: 'Duas redações por semana + sessão ao vivo. O plano que mais gera resultado.',
   },
   {
     name: 'Intensivo',
@@ -65,8 +65,8 @@ const planos = [
       'Análise quinzenal de evolução',
       'Canal direto para dúvidas rápidas',
     ],
-    cta: 'Assinar Intensivo — R$ 227',
-    sub: 'Aceleração máxima antes da prova.',
+    cta: 'Quero o Intensivo →',
+    sub: 'Três redações por semana com acompanhamento próximo. Para quem não pode esperar.',
   },
 ]
 
@@ -85,9 +85,9 @@ export default function Planos() {
         {/* Header */}
         <div className="text-center mb-5">
           <div className="section-label justify-center">Planos</div>
-          <h2 className="section-title mb-4">Escolha seu ritmo de evolução.</h2>
+          <h2 className="section-title mb-4">Quanto mais você treina com direção, mais rápido sua nota sobe.</h2>
           <p className="section-subtitle mx-auto max-w-xl">
-            Todos os planos incluem correção por especialista, devolutiva detalhada por competência e acompanhamento da sua evolução.
+            Todos os planos incluem correção estratégica por especialista, devolutiva detalhada por competência e acompanhamento da sua evolução.
           </p>
         </div>
 
@@ -197,6 +197,11 @@ export default function Planos() {
             ))}
           </div>
         </div>
+
+        {/* Note of confidence */}
+        <p className="text-center text-xs text-gray-700 mt-5">
+          Sem fidelidade. Cancele quando quiser. Sua evolução é o que te mantém.
+        </p>
       </div>
     </section>
   )

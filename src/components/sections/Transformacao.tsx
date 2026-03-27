@@ -90,7 +90,7 @@ export default function Transformacao() {
               </div>
               <div>
                 <p className="text-sm text-gray-300 leading-relaxed">
-                  <strong className="text-white">Lucas M.</strong> começou com 520 na redação. Em 12 semanas de acompanhamento, chegou a 820. Entendeu que seus erros estavam concentrados na Competência 3 e na proposta de intervenção. Com direção clara, evoluiu <strong className="text-purple-400">+300 pontos</strong>.
+                  <strong className="text-white">Lucas M.</strong> começou com 520 na redação. Em 12 semanas de acompanhamento, chegou a 820. O que mudou? Ele parou de chutar e começou a corrigir com estratégia. Entendeu que seus erros estavam concentrados na Competência 3 e na proposta de intervenção. Com direção clara, evoluiu <strong className="text-purple-400">+300 pontos</strong>.
                 </p>
               </div>
             </div>

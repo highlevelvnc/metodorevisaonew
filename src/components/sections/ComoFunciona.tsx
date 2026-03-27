@@ -11,28 +11,28 @@ const steps = [
   {
     n: '01',
     title: 'Escreva',
-    desc: 'Você escolhe um tema (ou recebe nossa proposta) e escreve no seu ritmo.',
+    desc: 'Você escolhe um tema (ou recebe uma proposta nossa) e escreve sua redação no seu ritmo. Pode ser no papel e enviar foto, ou digitar direto.',
     color: 'text-purple-400',
     bg: 'bg-purple-600/10 border-purple-500/20',
   },
   {
     n: '02',
     title: 'Envie',
-    desc: 'Manda pelo canal exclusivo. Sem plataforma complicada, sem burocracia.',
+    desc: 'Manda sua redação pelo canal exclusivo de entrega. Sem burocracia, sem plataforma complicada.',
     color: 'text-violet-400',
     bg: 'bg-violet-600/10 border-violet-500/20',
   },
   {
     n: '03',
-    title: 'Receba a devolutiva',
-    desc: 'Em até 24h: nota por competência, anotações no texto e diagnóstico dos seus padrões.',
+    title: 'Receba sua devolutiva estratégica',
+    desc: 'Em até 24h: nota detalhada por competência (C1 a C5), anotações diretas no texto, diagnóstico dos seus padrões de erro e orientação específica para a próxima redação.',
     color: 'text-indigo-400',
     bg: 'bg-indigo-600/10 border-indigo-500/20',
   },
   {
     n: '04',
     title: 'Evolua',
-    desc: 'Cada correção revela um padrão. Cada redação corrige um erro. Sua nota sobe.',
+    desc: 'A cada correção, você entende mais sobre seus erros. A cada redação, repete menos. Sua evolução fica visível — para você e para sua nota.',
     color: 'text-sky-400',
     bg: 'bg-sky-600/10 border-sky-500/20',
   },
@@ -361,18 +361,14 @@ export default function ComoFunciona() {
         <div className="text-center mb-14">
           <div className="section-label justify-center">Como funciona na prática</div>
 
-          {/* Improved title — shows the 3-step transformation */}
           <h2 className="section-title mb-4">
-            Você escreve.{' '}
-            <span className="gradient-text">A especialista lê cada linha.</span>
-            <br className="hidden sm:block" />
-            {' '}Sua nota deixa de estacionar.
+            Um método simples.{' '}
+            <span className="gradient-text">Uma evolução real.</span>
           </h2>
 
-          {/* Stronger subtitle — names the differentiators */}
           <p className="section-subtitle mx-auto max-w-2xl">
-            Cada redação volta com anotações reais, nota por competência e orientação
-            específica para a próxima. <span className="text-white/70 font-medium">Sem IA. Sem resposta genérica.</span>
+            Cada redação que você envia volta com um mapa claro do que melhorar.{' '}
+            <span className="text-white/70 font-medium">E a cada ciclo, sua nota sobe.</span>
           </p>
         </div>
 

@@ -196,24 +196,20 @@ export default function Hero() {
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
-              Sistema completo de evolução
+              Correção estratégica de redação para o ENEM
             </p>
 
             {/* Headline */}
-            <h1 className="text-[2.4rem] sm:text-5xl lg:text-[3rem] xl:text-[3.4rem] font-extrabold text-white leading-[1.06] tracking-tight mb-5">
-              Evolua sua redação com{' '}
-              <span className="gradient-text">direção, estratégia</span>{' '}
-              e feedback real.
+            <h1 className="text-[2.2rem] sm:text-[2.7rem] lg:text-[2.9rem] xl:text-[3.2rem] font-extrabold text-white leading-[1.08] tracking-tight mb-5">
+              Você não precisa de mais{' '}
+              <span className="gradient-text">aula de redação.</span>{' '}
+              Você precisa entender onde está errando.
             </h1>
 
             {/* Subheadline */}
-            <p className="text-base sm:text-[1.05rem] lg:text-base xl:text-[1.05rem] text-gray-400 leading-relaxed mb-3 max-w-[490px]">
-              Correção humana especializada, inteligência da Biia e um sistema pensado para fazer sua nota subir com consistência.
-            </p>
-
-            {/* Supporting line */}
-            <p className="text-sm text-gray-600 mb-9">
-              ENEM, vestibulares e treino estratégico em um só lugar.
+            <p className="text-base sm:text-[1.05rem] lg:text-base xl:text-[1.05rem] text-gray-400 leading-relaxed mb-8 max-w-[510px]">
+              A Método Revisão corrige sua redação com estratégia, mostra seus padrões de erro e te acompanha até sua nota subir de verdade.{' '}
+              <span className="text-gray-300">Tudo com uma especialista real, não com inteligência artificial.</span>
             </p>
 
             {/* CTA group */}
@@ -223,7 +219,7 @@ export default function Hero() {
                 onClick={() => trackEvent('checkout_started', { plan: 'estrategia', source: 'hero' })}
                 className="btn-primary-lg animate-glow-pulse sm:whitespace-nowrap"
               >
-                Começar minha evolução
+                Quero começar minha evolução
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
@@ -232,31 +228,17 @@ export default function Hero() {
                 href="#como-funciona"
                 className="btn-secondary-lg sm:whitespace-nowrap"
               >
-                Explorar a plataforma
+                Ver como funciona ↓
               </a>
             </div>
 
-            {/* Tertiary CTA */}
-            <div className="flex items-center gap-2 mb-5">
-              <a
-                href="#como-funciona"
-                className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-400 transition-colors"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" />
-                  <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
-                </svg>
-                Ver como funciona
-              </a>
-            </div>
-
-            {/* Micro-trust */}
-            <p className="text-xs text-gray-700">
-              Sem fidelidade &nbsp;·&nbsp; Cancele quando quiser &nbsp;·&nbsp; Devolutiva em até 24h
+            {/* Micro-trust inline */}
+            <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+              10.000+ redações corrigidas &nbsp;·&nbsp; Evolução média de +180 pts &nbsp;·&nbsp; Devolutiva em até 24h &nbsp;·&nbsp; 4.9/5
             </p>
 
             {/* Returning user link */}
-            <p className="text-sm text-gray-700 mt-3">
+            <p className="text-sm text-gray-700 mt-2">
               Já tem uma conta?{' '}
               <Link
                 href="/login"
