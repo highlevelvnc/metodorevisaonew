@@ -1,11 +1,9 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import { BookOpen, PenLine, Send, Star, Sparkles, TrendingUp } from 'lucide-react'
 import { trackEvent } from '@/components/Analytics'
 import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline'
-
-const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
 
 const steps = [
   {
@@ -445,10 +443,8 @@ export default function ComoFunciona() {
               </div>
 
               {/* Primary CTA — positioned right after process is understood */}
-              <a
-                href={WA_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/checkout/evolucao"
                 className="btn-primary"
                 onClick={() => trackEvent('cta_click', { source: 'como-funciona-primary' })}
               >
@@ -456,7 +452,7 @@ export default function ComoFunciona() {
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-              </a>
+              </Link>
 
               {/* Trust micro-copy below CTA */}
               <p className="text-xs text-gray-700 mt-3">
@@ -755,10 +751,8 @@ export default function ComoFunciona() {
               </div>
 
               {/* Secondary CTA — converts after visual proof */}
-              <a
-                href={WA_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/checkout/evolucao"
                 className="flex-shrink-0 inline-flex items-center gap-2 text-sm font-bold text-white bg-purple-700/60 hover:bg-purple-600/80 border border-purple-500/50 hover:border-purple-400/70 rounded-xl px-5 py-3 transition-all duration-200 whitespace-nowrap hover:shadow-btn-primary hover:-translate-y-px active:scale-[0.98]"
                 onClick={() => trackEvent('cta_click', { source: 'como-funciona-secondary' })}
               >
@@ -766,7 +760,7 @@ export default function ComoFunciona() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-              </a>
+              </Link>
             </div>
 
           </div>

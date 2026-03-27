@@ -5,9 +5,6 @@ import { getAllPosts, getPostBySlug } from '@/lib/blog'
 import { remark } from 'remark'
 import html from 'remark-html'
 
-const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20blog%20do%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20saber%20mais%20sobre%20as%20aulas.'
-
 interface Props {
   params: { slug: string }
 }
@@ -59,7 +56,7 @@ export default async function PostPage({ params }: Props) {
   }
 
   return (
-    <div className="pt-16 min-h-screen bg-white">
+    <div className="pt-16 min-h-screen bg-[#080d18]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdArticle) }}
@@ -67,20 +64,20 @@ export default async function PostPage({ params }: Props) {
 
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-400 mb-8">
-          <Link href="/" className="hover:text-purple-700 transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/blog" className="hover:text-purple-700 transition-colors">Blog</Link>
-          <span>/</span>
-          <span className="text-gray-600 truncate max-w-[200px]">{post.title}</span>
+        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-8">
+          <Link href="/" className="hover:text-purple-400 transition-colors">Home</Link>
+          <span className="text-white/20">/</span>
+          <Link href="/blog" className="hover:text-purple-400 transition-colors">Blog</Link>
+          <span className="text-white/20">/</span>
+          <span className="text-gray-400 truncate max-w-[200px]">{post.title}</span>
         </nav>
 
         {/* Meta */}
         <div className="flex items-center gap-3 mb-6">
-          <span className="bg-purple-50 text-purple-700 text-xs font-bold px-3 py-1 rounded-full">
+          <span className="bg-purple-500/[0.10] border border-purple-500/20 text-purple-300 text-xs font-bold px-3 py-1 rounded-full">
             {post.category}
           </span>
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-gray-500">
             {new Date(post.date).toLocaleDateString('pt-BR', {
               day: '2-digit',
               month: 'long',
@@ -96,28 +93,50 @@ export default async function PostPage({ params }: Props) {
         />
 
         {/* CTA post */}
-        <div className="mt-16 bg-purple-700 rounded-3xl p-8 text-center text-white">
-          <div className="text-3xl mb-4">👩‍🏫</div>
-          <h2 className="text-2xl font-bold mb-3">Quer acompanhamento personalizado?</h2>
-          <p className="text-purple-200 mb-6">
-            Beatriz Dias cria um plano de estudos sob medida para você — com aulas online, exercícios e feedback constante.
-          </p>
-          <a
-            href={WA_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-white text-purple-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.424h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+        <div className="mt-16 relative rounded-2xl overflow-hidden border border-purple-500/[0.22] p-8 text-center"
+          style={{ background: 'linear-gradient(145deg, rgba(124,58,237,0.12) 0%, rgba(124,58,237,0.04) 100%)' }}>
+          {/* Top accent */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
+
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/[0.12] border border-purple-500/20 flex items-center justify-center mx-auto mb-5">
+            <svg className="w-6 h-6 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
             </svg>
-            Falar com a Beatriz
-          </a>
+          </div>
+
+          <h2 className="text-xl font-bold text-white mb-3">
+            Quer correção personalizada da sua redação?
+          </h2>
+          <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-md mx-auto">
+            Professoras especializadas no ENEM entregam devolutiva individual em até 24h —
+            com diagnóstico por competência (C1–C5) e plano de evolução.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/checkout/evolucao"
+              className="btn-primary text-sm px-6 py-3"
+            >
+              Começar agora
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
+              href="/#planos"
+              className="text-sm text-gray-400 hover:text-white transition-colors font-medium"
+            >
+              Ver todos os planos →
+            </Link>
+          </div>
         </div>
 
         {/* Back to blog */}
         <div className="mt-8 text-center">
-          <Link href="/blog" className="text-purple-700 font-semibold hover:text-purple-900 transition-colors flex items-center justify-center gap-2">
+          <Link
+            href="/blog"
+            className="text-purple-400 font-semibold hover:text-purple-300 transition-colors flex items-center justify-center gap-2 text-sm"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
