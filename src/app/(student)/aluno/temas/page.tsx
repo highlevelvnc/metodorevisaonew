@@ -128,6 +128,41 @@ function getThemeTags(title: string): ThemeTag[] {
   return tags.slice(0, 2)
 }
 
+// ─── Student activity helpers ─────────────────────────────────────────────────
+
+/** Consecutive-week streak — same algorithm as the dashboard. */
+function computeWeekStreak(essays: { submitted_at: string }[]): number {
+  if (!essays.length) return 0
+  const MS_WEEK = 7 * 24 * 60 * 60 * 1000
+  const now     = Date.now()
+  const weeks   = new Set(essays.map(e => Math.floor((now - new Date(e.submitted_at).getTime()) / MS_WEEK)))
+  const start   = weeks.has(0) ? 0 : 1          // grace: count current week even if just started
+  let streak = 0, i = start
+  while (weeks.has(i)) { streak++; i++ }
+  return streak
+}
+
+/** Human-readable mastery label for the number of explored categories. */
+function getCategoryMasteryLabel(n: number): string {
+  if (n >= 7) return 'explorador'
+  if (n >= 5) return 'diversificado'
+  if (n >= 3) return 'crescendo'
+  if (n >= 1) return 'iniciando'
+  return ''
+}
+
+/** Max essays the student has written in any category shared by a theme. */
+function getSimilarCount(tags: ThemeTag[], catMap: Map<ThemeTag, number>): number {
+  return tags.reduce((max, tag) => Math.max(max, catMap.get(tag) ?? 0), 0)
+}
+
+// ─── All tag keys (for variety engine) ───────────────────────────────────────
+
+const ALL_TAGS: ThemeTag[] = [
+  'tecnologia', 'educação', 'meio ambiente', 'saúde',
+  'direitos humanos', 'desigualdade', 'democracia', 'cultura', 'economia',
+]
+
 // ─── Text helpers ────────────────────────────────────────────────────────────
 
 function normalizeTitle(t: string): string {
@@ -334,9 +369,12 @@ export default async function TemasPage({
   ] = await Promise.all([
     themeQuery,
 
-    // Student's essay-theme counts (for trained/untrained filter)
+    // All student essays — used for: trained/untrained filter + streak + category distribution
     user
-      ? db.from('essays').select('theme_id').eq('student_id', user.id).not('theme_id', 'is', null)
+      ? db.from('essays')
+          .select('theme_id, theme_title, submitted_at')
+          .eq('student_id', user.id)
+          .order('submitted_at', { ascending: false })
       : Promise.resolve({ data: [] }),
 
     // Weakest competency from most recent correction
@@ -360,11 +398,19 @@ export default async function TemasPage({
       .limit(500),
   ])
 
-  /* ── Essay counts per official theme ─────────────────────────────────────── */
+  /* ── Student essay profile ────────────────────────────────────────────────── */
+  type StudentEssayRow = { theme_id: string | null; theme_title: string | null; submitted_at: string }
+  const studentEssays     = (essaysRaw ?? []) as StudentEssayRow[]
+  const totalStudentEssays = studentEssays.length
+
+  // Per-official-theme counts (for trained / untrained filter)
   const essayCounts: Record<string, number> = {}
-  for (const row of (essaysRaw ?? []) as { theme_id: string }[]) {
+  for (const row of studentEssays) {
     if (row.theme_id) essayCounts[row.theme_id] = (essayCounts[row.theme_id] ?? 0) + 1
   }
+
+  // Week streak
+  const weekStreak = computeWeekStreak(studentEssays)
 
   /* ── Weakest competency ───────────────────────────────────────────────────── */
   const compKeys = ['c1_score', 'c2_score', 'c3_score', 'c4_score', 'c5_score']
@@ -402,6 +448,61 @@ export default async function TemasPage({
       })
       .slice(0, max)
   }
+
+  /* ── Student category distribution (variety engine) ─────────────────────── */
+  // Build a map: ThemeTag → number of student essays in that category.
+  // We look at both official essays (via theme_id → title) and free-text essays.
+  const officialById = new Map(allOfficial.map(t => [t.id, t]))
+  const studentCategoryMap = new Map<ThemeTag, number>()
+
+  for (const e of studentEssays) {
+    let title: string | null = null
+    if (e.theme_id) {
+      title = officialById.get(e.theme_id)?.title ?? null
+    } else if (e.theme_title && isQualityTitle(e.theme_title)) {
+      title = e.theme_title
+    }
+    if (title) {
+      for (const tag of getThemeTags(title)) {
+        studentCategoryMap.set(tag, (studentCategoryMap.get(tag) ?? 0) + 1)
+      }
+    }
+  }
+
+  const uniqueCategoriesExplored = studentCategoryMap.size
+
+  // Underrepresented tags — sorted by ascending student essay count, used for variety
+  const underrepresentedTags = [...ALL_TAGS].sort(
+    (a, b) => (studentCategoryMap.get(a) ?? 0) - (studentCategoryMap.get(b) ?? 0)
+  )
+
+  // Variety saturation check: is the comp-suggested category already overwritten?
+  const SATURATION_THRESHOLD = 3
+  const compSuggTags = suggestion ? getThemeTags(suggestion.title) : []
+  const isCompCategorySaturated =
+    compSuggTags.length > 0 &&
+    compSuggTags.some(tag => (studentCategoryMap.get(tag) ?? 0) >= SATURATION_THRESHOLD)
+
+  // If saturated, surface the most underrepresented category as Biia's next suggestion
+  const diverseTag = isCompCategorySaturated ? underrepresentedTags[0] : null
+  const diverseOfficialTheme = diverseTag
+    ? allOfficial.find(t => {
+        const tags = themeTagsMap.get(t.id) ?? []
+        return tags.includes(diverseTag) && !essayCounts[t.id]
+      }) ?? null
+    : null
+  const varietyReason = isCompCategorySaturated && compSuggTags[0]
+    ? `Você já praticou bastante em "${compSuggTags[0]}" — explorar ${diverseTag ?? 'uma nova categoria'} agora treina argumentação de forma mais ampla e ainda trabalha ${weakestCompKey ? COMP_NAMES[weakestCompKey] : 'suas competências'}.`
+    : null
+
+  // Sort seed themes: prefer categories the student has practiced the LEAST
+  const sortedSeeds = totalStudentEssays > 0
+    ? [...SEED_THEMES].sort((a, b) => {
+        const aMin = getThemeTags(a.title).reduce((m, tag) => Math.min(m, studentCategoryMap.get(tag) ?? 0), 99)
+        const bMin = getThemeTags(b.title).reduce((m, tag) => Math.min(m, studentCategoryMap.get(tag) ?? 0), 99)
+        return aMin - bMin
+      })
+    : SEED_THEMES
 
   /* ── Build community themes ───────────────────────────────────────────────── */
   const communityMap = new Map<string, { title: string; count: number; lastSeen: string }>()
@@ -483,7 +584,7 @@ export default async function TemasPage({
         </p>
       </div>
 
-      {/* ── 🎯 Recomendado para você ── competency-aware suggestion card ──────── */}
+      {/* ── 🎯 Recomendado para você ── variety-aware + competency-driven card ── */}
       {suggestion && weakestCompKey && (
         <div className="rounded-2xl border border-purple-500/[0.2] bg-gradient-to-br from-purple-900/20 to-purple-950/10 p-5 mb-6">
           <div className="flex items-start gap-3">
@@ -495,30 +596,62 @@ export default async function TemasPage({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">
-                  🎯 Recomendado para você agora
+                  🎯 Próximo tema sugerido pela Biia
                 </span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
                   Treina {COMP_LABELS[weakestCompKey]} — {COMP_NAMES[weakestCompKey]}
                 </span>
+                {isCompCategorySaturated && diverseTag && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                    ↗ diversifica repertório
+                  </span>
+                )}
               </div>
-              <p className="text-sm font-bold text-white mb-1.5 leading-snug">{suggestion.title}</p>
-              <p className="text-xs text-gray-500 leading-relaxed mb-3">{suggestion.reason}</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Link
-                  href={`/aluno/redacoes/nova?tema_livre=${encodeURIComponent(suggestion.title)}`}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 hover:scale-[1.02] text-white transition-all duration-150"
-                >
-                  <IconPen />
-                  Escrever este tema
-                </Link>
-                <a
-                  href={biiaPrompt(suggestion.title)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl border border-purple-600/30 bg-purple-700/10 text-purple-300 hover:bg-purple-700/20 hover:scale-[1.02] transition-all duration-150"
-                >
-                  <IconSparkle />
-                  Gerar repertório com a Biia
-                </a>
-              </div>
+
+              {/* If saturated, show variety-override theme; else show comp suggestion */}
+              {isCompCategorySaturated && diverseOfficialTheme ? (
+                <>
+                  <p className="text-sm font-bold text-white mb-1.5 leading-snug">{diverseOfficialTheme.title}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-3">{varietyReason}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Link
+                      href={`/aluno/redacoes/nova?tema=${diverseOfficialTheme.id}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 hover:scale-[1.02] text-white transition-all duration-150"
+                    >
+                      <IconPen />
+                      Escrever este tema
+                    </Link>
+                    <a
+                      href={biiaPrompt(diverseOfficialTheme.title)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl border border-purple-600/30 bg-purple-700/10 text-purple-300 hover:bg-purple-700/20 hover:scale-[1.02] transition-all duration-150"
+                    >
+                      <IconSparkle />
+                      Gerar repertório com a Biia
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-white mb-1.5 leading-snug">{suggestion.title}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-3">{suggestion.reason}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Link
+                      href={`/aluno/redacoes/nova?tema_livre=${encodeURIComponent(suggestion.title)}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 hover:scale-[1.02] text-white transition-all duration-150"
+                    >
+                      <IconPen />
+                      Escrever este tema
+                    </Link>
+                    <a
+                      href={biiaPrompt(suggestion.title)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl border border-purple-600/30 bg-purple-700/10 text-purple-300 hover:bg-purple-700/20 hover:scale-[1.02] transition-all duration-150"
+                    >
+                      <IconSparkle />
+                      Gerar repertório com a Biia
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -550,6 +683,52 @@ export default async function TemasPage({
           </>
         )}
       </div>
+
+      {/* ── Gamification strip ── streak · category mastery · total essays ────── */}
+      {totalStudentEssays > 0 && !treinoFilter && !selectedYear && (
+        <div className="grid grid-cols-3 gap-2 mb-5">
+
+          {/* Streak */}
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            {weekStreak > 0 ? (
+              <>
+                <p className="text-base font-bold text-white tabular-nums leading-none">
+                  {weekStreak}
+                  <span className="text-[10px] font-normal text-gray-600 ml-0.5">sem.</span>
+                </p>
+                <p className={`text-[10px] mt-0.5 ${weekStreak >= 3 ? 'text-amber-400' : 'text-gray-700'}`}>
+                  {weekStreak >= 3 ? '🔥 sequência' : 'sequência'}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-bold text-gray-600 leading-none">—</p>
+                <p className="text-[10px] text-gray-700 mt-0.5">Sequência</p>
+              </>
+            )}
+          </div>
+
+          {/* Category mastery */}
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <p className="text-base font-bold text-white tabular-nums leading-none">
+              {uniqueCategoriesExplored}
+              <span className="text-[10px] font-normal text-gray-600 ml-px">/{ALL_TAGS.length}</span>
+            </p>
+            <p className={`text-[10px] mt-0.5 ${uniqueCategoriesExplored >= 5 ? 'text-purple-400' : 'text-gray-700'}`}>
+              {getCategoryMasteryLabel(uniqueCategoriesExplored) || 'categorias'}
+            </p>
+          </div>
+
+          {/* Total essays */}
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-center">
+            <p className="text-base font-bold text-white tabular-nums leading-none">{totalStudentEssays}</p>
+            <p className="text-[10px] text-gray-700 mt-0.5">
+              redaç{totalStudentEssays === 1 ? 'ão' : 'ões'}
+            </p>
+          </div>
+
+        </div>
+      )}
 
       {/* Filters row — only show when DB has official themes */}
       {!dbIsEmpty && (
@@ -624,12 +803,12 @@ export default async function TemasPage({
             ✨ Sugestões para começar
           </SectionDivider>
           <div className="space-y-2">
-            {SEED_THEMES.map((theme, i) => (
+            {sortedSeeds.map((theme, i) => (
               <SeedThemeRow key={i} theme={theme} />
             ))}
           </div>
           <p className="mt-4 text-xs text-gray-700 text-center">
-            {SEED_THEMES.length} temas curados para o ENEM
+            {sortedSeeds.length} temas curados para o ENEM
           </p>
         </div>
       )}
@@ -665,12 +844,12 @@ export default async function TemasPage({
                   Ver todos os temas
                 </Link>
               </div>
-              {/* Fallback: show seed themes even when filter returns nothing */}
+              {/* Fallback: show variety-sorted seed themes even when filter returns nothing */}
               <SectionDivider right="Pratique enquanto isso">
                 Temas recomendados
               </SectionDivider>
               <div className="space-y-2">
-                {SEED_THEMES.slice(0, 4).map((theme, i) => (
+                {sortedSeeds.slice(0, 4).map((theme, i) => (
                   <SeedThemeRow key={i} theme={theme} />
                 ))}
               </div>
@@ -682,6 +861,18 @@ export default async function TemasPage({
                 const alreadyDone  = count > 0
                 const related      = getRelatedThemes(theme.id)
                 const tags         = themeTagsMap.get(theme.id) ?? []
+
+                // Progress context: how many student essays share a category with this theme
+                const similarCount   = getSimilarCount(tags, studentCategoryMap)
+                const progressCtx    = alreadyDone
+                  ? null
+                  : totalStudentEssays === 0
+                    ? null
+                    : similarCount >= 2
+                      ? `Você praticou ${similarCount} tema(s) similar(es)`
+                      : similarCount === 0
+                        ? 'Novo para você'
+                        : null
 
                 return (
                   <div
@@ -740,11 +931,20 @@ export default async function TemasPage({
                             {theme.title}
                           </p>
 
-                          {/* Count + related themes */}
+                          {/* Count + progress context + related themes */}
                           <div className="mt-1.5 flex items-center gap-3 flex-wrap">
                             {alreadyDone && (
                               <span className="text-[11px] text-gray-700">
                                 {count === 1 ? '1 redação escrita' : `${count} redações escritas`}
+                              </span>
+                            )}
+                            {progressCtx && (
+                              <span className={`text-[10px] font-medium ${
+                                progressCtx === 'Novo para você'
+                                  ? 'text-green-400/80'
+                                  : 'text-blue-400/70'
+                              }`}>
+                                {progressCtx === 'Novo para você' ? '✦ ' : ''}{progressCtx}
                               </span>
                             )}
                             {related.length > 0 && (
