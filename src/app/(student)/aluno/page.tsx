@@ -220,27 +220,59 @@ export default async function AlunoDashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
-  const [{ data: profileRaw }, { data: subRaw }, { data: essaysRaw }] = await Promise.all([
-    supabase.from('users').select('full_name').eq('id', user.id).single(),
-    db.from('subscriptions')
-      .select('essays_used, essays_limit, plans(name)')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    db.from('essays')
-      .select('id, theme_title, status, submitted_at, corrections(c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at)')
-      .eq('student_id', user.id)
-      .order('submitted_at', { ascending: false })
-      .limit(200),
-  ])
+  // Wrap all data fetching in try/catch — a query failure must never crash the dashboard.
+  let profileRaw: { full_name: string } | null = null
+  let subRaw:     SubData | null                = null
+  let essaysRaw:  unknown[]                     = []
 
-  const profile  = profileRaw as { full_name: string } | null
-  const sub      = subRaw as SubData | null
-  // Guard: filter out any malformed rows (missing id or submitted_at) to prevent render crashes
-  const essaysRaw2 = (essaysRaw as EssayData[]) ?? []
-  const essays = essaysRaw2.filter(e => e && typeof e.id === 'string')
+  try {
+    const [profileRes, subRes, essaysRes] = await Promise.all([
+      supabase.from('users').select('full_name').eq('id', user.id).single(),
+      db.from('subscriptions')
+        .select('essays_used, essays_limit, plans(name)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      db.from('essays')
+        .select('id, theme_title, status, submitted_at, corrections(c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at)')
+        .eq('student_id', user.id)
+        .order('submitted_at', { ascending: false })
+        .limit(200),
+    ])
+
+    profileRaw = (profileRes.data as { full_name: string } | null) ?? null
+    subRaw     = (subRes.data     as SubData | null)                ?? null
+    essaysRaw  = (essaysRes.data  as unknown[])                    ?? []
+
+    if (essaysRes.error) console.error('[dashboard] essays query error:', essaysRes.error.message)
+    if (profileRes.error) console.error('[dashboard] profile query error:', profileRes.error.message)
+  } catch (fetchErr) {
+    console.error('[dashboard] Promise.all failed:', fetchErr)
+    // Continue with empty state — dashboard renders a safe shell
+  }
+
+  const profile  = profileRaw
+  const sub      = subRaw
+
+  // Normalize essays: the only hard requirement is a string id.
+  // corrections: null from PostgREST (no rows) is normalized to [] — this is the root cause
+  // of post-submit dashboard crashes for brand-new students.
+  const VALID_ESSAY_STATUSES = new Set<string>(['pending', 'in_review', 'corrected'])
+  const essays: EssayData[] = (essaysRaw as unknown[])
+    .filter((e) => e !== null && e !== undefined && typeof (e as EssayData).id === 'string')
+    .map((e) => {
+      const raw = e as Record<string, unknown>
+      return {
+        id:           raw.id           as string,
+        theme_title:  (raw.theme_title as string) ?? '—',
+        status:       VALID_ESSAY_STATUSES.has(raw.status as string) ? (raw.status as string) : 'pending',
+        submitted_at: (raw.submitted_at as string) ?? new Date(0).toISOString(),
+        // corrections: null from PostgREST means 0 rows — normalize to []
+        corrections:  Array.isArray(raw.corrections) ? (raw.corrections as CorrectionData[]) : [],
+      } satisfies EssayData
+    })
 
   // ── Derived values ────────────────────────────────────────────────────────
 

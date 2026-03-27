@@ -146,17 +146,37 @@ export default async function RelatorioPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
-  const [{ data: essaysRaw }, { data: profileRaw }] = await Promise.all([
-    db.from('essays')
-      .select('id, theme_title, status, submitted_at, corrections(c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at)')
-      .eq('student_id', user.id)
-      .order('submitted_at', { ascending: false })
-      .limit(200),
-    db.from('users').select('full_name').eq('id', user.id).single(),
-  ])
+  let essaysRaw:  unknown[] = []
+  let profileRaw: { full_name: string } | null = null
 
-  const essays          = (essaysRaw as EssayData[]) ?? []
-  const correctedEssays = essays.filter(e => e.status === 'corrected' && e.corrections?.length > 0)
+  try {
+    const [essaysRes, profileRes] = await Promise.all([
+      db.from('essays')
+        .select('id, theme_title, status, submitted_at, corrections(c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at)')
+        .eq('student_id', user.id)
+        .order('submitted_at', { ascending: false })
+        .limit(200),
+      db.from('users').select('full_name').eq('id', user.id).single(),
+    ])
+    essaysRaw  = (essaysRes.data  as unknown[]) ?? []
+    profileRaw = (profileRes.data as { full_name: string } | null) ?? null
+    if (essaysRes.error)  console.error('[relatorio] essays query error:', essaysRes.error.message)
+    if (profileRes.error) console.error('[relatorio] profile query error:', profileRes.error.message)
+  } catch (fetchErr) {
+    console.error('[relatorio] Promise.all failed:', fetchErr)
+  }
+
+  // Normalize: corrections: null from PostgREST (no rows) → []; only reject truly malformed ids
+  const essays: EssayData[] = (essaysRaw as unknown[])
+    .filter((e) => e !== null && typeof (e as EssayData).id === 'string')
+    .map((e) => {
+      const raw = e as Record<string, unknown>
+      return {
+        ...(raw as EssayData),
+        corrections: Array.isArray(raw.corrections) ? (raw.corrections as CorrectionData[]) : [],
+      }
+    })
+  const correctedEssays = essays.filter(e => e.status === 'corrected' && e.corrections.length > 0)
   const studentName     = (profileRaw?.full_name as string | null) || user.email?.split('@')[0] || 'Aluno'
   const today           = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
 

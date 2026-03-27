@@ -192,12 +192,31 @@ export type EssayForCorrection = {
   content_text: string | null
   notes: string | null
   status: string
+  upload_type: 'text' | 'image' | 'pdf' | null
+  original_file_url: string | null
   student: { id: string; full_name: string } | null
   plan: string
   existingCorrection: {
     c1_score: number; c2_score: number; c3_score: number
     c4_score: number; c5_score: number; general_feedback: string
   } | null
+}
+
+/** Determine how to render the essay file.
+ *  Priority: explicit upload_type → URL extension → fallback to 'image' */
+function inferFileType(
+  uploadType: 'text' | 'image' | 'pdf' | null,
+  url: string | null,
+): 'image' | 'pdf' | null {
+  if (uploadType === 'image') return 'image'
+  if (uploadType === 'pdf')   return 'pdf'
+  if (!url) return null
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
+  if (ext === 'pdf') return 'pdf'
+  if (ext && ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic'].includes(ext)) return 'image'
+  // content_text prefix heuristic: both image and pdf use [IMAGEM] prefix,
+  // so we can't distinguish here — default to image (most common)
+  return 'image'
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -475,52 +494,98 @@ export default function CorrectionForm({
 
         <div className={`card-dark rounded-2xl overflow-hidden ${!essayExpanded ? 'lg:block hidden' : ''}`}>
           {(() => {
-            const isImage = essay.content_text?.startsWith('[IMAGEM] ')
-            const imageUrl = isImage ? essay.content_text!.slice('[IMAGEM] '.length) : null
-            const wordCount = !isImage && essay.content_text
+            // Derive the file URL — prefer original_file_url, fall back to [IMAGEM] prefix extraction
+            const hasFilePrefix = essay.content_text?.startsWith('[IMAGEM] ')
+            const fileUrlFromText = hasFilePrefix ? essay.content_text!.slice('[IMAGEM] '.length) : null
+            const fileUrl = essay.original_file_url ?? fileUrlFromText
+
+            const fileType = fileUrl ? inferFileType(essay.upload_type, fileUrl) : null
+            const isFile = fileType !== null && fileUrl !== null
+
+            const wordCount = !isFile && essay.content_text
               ? essay.content_text.trim().split(/\s+/).length
               : null
+
+            const headerLabel = fileType === 'pdf'
+              ? 'PDF da redação'
+              : fileType === 'image'
+              ? 'Imagem da redação'
+              : 'Texto da redação'
+
             return (
               <>
                 <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {isImage ? 'Imagem da redação' : 'Texto da redação'}
+                    {headerLabel}
                   </span>
                   {wordCount !== null && (
                     <span className="text-xs text-gray-600">{wordCount} palavras</span>
                   )}
                 </div>
                 <div className="p-5 max-h-[60vh] overflow-y-auto">
-                  {isImage && imageUrl ? (
+                  {isFile && fileType === 'pdf' ? (
+                    /* ── PDF renderer ─────────────────────────────────── */
+                    <div className="space-y-3">
+                      <object
+                        data={fileUrl!}
+                        type="application/pdf"
+                        className="w-full rounded-xl border border-white/[0.08]"
+                        style={{ height: '55vh', minHeight: '320px' }}
+                        aria-label="PDF da redação"
+                      >
+                        {/* Shown when browser cannot embed the PDF */}
+                        <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-amber-300">Pré-visualização de PDF não suportada neste navegador</p>
+                            <p className="text-xs text-gray-500 mt-0.5">Abra o PDF diretamente pelo link abaixo.</p>
+                          </div>
+                        </div>
+                      </object>
+                      <a
+                        href={fileUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                          <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                        Abrir PDF em nova aba
+                      </a>
+                    </div>
+                  ) : isFile && fileType === 'image' ? (
+                    /* ── Image renderer ───────────────────────────────── */
                     <div className="space-y-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={imageUrl}
+                        src={fileUrl!}
                         alt="Redação enviada pelo aluno"
                         className="w-full rounded-xl border border-white/[0.08] object-contain"
                         onError={e => {
-                          // Hide broken image and show fallback notice
                           const el = e.currentTarget
                           el.style.display = 'none'
                           const fallback = el.nextElementSibling as HTMLElement | null
                           if (fallback) fallback.style.display = 'flex'
                         }}
                       />
-                      {/* Fallback card — hidden until onError fires */}
-                      <div
-                        className="hidden items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4"
-                      >
+                      {/* Fallback — hidden until onError fires */}
+                      <div className="hidden items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-amber-400 flex-shrink-0">
                           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                           <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
                         </svg>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-amber-300">Não foi possível renderizar a pré-visualização</p>
+                          <p className="text-xs font-medium text-amber-300">Não foi possível carregar a imagem</p>
                           <p className="text-xs text-gray-500 mt-0.5">O arquivo original está disponível no link abaixo.</p>
                         </div>
                       </div>
                       <a
-                        href={imageUrl}
+                        href={fileUrl!}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors"
@@ -533,6 +598,7 @@ export default function CorrectionForm({
                       </a>
                     </div>
                   ) : essay.content_text ? (
+                    /* ── Plain text ───────────────────────────────────── */
                     <p className="text-sm text-gray-300 leading-[1.9] whitespace-pre-wrap">{essay.content_text}</p>
                   ) : (
                     <p className="text-sm text-gray-600 italic">Texto não disponível.</p>

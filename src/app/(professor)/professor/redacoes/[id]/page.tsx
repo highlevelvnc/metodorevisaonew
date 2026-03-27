@@ -24,7 +24,7 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
   // Fetch essay (notes field included for reviewer context)
   const { data: essayRaw } = await db.from('essays')
     .select(`
-      id, theme_title, content_text, notes, status, student_id,
+      id, theme_title, content_text, notes, status, student_id, upload_type, original_file_url,
       student:users!essays_student_id_fkey(id, full_name),
       corrections(c1_score, c2_score, c3_score, c4_score, c5_score, general_feedback)
     `)
@@ -36,6 +36,8 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
   type EssayRaw = {
     id: string; theme_title: string; content_text: string | null
     notes: string | null; status: string; student_id: string
+    upload_type: 'text' | 'image' | 'pdf' | null
+    original_file_url: string | null
     student: { id: string; full_name: string } | null
     corrections: {
       c1_score: number; c2_score: number; c3_score: number
@@ -43,7 +45,14 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
     }[]
   }
 
-  const raw = essayRaw as EssayRaw
+  // Normalize: PostgREST can return corrections: null for a newly submitted essay with no corrections yet.
+  // Ensure it is always an array before any downstream access.
+  const raw: EssayRaw = {
+    ...(essayRaw as EssayRaw),
+    corrections: Array.isArray((essayRaw as EssayRaw).corrections)
+      ? (essayRaw as EssayRaw).corrections
+      : [],
+  }
 
   // Parallelize remaining queries for lower latency
   const [{ data: subRaw }, { data: nextRaw }, { count: pendingCount }] = await Promise.all([
@@ -86,6 +95,8 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
     content_text:       raw.content_text,
     notes:              raw.notes,
     status:             raw.status,
+    upload_type:        raw.upload_type ?? null,
+    original_file_url:  raw.original_file_url ?? null,
     student:            raw.student,
     plan:               planName,
     existingCorrection: existingCorrection

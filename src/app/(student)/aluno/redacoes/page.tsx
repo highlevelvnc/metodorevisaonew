@@ -131,15 +131,31 @@ export default async function RedacoesPage() {
     .order('submitted_at', { ascending: false })
     .limit(200)
 
-  const VALID_STATUSES = new Set(['pending', 'in_review', 'corrected'])
-  const essays: Essay[] = (essaysRaw ?? []).filter((e: unknown) => {
-    if (!e || typeof (e as Essay).id !== 'string') return false
-    if (typeof (e as Essay).submitted_at !== 'string') return false
-    const s = (e as Essay).status
-    if (!VALID_STATUSES.has(s)) return false
-    if (!Array.isArray((e as Essay).corrections)) return false
-    return true
-  })
+  const VALID_STATUSES = new Set<string>(['pending', 'in_review', 'corrected'])
+
+  // Normalize essays from the DB response.
+  // Rules:
+  //   - ONLY reject rows with a missing/non-string id (true corruption)
+  //   - A pending essay with NO corrections is VALID — corrections: [] is the correct normal state
+  //   - corrections: null from Supabase (no related rows) is normalized to [] — never used as a filter
+  //   - unknown status is normalized to 'pending', not rejected
+  //   - missing submitted_at gets a safe fallback — the essay still appears
+  const essays: Essay[] = ((essaysRaw ?? []) as unknown[])
+    .filter((e) => e !== null && e !== undefined && typeof (e as Essay).id === 'string')
+    .map((e) => {
+      const raw = e as Record<string, unknown>
+      const status = VALID_STATUSES.has(raw.status as string)
+        ? (raw.status as EssayStatus)
+        : 'pending' as EssayStatus
+      return {
+        id:           raw.id           as string,
+        theme_title:  (raw.theme_title as string)  ?? '—',
+        status,
+        submitted_at: (raw.submitted_at as string)  ?? new Date(0).toISOString(),
+        // ↓ The critical fix: null from PostgREST = no rows = empty array, never invalid
+        corrections:  Array.isArray(raw.corrections) ? (raw.corrections as CorrectionBrief[]) : [],
+      }
+    })
   const correctedEssays = essays.filter(e => e.status === 'corrected' && (e.corrections?.length ?? 0) > 0)
 
   return (

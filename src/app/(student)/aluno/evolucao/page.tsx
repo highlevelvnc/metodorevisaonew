@@ -52,8 +52,17 @@ export default async function EvolucaoPage() {
     .order('submitted_at', { ascending: false })
     .limit(200)
 
-  const essays = (essaysRaw as EssayData[]) ?? []
-  const correctedEssays = essays.filter(e => e.status === 'corrected' && e.corrections?.length > 0)
+  // Normalize: corrections: null from PostgREST (no rows) → []; only reject truly malformed ids
+  const essays: EssayData[] = ((essaysRaw ?? []) as unknown[])
+    .filter((e) => e !== null && typeof (e as EssayData).id === 'string')
+    .map((e) => {
+      const raw = e as Record<string, unknown>
+      return {
+        ...(raw as EssayData),
+        corrections: Array.isArray(raw.corrections) ? (raw.corrections as CorrectionData[]) : [],
+      }
+    })
+  const correctedEssays = essays.filter(e => e.status === 'corrected' && e.corrections.length > 0)
 
   /* ── Empty state ──────────────────────────────────────────────────────────── */
   if (correctedEssays.length === 0) {
