@@ -98,14 +98,14 @@ export default async function ProfessorDashboardPage() {
   ] = await Promise.all([
     db.from('essays').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     db.from('essays').select('*', { count: 'exact', head: true }).eq('status', 'in_review'),
-    db.from('essays').select('*', { count: 'exact', head: true })
-      .eq('status', 'corrected').gte('corrected_at', todayStart),
-    db.from('essays').select('*', { count: 'exact', head: true })
-      .eq('status', 'corrected').gte('corrected_at', sevenDaysAgo),
-    db.from('essays').select('*', { count: 'exact', head: true })
-      .eq('status', 'corrected').gte('corrected_at', fourteenDaysAgo).lt('corrected_at', sevenDaysAgo),
-    db.from('essays').select('*', { count: 'exact', head: true })
-      .eq('status', 'corrected').gte('corrected_at', firstOfMonth),
+    supabase.from('corrections').select('*', { count: 'exact', head: true })
+      .eq('reviewer_id', user.id).gte('corrected_at', todayStart),
+    supabase.from('corrections').select('*', { count: 'exact', head: true })
+      .eq('reviewer_id', user.id).gte('corrected_at', sevenDaysAgo),
+    supabase.from('corrections').select('*', { count: 'exact', head: true })
+      .eq('reviewer_id', user.id).gte('corrected_at', fourteenDaysAgo).lt('corrected_at', sevenDaysAgo),
+    supabase.from('corrections').select('*', { count: 'exact', head: true })
+      .eq('reviewer_id', user.id).gte('corrected_at', firstOfMonth),
     db.from('users').select('*', { count: 'exact', head: true }).eq('role', 'student'),
     db.from('essays')
       .select('id, theme_title, submitted_at, student:users!essays_student_id_fkey(full_name)')

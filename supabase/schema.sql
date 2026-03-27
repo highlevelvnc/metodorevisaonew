@@ -175,7 +175,7 @@ alter table public.essays        enable row level security;
 alter table public.corrections   enable row level security;
 
 -- users
-create policy "users: read own"    on public.users for select using (auth.uid() = id);
+create policy if not exists "users: read own" on public.users for select using (auth.uid() = id);
 create policy "users: update own"  on public.users for update using (auth.uid() = id);
 create policy "users: admin read"  on public.users for select using (public.is_admin_or_reviewer());
 create policy "users: admin update" on public.users for update using (public.is_admin_or_reviewer());

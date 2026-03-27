@@ -1,8 +1,10 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export type UserRole = 'student' | 'reviewer' | 'admin'
-export type EssayStatus = 'pending' | 'in_review' | 'corrected'
+export type UserRole          = 'student' | 'reviewer' | 'admin'
+export type EssayStatus       = 'pending' | 'in_review' | 'corrected'
 export type SubscriptionStatus = 'active' | 'cancelled' | 'expired'
+export type LessonStatus      = 'scheduled' | 'completed' | 'cancelled'
+export type PayoutStatus      = 'open' | 'closed' | 'paid'
 
 export interface Database {
   public: {
@@ -182,6 +184,113 @@ export interface Database {
           corrected_at?: string
         }
       }
+      professor_rates: {
+        Row: {
+          id:            string
+          professor_id:  string
+          essay_rate:    number
+          lesson_rate:   number
+          valid_from:    string        // date "YYYY-MM-DD"
+          valid_to:      string | null // date "YYYY-MM-DD" or null (currently active)
+          created_at:    string
+        }
+        Insert: {
+          id?:           string
+          professor_id:  string
+          essay_rate?:   number
+          lesson_rate?:  number
+          valid_from?:   string
+          valid_to?:     string | null
+          created_at?:   string
+        }
+        Update: {
+          essay_rate?:   number
+          lesson_rate?:  number
+          valid_to?:     string | null
+        }
+      }
+      lesson_sessions: {
+        Row: {
+          id:            string
+          professor_id:  string
+          student_id:    string | null
+          session_date:  string        // date "YYYY-MM-DD"
+          duration_min:  number
+          topic:         string | null
+          status:        LessonStatus
+          notes:         string | null
+          created_at:    string
+          updated_at:    string
+        }
+        Insert: {
+          id?:           string
+          professor_id:  string
+          student_id?:   string | null
+          session_date:  string
+          duration_min?: number
+          topic?:        string | null
+          status?:       LessonStatus
+          notes?:        string | null
+          created_at?:   string
+          updated_at?:   string
+        }
+        Update: {
+          session_date?: string
+          duration_min?: number
+          topic?:        string | null
+          status?:       LessonStatus
+          notes?:        string | null
+          updated_at?:   string
+        }
+      }
+      monthly_payouts: {
+        Row: {
+          id:                  string
+          professor_id:        string
+          reference_month:     string        // date "YYYY-MM-01"
+          essays_count:        number
+          lessons_count:       number
+          essays_amount:       number
+          lessons_amount:      number
+          total_amount:        number        // generated column: essays_amount + lessons_amount
+          status:              PayoutStatus
+          closed_at:           string | null
+          paid_at:             string | null
+          payment_reference:   string | null
+          notes:               string | null
+          created_at:          string
+          updated_at:          string
+        }
+        Insert: {
+          id?:                 string
+          professor_id:        string
+          reference_month:     string
+          essays_count?:       number
+          lessons_count?:      number
+          essays_amount?:      number
+          lessons_amount?:     number
+          // total_amount is generated — do not insert
+          status?:             PayoutStatus
+          closed_at?:          string | null
+          paid_at?:            string | null
+          payment_reference?:  string | null
+          notes?:              string | null
+          created_at?:         string
+          updated_at?:         string
+        }
+        Update: {
+          essays_count?:       number
+          lessons_count?:      number
+          essays_amount?:      number
+          lessons_amount?:     number
+          status?:             PayoutStatus
+          closed_at?:          string | null
+          paid_at?:            string | null
+          payment_reference?:  string | null
+          notes?:              string | null
+          updated_at?:         string
+        }
+      }
     }
     Views: {
       student_progress: {
@@ -208,6 +317,10 @@ export type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row
 export type ThemeRow        = Database['public']['Tables']['themes']['Row']
 export type EssayRow        = Database['public']['Tables']['essays']['Row']
 export type CorrectionRow   = Database['public']['Tables']['corrections']['Row']
+
+export type ProfessorRateRow  = Database['public']['Tables']['professor_rates']['Row']
+export type LessonSessionRow  = Database['public']['Tables']['lesson_sessions']['Row']
+export type MonthlyPayoutRow  = Database['public']['Tables']['monthly_payouts']['Row']
 
 /** Essay with its correction (if any) */
 export type EssayWithCorrection = EssayRow & {

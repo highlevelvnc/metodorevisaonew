@@ -22,15 +22,15 @@ export function formatBRL(val: number): string {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+import type { PayoutStatus } from '@/lib/supabase/types'
+
 /**
- * Lifecycle status of a monthly payout cycle.
+ * UI-level lifecycle status for a monthly payout cycle.
  *
- * - open       current month, still accumulating
- * - closed     month ended, total confirmed, payment not yet processed
- * - paid       payment transferred to professor
- * - no_record  past month with no payout record yet (system in construction)
+ * Extends PayoutStatus (the DB-level type) with one UI-only state:
+ * - no_record  past month with no monthly_payouts row yet (system in construction)
  */
-export type ClosingStatus = 'open' | 'closed' | 'paid' | 'no_record'
+export type ClosingStatus = PayoutStatus | 'no_record'
 
 /** A calendar-month window with ISO timestamps for DB range queries. */
 export interface MonthWindow {

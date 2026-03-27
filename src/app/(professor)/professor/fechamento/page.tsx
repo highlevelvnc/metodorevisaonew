@@ -10,6 +10,7 @@ import {
   buildMonthWindows,
   type ClosingStatus,
 } from '@/lib/professor/rates'
+import type { MonthlyPayoutRow } from '@/lib/supabase/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,8 @@ interface MonthSummary {
   totalAmount: number
   status: ClosingStatus
   isCurrent: boolean
+  /** True when the amounts come from a confirmed monthly_payouts row */
+  isConfirmed: boolean
 }
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -87,31 +90,103 @@ export default async function ProfessorFechamentoPage() {
   const now     = new Date()
   const windows = buildMonthWindows(6, now)
 
-  // Query essay counts for all windows in parallel
-  const counts = await Promise.all(
-    windows.map(w =>
-      db
-        .from('essays')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'corrected')
-        .gte('corrected_at', w.first)
-        .lte('corrected_at', w.last)
-    )
+  // ── Fetch monthly_payouts rows + current-month live corrections in parallel ──
+
+  // Build reference-month strings ('YYYY-MM-01') for all 6 windows
+  const refMonths = windows.map(w => {
+    const mm = String(w.month + 1).padStart(2, '0')
+    return `${w.year}-${mm}-01`
+  })
+
+  const [
+    { data: payoutRowsRaw },
+    { count: currentLiveEssays },
+    { count: currentLiveLessons },
+  ] = await Promise.all([
+    // All payout rows for this professor across our 6-window range
+    db
+      .from('monthly_payouts')
+      .select('*')
+      .eq('professor_id', user.id)
+      .in('reference_month', refMonths),
+
+    // Live corrections count for current month (always fresh)
+    supabase
+      .from('corrections')
+      .select('*', { count: 'exact', head: true })
+      .eq('reviewer_id', user.id)
+      .gte('corrected_at', windows[0].first)
+      .lte('corrected_at', windows[0].last),
+
+    // Live completed lessons for current month
+    db
+      .from('lesson_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('professor_id', user.id)
+      .eq('status', 'completed')
+      .gte('session_date', refMonths[0])
+      .lte('session_date', (() => {
+        const d = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      })()),
+  ])
+
+  const payoutRows: MonthlyPayoutRow[] = payoutRowsRaw ?? []
+
+  // Index payout rows by reference_month for O(1) lookup
+  const payoutByMonth = new Map<string, MonthlyPayoutRow>(
+    payoutRows.map(r => [r.reference_month.slice(0, 10), r])
   )
 
+  // ── Build summaries ────────────────────────────────────────────────────────
+
   const summaries: MonthSummary[] = windows.map((w, i) => {
-    const essays      = counts[i].count ?? 0
-    const lessons     = 0  // future: from lesson_sessions table
-    const totalAmount = essays * RATE_ESSAY + lessons * RATE_LESSON
+    const refKey = refMonths[i]
+
+    if (i === 0) {
+      // Current month: always use live counts
+      const essays  = currentLiveEssays  ?? 0
+      const lessons = currentLiveLessons ?? 0
+      return {
+        year:        w.year,
+        month:       w.month,
+        label:       w.label,
+        essays,
+        lessons,
+        totalAmount: essays * RATE_ESSAY + lessons * RATE_LESSON,
+        status:      'open',
+        isCurrent:   true,
+        isConfirmed: false,
+      }
+    }
+
+    // Historical month: use confirmed payout row when available
+    const payout = payoutByMonth.get(refKey)
+    if (payout) {
+      return {
+        year:        w.year,
+        month:       w.month,
+        label:       w.label,
+        essays:      payout.essays_count,
+        lessons:     payout.lessons_count,
+        totalAmount: payout.total_amount,
+        status:      payout.status as ClosingStatus,
+        isCurrent:   false,
+        isConfirmed: true,
+      }
+    }
+
+    // No payout row yet — return zeroed no_record placeholder
     return {
       year:        w.year,
       month:       w.month,
       label:       w.label,
-      essays,
-      lessons,
-      totalAmount,
-      status:      w.isCurrent ? 'open' : 'no_record',
-      isCurrent:   w.isCurrent,
+      essays:      0,
+      lessons:     0,
+      totalAmount: 0,
+      status:      'no_record',
+      isCurrent:   false,
+      isConfirmed: false,
     }
   })
 
@@ -213,7 +288,7 @@ export default async function ProfessorFechamentoPage() {
         <div className="px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-sm font-semibold text-white">Ciclos anteriores</h2>
           <p className="text-xs text-gray-600 mt-0.5">
-            Histórico de fechamentos · Sistema de pagamento em implementação
+            Histórico de fechamentos · Valores confirmados pelo sistema de pagamento
           </p>
         </div>
 
@@ -244,14 +319,16 @@ export default async function ProfessorFechamentoPage() {
                       ? 'Pagamento concluído'
                       : m.status === 'closed'
                       ? 'Fechamento processado'
+                      : m.isConfirmed
+                      ? 'Registro confirmado'
                       : 'Aguardando sistema de pagamento'}
                   </p>
                 </td>
                 <td className="px-4 py-4 text-sm font-semibold text-gray-300 text-center tabular-nums">
-                  {m.essays}
+                  {m.isConfirmed || m.essays > 0 ? m.essays : '—'}
                 </td>
                 <td className={`px-5 py-4 text-sm font-bold text-right tabular-nums ${m.totalAmount > 0 ? 'text-white' : 'text-gray-700'}`}>
-                  {formatBRL(m.totalAmount)}
+                  {m.isConfirmed || m.totalAmount > 0 ? formatBRL(m.totalAmount) : '—'}
                 </td>
                 <td className="px-5 py-4 text-right">
                   <StatusBadge status={m.status} />
