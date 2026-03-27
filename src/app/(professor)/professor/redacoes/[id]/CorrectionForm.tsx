@@ -269,17 +269,51 @@ export default function CorrectionForm({
   )
   const [annotating, setAnnotating] = useState(false)
 
+  // ── Annotation ↔ competency sync state ─────────────────────────────────────
+  /** id being flashed on the essay canvas (list item was clicked) */
+  const [focusedAnnId,   setFocusedAnnId]   = useState<string | null>(null)
+  /** id being hovered in either the list or the essay canvas */
+  const [hoveredAnnId,   setHoveredAnnId]   = useState<string | null>(null)
+  /** key of the competency block currently flashing in the right panel */
+  const [flashedCompKey, setFlashedCompKey] = useState<CompKey | null>(null)
+  /** key that is "active context" while creating an annotation */
+  const [activeAnnComp,  setActiveAnnComp]  = useState<CompKey | null>(null)
+
+  // Stable refs for flash timers so we can clear on unmount
+  const flashAnnTimer  = useRef<ReturnType<typeof setTimeout>>()
+  const flashCompTimer = useRef<ReturnType<typeof setTimeout>>()
+
   function addAnnotation(ann: Annotation) {
     setAnnotations(prev => [...prev, ann])
     markDirty()
+    // When a new annotation is saved, clear the active context
+    setActiveAnnComp(null)
   }
   function removeAnnotation(id: string) {
     setAnnotations(prev => prev.filter(a => a.id !== id))
     markDirty()
   }
+
+  /** Flash the competency block in the right panel + scroll to it */
   function focusCompetency(key: CompKey) {
     const el = document.getElementById(`competency-${key}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Flash the block
+    if (flashCompTimer.current) clearTimeout(flashCompTimer.current)
+    setFlashedCompKey(key)
+    flashCompTimer.current = setTimeout(() => setFlashedCompKey(null), 900)
+  }
+
+  /** Flash + highlight an annotation mark on the essay (list item was clicked) */
+  function focusAnnotationOnEssay(id: string) {
+    if (flashAnnTimer.current) clearTimeout(flashAnnTimer.current)
+    setFocusedAnnId(id)
+    flashAnnTimer.current = setTimeout(() => setFocusedAnnId(null), 1200)
+  }
+
+  /** Called by AnnotationLayer popover when the competency tab changes */
+  function handleAnnotationCompContext(key: CompKey) {
+    setActiveAnnComp(key)
   }
 
   // ── Operational tool panel state ──────────────────────────────────────────
@@ -371,6 +405,14 @@ export default function CorrectionForm({
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [isDirty])
+
+  /* ── Sync timer cleanup ──────────────────────────────────────────────────── */
+  useEffect(() => {
+    return () => {
+      if (flashAnnTimer.current)  clearTimeout(flashAnnTimer.current)
+      if (flashCompTimer.current) clearTimeout(flashCompTimer.current)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Helpers ──────────────────────────────────────────────────────────────── */
   function markDirty() {
@@ -592,6 +634,10 @@ export default function CorrectionForm({
                           ? pdfRef
                           : undefined) as React.RefObject<HTMLElement> | undefined
                       }
+                      focusedAnnotationId={focusedAnnId}
+                      hoveredAnnotationId={hoveredAnnId}
+                      onAnnotationHover={setHoveredAnnId}
+                      onPopoverCompChange={handleAnnotationCompContext}
                     >
                       {fileType === 'pdf' ? (
                         /* ── PDF canvas ──────────────────────────────────── */
@@ -860,6 +906,9 @@ export default function CorrectionForm({
           annotations={annotations}
           onRemove={removeAnnotation}
           onCompetencyFocus={focusCompetency}
+          onAnnotationFocus={focusAnnotationOnEssay}
+          hoveredAnnotationId={hoveredAnnId}
+          onAnnotationHover={setHoveredAnnId}
         />
 
         {/* ── Pontuação ─────────────────────────────────────────────────────── */}
@@ -890,9 +939,23 @@ export default function CorrectionForm({
             </div>
           </div>
 
-          <div className="p-4 space-y-5">
-            {COMPETENCIES.map(c => (
-              <div key={c.key} id={`competency-${c.key}`}>
+          <div className="p-4 space-y-3">
+            {COMPETENCIES.map(c => {
+              const isFlashing = flashedCompKey === c.key
+              const isActive   = activeAnnComp  === c.key
+              const compColors = COMP_COLORS[c.key as CompKey]
+              return (
+              <div
+                key={c.key}
+                id={`competency-${c.key}`}
+                className={`rounded-xl px-3 py-2.5 -mx-1 transition-all duration-300 ${
+                  isFlashing
+                    ? `ring-2 ${compColors.ring} ${compColors.bg}`
+                    : isActive
+                    ? `ring-1 ${compColors.ring} bg-white/[0.02]`
+                    : 'ring-0'
+                }`}
+              >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -964,7 +1027,8 @@ export default function CorrectionForm({
                   onInsert={insertComment}
                 />
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {total > 0 && (

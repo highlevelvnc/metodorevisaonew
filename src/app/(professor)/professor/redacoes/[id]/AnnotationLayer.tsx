@@ -154,6 +154,7 @@ interface AnnotationLayerProps {
   annotations: Annotation[]
   onAdd: (ann: Annotation) => void
   onRemove: (id: string) => void
+  /** Called when an essay mark is clicked — scrolls + flashes the competency block */
   onCompetencyFocus?: (key: CompKey) => void
   /** Controlled from outside so the toggle can live in the card header */
   isAnnotating: boolean
@@ -165,6 +166,14 @@ interface AnnotationLayerProps {
    * Coordinates are re-measured on mount, resize, and image load.
    */
   documentRef?: React.RefObject<HTMLElement>
+  /** List → essay: flash + scroll this mark into prominence */
+  focusedAnnotationId?: string | null
+  /** Hover sync: the id currently hovered in the list panel */
+  hoveredAnnotationId?: string | null
+  /** Fired when the mouse enters/leaves an annotation mark */
+  onAnnotationHover?: (id: string | null) => void
+  /** Fired when the professor changes competency inside the creation popover */
+  onPopoverCompChange?: (key: CompKey) => void
 }
 
 export function AnnotationLayer({
@@ -175,6 +184,10 @@ export function AnnotationLayer({
   isAnnotating,
   children,
   documentRef,
+  focusedAnnotationId,
+  hoveredAnnotationId,
+  onAnnotationHover,
+  onPopoverCompChange,
 }: AnnotationLayerProps) {
   const containerRef          = useRef<HTMLDivElement>(null)
   const [drag, setDrag]       = useState<DragState | null>(null)
@@ -341,6 +354,8 @@ export function AnnotationLayer({
 
     setDrag(null)
     setPopText('')
+    // Notify parent of the initial competency context when popover opens
+    onPopoverCompChange?.(popComp)
   }
 
   // ── Save / cancel ──────────────────────────────────────────────────────────
@@ -401,9 +416,17 @@ export function AnnotationLayer({
               annotation={ann}
               docBounds={docBounds}
               isActive={activeId === ann.id}
-              onActivate={(id) => setActiveId(activeId === id ? null : id)}
+              isFocused={focusedAnnotationId === ann.id}
+              isHovered={hoveredAnnotationId === ann.id}
+              onActivate={(id) => {
+                setActiveId(activeId === id ? null : id)
+                // Clicking a mark immediately navigates to its competency in the right panel
+                const clicked = annotations.find(a => a.id === id)
+                if (clicked) onCompetencyFocus?.(clicked.competency)
+              }}
               onRemove={onRemove}
               onCompetencyFocus={onCompetencyFocus}
+              onHover={onAnnotationHover ?? null}
             />
           ))}
 
@@ -436,7 +459,7 @@ export function AnnotationLayer({
           y={pending.popY}
           selectedComp={popComp}
           text={popText}
-          onCompChange={(k) => { setPopComp(k); setPopText('') }}
+          onCompChange={(k) => { setPopComp(k); setPopText(''); onPopoverCompChange?.(k) }}
           onTextChange={setPopText}
           onSave={handleSave}
           onCancel={handleCancel}
@@ -452,20 +475,40 @@ function AnnotationMark({
   annotation: ann,
   docBounds,
   isActive,
+  isFocused,
+  isHovered,
   onActivate,
   onRemove,
   onCompetencyFocus,
+  onHover,
 }: {
   annotation: Annotation
   /** When provided, positions marks in px relative to the document element.
    *  Falls back to percentage-of-container when null. */
   docBounds: DocBounds | null
   isActive: boolean
+  /** List → essay: flash this mark briefly to guide the professor's eye */
+  isFocused: boolean
+  /** Hover sync: this mark is being hovered from the list panel */
+  isHovered: boolean
   onActivate: (id: string) => void
   onRemove: (id: string) => void
   onCompetencyFocus?: (key: CompKey) => void
+  /** Fired with the annotation id on mouseenter, null on mouseleave */
+  onHover: ((id: string | null) => void) | null
 }) {
   const colors = COMP_COLORS[ann.competency]
+
+  // ── Focus pulse ────────────────────────────────────────────────────────────
+  // When `isFocused` flips to true (list item clicked), run a one-shot pulse
+  // animation. Isolated inside the mark so parent doesn't track pulse state.
+  const [pulsing, setPulsing] = useState(false)
+  useEffect(() => {
+    if (!isFocused) return
+    setPulsing(true)
+    const t = setTimeout(() => setPulsing(false), 900)
+    return () => clearTimeout(t)
+  }, [isFocused])
 
   // Compute CSS position values — px when docBounds is known, % otherwise
   const posLeft   = docBounds
@@ -481,6 +524,10 @@ function AnnotationMark({
     ? `${ann.h_pct * docBounds.height}px`
     : `${ann.h_pct * 100}%`
 
+  const hoverHandlers = onHover
+    ? { onMouseEnter: () => onHover(ann.id), onMouseLeave: () => onHover(null) }
+    : {}
+
   const tooltip = isActive ? (
     <AnnotationTooltip
       annotation={ann}
@@ -492,16 +539,28 @@ function AnnotationMark({
   if (ann.type === 'highlight') {
     return (
       <div
-        className={`absolute pointer-events-auto rounded cursor-pointer border ${colors.border}`}
+        className={`absolute pointer-events-auto rounded cursor-pointer border transition-all duration-150 ${colors.border} ${
+          isHovered ? `${colors.bg} opacity-100` : ''
+        }`}
         style={{
           left:   posLeft,
           top:    posTop,
           width:  posWidth,
           height: posHeight,
-          backgroundColor: `color-mix(in srgb, currentColor 6%, transparent)`,
+          backgroundColor: isHovered
+            ? undefined  // let bg class handle it
+            : `color-mix(in srgb, currentColor 6%, transparent)`,
+          // Pulse ring when focused from list
+          outline: pulsing ? `2px solid white` : undefined,
+          outlineOffset: pulsing ? '2px' : undefined,
+          boxShadow: pulsing
+            ? '0 0 0 4px rgba(255,255,255,0.2), 0 0 12px rgba(255,255,255,0.15)'
+            : undefined,
+          transition: 'outline 0.1s, box-shadow 0.3s, opacity 0.15s',
         }}
         title={ann.text}
         onClick={() => onActivate(ann.id)}
+        {...hoverHandlers}
       >
         {/* Competency badge on top-left of highlight */}
         <span
@@ -525,10 +584,18 @@ function AnnotationMark({
         transform: 'translate(-50%, -50%)',
         zIndex:    isActive ? 20 : 6,
       }}
+      {...hoverHandlers}
     >
       <button
         type="button"
-        className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-extrabold border-2 border-white/30 shadow-lg transition-transform hover:scale-110 ${colors.bar}`}
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-extrabold border-2 shadow-lg transition-all hover:scale-110 ${colors.bar} ${
+          isHovered ? 'scale-110 border-white/60' : 'border-white/30'
+        }`}
+        style={
+          pulsing
+            ? { outline: '2px solid white', outlineOffset: '3px', boxShadow: '0 0 0 6px rgba(255,255,255,0.15), 0 0 14px rgba(255,255,255,0.2)' }
+            : undefined
+        }
         onClick={() => onActivate(ann.id)}
         title={ann.text}
       >
@@ -707,10 +774,20 @@ export function AnnotationList({
   annotations,
   onRemove,
   onCompetencyFocus,
+  onAnnotationFocus,
+  hoveredAnnotationId,
+  onAnnotationHover,
 }: {
   annotations: Annotation[]
   onRemove: (id: string) => void
+  /** Click competency label → scroll scoring panel */
   onCompetencyFocus: (key: CompKey) => void
+  /** Click annotation item → flash mark on essay */
+  onAnnotationFocus?: (id: string) => void
+  /** Id being hovered on the essay (highlight corresponding list item) */
+  hoveredAnnotationId?: string | null
+  /** Fired on mouseenter/leave of a list item (highlight mark on essay) */
+  onAnnotationHover?: (id: string | null) => void
 }) {
   if (annotations.length === 0) return null
 
@@ -722,50 +799,91 @@ export function AnnotationList({
 
   return (
     <div className="card-dark rounded-2xl overflow-hidden">
+      {/* Header */}
       <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Anotações</span>
-        <span className="text-[10px] text-gray-700 tabular-nums">{annotations.length}</span>
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Anotações no texto</span>
+        <span className={`text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.07] ${
+          annotations.length > 0 ? 'text-gray-400' : 'text-gray-700'
+        }`}>
+          {annotations.length}
+        </span>
       </div>
-      <div className="p-3 space-y-3 max-h-52 overflow-y-auto">
+
+      <div className="p-2 space-y-1 max-h-56 overflow-y-auto">
         {COMP_KEYS.map(key => {
           const items = grouped[key]
           if (!items) return null
           const colors = COMP_COLORS[key]
           return (
-            <div key={key}>
-              {/* Competency group header */}
-              <div className="flex items-center gap-1.5 mb-1">
-                <button
-                  type="button"
-                  onClick={() => onCompetencyFocus(key)}
-                  className={`text-[10px] font-extrabold uppercase ${colors.text} hover:opacity-70 transition-opacity`}
-                >
+            <div key={key} className="mb-1 last:mb-0">
+              {/* Competency group header — click to jump scoring panel */}
+              <button
+                type="button"
+                onClick={() => onCompetencyFocus(key)}
+                className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/[0.04] transition-colors group`}
+              >
+                <span className={`text-[9px] font-extrabold uppercase tracking-widest ${colors.text}`}>
                   {key.toUpperCase()}
-                </button>
-                <span className={`text-[9px] font-bold px-1.5 py-px rounded-full ${colors.bg} ${colors.text} border ${colors.border}`}>
+                </span>
+                <span className={`text-[8px] font-bold px-1.5 py-px rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}>
                   {items.length}
                 </span>
-              </div>
+                {/* Subtle divider line */}
+                <span className={`flex-1 h-px ${colors.bar} opacity-10 group-hover:opacity-20 transition-opacity`} />
+              </button>
+
               {/* Annotation items */}
-              {items.map(ann => (
-                <div key={ann.id} className="flex items-start gap-2 pl-3 py-0.5">
-                  <span
-                    className={`w-1 h-1 rounded-full flex-shrink-0 mt-1.5 ${colors.bar}`}
-                  />
-                  <p className="text-[10px] text-gray-400 leading-relaxed flex-1 min-w-0">{ann.text}</p>
-                  <button
-                    type="button"
-                    onClick={() => onRemove(ann.id)}
-                    className="text-gray-700 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"
-                    title="Remover anotação"
+              {items.map(ann => {
+                const isRowHovered = hoveredAnnotationId === ann.id
+                return (
+                  <div
+                    key={ann.id}
+                    className={`group flex items-start gap-2 pl-5 pr-2 py-1 rounded-lg cursor-pointer transition-all duration-100 ${
+                      isRowHovered
+                        ? `${colors.bg} border border-opacity-50 ${colors.border}`
+                        : 'hover:bg-white/[0.03] border border-transparent'
+                    }`}
+                    onClick={() => onAnnotationFocus?.(ann.id)}
+                    onMouseEnter={() => onAnnotationHover?.(ann.id)}
+                    onMouseLeave={() => onAnnotationHover?.(null)}
+                    title="Clique para localizar no texto"
                   >
-                    <X size={9} />
-                  </button>
-                </div>
-              ))}
+                    {/* Type indicator dot */}
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${colors.bar} ${isRowHovered ? 'opacity-100' : 'opacity-50'}`}
+                    />
+                    {/* Comment text */}
+                    <p className={`text-[10px] leading-relaxed flex-1 min-w-0 truncate transition-colors ${
+                      isRowHovered ? colors.text : 'text-gray-400'
+                    }`}>
+                      {ann.text}
+                    </p>
+                    {/* Type badge */}
+                    <span className="text-[8px] text-gray-700 group-hover:text-gray-500 transition-colors flex-shrink-0 mt-0.5">
+                      {ann.type === 'pin' ? '📍' : '▬'}
+                    </span>
+                    {/* Remove */}
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); onRemove(ann.id) }}
+                      className="text-gray-700 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100"
+                      title="Remover anotação"
+                    >
+                      <X size={9} />
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           )
         })}
+      </div>
+
+      {/* Footer hint */}
+      <div className="px-4 py-2 border-t border-white/[0.04]">
+        <p className="text-[9px] text-gray-700">
+          Clique em uma anotação para localizá-la · Clique na competência para ir à pontuação
+        </p>
       </div>
     </div>
   )
