@@ -4,7 +4,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Método Revisão para Escolas — Correção estratégica de redação ENEM por turma',
   description:
-    'Sistema completo de correção individual de redação para escolas: devolutiva estratégica em 24h, avaliação pelos critérios oficiais do ENEM e acompanhamento de evolução por turma — sem aumentar a carga dos professores.',
+    'Sistema de correção estratégica de redação para escolas: professoras especializadas em ENEM entregam devolutiva individual em 24h, com diagnóstico por competência e acompanhamento de evolução por turma — resultado mensurável, sem sobrecarga para os professores.',
 }
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
@@ -29,8 +29,8 @@ const painPoints = [
     ),
   },
   {
-    title: 'Sem dados, não há como gerenciar a evolução',
-    desc: 'A escola investe em aulas de redação mas não sabe quem evoluiu, quem estancou e quem vai chegar ao ENEM sem estrutura. Sem visibilidade, não há como intervir no momento certo.',
+    title: 'Sem dados, a gestão pedagógica opera no escuro',
+    desc: 'A escola investe em aulas de redação mas não sabe quem evoluiu, quem estancou e quem vai chegar ao ENEM sem estrutura. A decisão de intervir chega tarde — quando já é tarde demais.',
     icon: (
       <svg className="w-5 h-5 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
@@ -41,8 +41,8 @@ const painPoints = [
 
 const studentBenefits = [
   'Clareza sobre onde está errando — por competência, não por impressão',
-  'Evolução visível entre uma redação e a próxima',
-  'Anotações direto no texto, parágrafo a parágrafo',
+  'Diagnóstico claro após cada texto: o que melhorou, o que ainda precisa de trabalho',
+  'Anotações direto no texto, parágrafo a parágrafo — sem espaço para dúvidas',
   'Orientação clara para a próxima redação já na devolutiva',
   'Confiança para escrever com estratégia, não no chute',
 ]
@@ -50,7 +50,7 @@ const studentBenefits = [
 const schoolBenefits = [
   'Professores livres para ensinar — sem sobrecarga de correção',
   'Qualidade de feedback padronizada para toda a turma',
-  'Evolução de cada aluno acompanhada ao longo do tempo',
+  'Histórico individual de evolução — identifique quem precisa de atenção antes que seja tarde',
   'Resultado do ENEM como evidência concreta do seu método de ensino',
   'Dados de evolução por turma para decisões pedagógicas precisas',
 ]
@@ -69,12 +69,12 @@ const steps = [
   {
     n: '03',
     title: 'Devolutiva completa em até 24h',
-    desc: 'Cada redação volta com nota por competência, anotações direto no texto e orientação para a próxima. Feita por especialista humana — não por IA.',
+    desc: 'Cada redação volta com nota por competência, anotações direto no texto e orientação para a próxima. Feita por professoras especializadas em redação ENEM — sem IA, sem automação.',
   },
   {
     n: '04',
     title: 'A escola acompanha a evolução',
-    desc: 'Relatório por aluno e por turma, com evolução por competência e período. Você sabe exatamente quem está avançando e quem precisa de atenção agora.',
+    desc: 'Relatório por aluno e por turma, com evolução por competência e período. Você sabe quem avança, quem precisa de atenção — e tem base concreta para o próximo planejamento pedagógico.',
   },
 ]
 
@@ -83,7 +83,7 @@ const tiers = [
     name: 'Essencial',
     freq: '1 redação por mês',
     desc: 'Para escolas que querem introduzir feedback estratégico na rotina sem grande comprometimento inicial.',
-    who: 'Ideal para turmas que estão iniciando a prática regular de redação ENEM.',
+    who: 'Ideal para escolas que querem validar o modelo antes de expandir para mais turmas.',
   },
   {
     name: 'Evolução',
@@ -160,7 +160,7 @@ export default function ParaEscolasPage() {
           </div>
 
           {/* Low-friction note under primary CTA */}
-          <p className="text-xs text-gray-700 mb-10">Sem compromisso. Resposta em até 24h.</p>
+          <p className="text-xs text-gray-700 mb-10">A conversa leva em média 20 minutos. Proposta enviada em até 24h. Sem compromisso.</p>
 
           {/* Trust bar */}
           <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2">
@@ -168,7 +168,7 @@ export default function ParaEscolasPage() {
               { dot: 'bg-green-400',  label: '10.000+ redações corrigidas' },
               { dot: 'bg-purple-400', label: 'Devolutiva em até 24h' },
               { dot: 'bg-blue-400',   label: 'Correção humana, não IA' },
-              { dot: 'bg-amber-400',  label: 'Critérios oficiais do ENEM (C1–C5)' },
+              { dot: 'bg-amber-400',  label: 'Correção por especialistas em redação ENEM' },
             ].map((t) => (
               <div key={t.label} className="flex items-center gap-1.5">
                 <div className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
@@ -232,8 +232,8 @@ export default function ParaEscolasPage() {
                 </p>
                 <p className="text-gray-400 text-base leading-relaxed mb-6">
                   Cada aluno recebe uma devolutiva completa: nota por competência, anotações direto
-                  no texto e orientação clara para a próxima redação. Não é mais aula — é o feedback
-                  que transforma prática em evolução.
+                  no texto e orientação clara para a próxima redação. Sem feedback específico, prática
+                  não vira aprendizado. Com ele, cada redação escrita é um passo calculado.
                 </p>
                 <p className="text-gray-400 text-base leading-relaxed">
                   A escola passa a ter visibilidade real: quem evoluiu, quem precisa de atenção, quais
@@ -245,7 +245,7 @@ export default function ParaEscolasPage() {
               <div className="space-y-3">
                 {[
                   { label: 'Aluno envia a redação',              sub: 'foto, PDF ou texto — como for mais fácil' },
-                  { label: 'Especialista humana lê e corrige',   sub: 'sem IA, sem checklist automático' },
+                  { label: 'Especialista lê e corrige',           sub: 'professoras especializadas em redação ENEM' },
                   { label: 'Devolutiva completa em até 24h',     sub: 'nota + anotações no texto + orientação' },
                   { label: 'Avaliação por C1–C5',                sub: 'critérios oficiais do ENEM, competência a competência' },
                   { label: 'Escola acompanha a evolução',        sub: 'relatório por aluno, turma e período' },
@@ -432,18 +432,18 @@ export default function ParaEscolasPage() {
 
         <div className="section-container relative">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="section-label justify-center">Comece pequeno</div>
+            <div className="section-label justify-center">Piloto estruturado</div>
             <h2 className="section-title mb-5">
               Não precisa decidir por toda a escola agora.{' '}
               <span className="gradient-text">Comece com uma turma.</span>
             </h2>
             <p className="text-base text-gray-400 leading-relaxed mb-4">
-              Uma turma. Quatro semanas. Ao final, você tem dados reais da evolução de cada aluno por
-              competência — e uma visão clara de como escalar para o restante da escola.
+              Se não gerar resultado visível, não faz sentido continuar — e estamos tranquilos com
+              isso. É assim que trabalhamos.
             </p>
             <p className="text-base text-gray-400 leading-relaxed mb-10">
-              Se não gerar resultado visível, não faz sentido continuar — e estamos tranquilos com isso.
-              É assim que trabalhamos.
+              Uma turma. Quatro semanas. Piloto iniciado agora: resultado mensurável antes do
+              encerramento deste semestre — e uma visão clara de como escalar para o restante da escola.
             </p>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-12">
@@ -472,17 +472,36 @@ export default function ParaEscolasPage() {
               ))}
             </div>
 
+            {/* What happens in the conversation */}
+            <div className="text-left rounded-xl border border-white/[0.06] bg-white/[0.02] px-6 py-5 mb-10">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">O que acontece na conversa</p>
+              <ol className="space-y-3">
+                {[
+                  'Você nos conta o perfil da turma e o momento da preparação (10–15 min)',
+                  'A gente propõe um piloto desenhado para a realidade da sua escola',
+                  'Proposta por escrito enviada em até 24h — sem custo, sem compromisso',
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-[10px] font-bold text-purple-400 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm text-gray-400 leading-relaxed">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
             <a
-              href="https://wa.me/5522992682207?text=Ol%C3%A1%2C+gostaria+de+agendar+um+piloto+do+M%C3%A9todo+Revis%C3%A3o+para+minha+escola."
+              href="https://wa.me/5522992682207?text=Ol%C3%A1%2C+gostaria+de+entender+como+seria+um+piloto+do+M%C3%A9todo+Revis%C3%A3o+na+minha+escola."
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary px-8 py-4 text-base font-bold rounded-xl inline-flex items-center gap-2"
             >
-              Quero agendar o piloto →
+              Agendar a conversa sobre o piloto →
             </a>
 
             <p className="text-xs text-gray-700 mt-4">
-              Sem compromisso. Sem contrato. A conversa é gratuita.
+              Em 20 minutos você sabe exatamente se faz sentido para a sua escola.
             </p>
           </div>
         </div>
@@ -500,7 +519,8 @@ export default function ParaEscolasPage() {
             </h2>
             <p className="section-subtitle mx-auto mb-10">
               A escola que começa hoje tem quatro, oito, doze devolutivas a mais antes da prova.
-              Fale com a equipe e entenda como implementar na sua realidade.
+              O próximo ciclo de redações começa com ou sem essa decisão. A diferença está no que
+              os alunos vão levar de cada texto. A conversa dura 20 minutos.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -526,7 +546,7 @@ export default function ParaEscolasPage() {
             </div>
 
             <p className="text-xs text-gray-700 mt-8">
-              Sem fidelidade. Sem contrato longo. Começa com um piloto e escala conforme o resultado.
+              Sem contrato. Sem fidelidade. Começa com um piloto e escala conforme o resultado — no ritmo da sua escola.
             </p>
           </div>
         </div>
