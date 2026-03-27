@@ -5,12 +5,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { trackEvent } from './Analytics'
 
-const navLinks = [
+const navLinks: { label: string; href: string; highlight?: boolean }[] = [
   { label: 'Como funciona', href: '/#como-funciona' },
   { label: 'Planos',        href: '/#planos' },
   { label: 'Resultados',    href: '/#depoimentos' },
   { label: 'Blog',          href: '/blog' },
 ]
+
+// Separate entry — different audience (B2B), deserves visual distinction
+const schoolLink = { label: 'Para Escolas', href: '/para-escolas' }
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
@@ -64,6 +67,18 @@ export default function Navbar() {
               </Link>
             </li>
           ))}
+          {/* Para Escolas — pill treatment, signals a different audience */}
+          <li>
+            <Link
+              href={schoolLink.href}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-400 hover:text-purple-300 bg-purple-500/[0.08] hover:bg-purple-500/[0.14] border border-purple-500/[0.20] hover:border-purple-500/[0.35] px-3 py-1.5 rounded-full transition-all duration-200"
+            >
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+              </svg>
+              Para Escolas
+            </Link>
+          </li>
         </ul>
 
         {/* ── Desktop action group ───────────────────────────────── */}
@@ -133,6 +148,18 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          {/* Para Escolas — visually distinct in mobile menu */}
+          <Link
+            href={schoolLink.href}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 py-2.5 px-4 text-purple-400 hover:text-purple-300 hover:bg-purple-500/[0.08] rounded-lg text-sm font-semibold transition-colors border border-purple-500/[0.15] hover:border-purple-500/[0.28]"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+            </svg>
+            Para Escolas
+          </Link>
 
           {/* Login + CTA section */}
           <div className="pt-4 mt-2 border-t border-white/[0.06] space-y-2.5">
