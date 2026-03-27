@@ -168,8 +168,11 @@ function scoreColor(score: number, max = 200) {
   return                  { bar: 'bg-amber-500',  text: 'text-amber-400',  bg: 'bg-amber-500/10' }
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', {
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
 }

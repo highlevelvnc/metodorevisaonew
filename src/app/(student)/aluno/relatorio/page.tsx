@@ -117,8 +117,11 @@ function scoreColor(score: number, max = 200) {
   return                  { bar: 'bg-amber-500',  text: 'text-amber-400',  badge: 'text-amber-400 bg-amber-500/10'  }
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -190,11 +193,11 @@ export default async function RelatorioPage() {
 
   const lastCorrected  = correctedEssays[0]
   const firstCorrected = correctedEssays[correctedCount - 1]
-  const lastCorr       = lastCorrected.corrections[0]
-  const firstCorr      = firstCorrected.corrections[0]
+  const lastCorr       = lastCorrected.corrections?.[0]
+  const firstCorr      = firstCorrected.corrections?.[0]
 
-  const lastScore    = lastCorr.total_score
-  const firstScore   = firstCorr.total_score
+  const lastScore    = lastCorr?.total_score ?? 0
+  const firstScore   = firstCorr?.total_score ?? 0
   const bestScore    = Math.max(...correctedEssays.map(e => e.corrections[0]?.total_score ?? 0))
   const overallDelta = correctedCount >= 2 ? lastScore - firstScore : null
   const avgScore     = Math.round(
@@ -203,8 +206,8 @@ export default async function RelatorioPage() {
 
   // Per-competency stats
   const compEvolution = COMPETENCIES.map(c => {
-    const currentScore = lastCorr[c.key] ?? 0
-    const startScore   = correctedCount >= 2 ? (firstCorr[c.key] ?? 0) : null
+    const currentScore = lastCorr?.[c.key] ?? 0
+    const startScore   = correctedCount >= 2 ? (firstCorr?.[c.key] ?? 0) : null
     const delta        = startScore !== null ? currentScore - startScore : null
     const avg          = Math.round(
       correctedEssays.reduce((s, e) => s + (e.corrections[0]?.[c.key] ?? 0), 0) / correctedCount
@@ -271,7 +274,7 @@ export default async function RelatorioPage() {
           <p className="text-gray-500 text-sm">
             {correctedCount} redaç{correctedCount !== 1 ? 'ões' : 'ão'} corrigida{correctedCount !== 1 ? 's' : ''}
             {' '}·{' '}
-            última devolutiva: {formatDate(lastCorr.corrected_at)}
+            última devolutiva: {formatDate(lastCorr?.corrected_at)}
           </p>
         </div>
         <div className="flex items-center gap-3 self-start sm:self-auto print:hidden">

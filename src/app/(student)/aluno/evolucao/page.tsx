@@ -86,18 +86,18 @@ export default async function EvolucaoPage() {
 
   const lastCorrected  = correctedEssays[0]
   const firstCorrected = correctedEssays[correctedCount - 1]
-  const lastCorr       = lastCorrected.corrections[0]
-  const firstCorr      = firstCorrected.corrections[0]
+  const lastCorr       = lastCorrected.corrections?.[0]
+  const firstCorr      = firstCorrected.corrections?.[0]
 
-  const lastScore    = lastCorr.total_score
-  const firstScore   = firstCorr.total_score
+  const lastScore    = lastCorr?.total_score ?? 0
+  const firstScore   = firstCorr?.total_score ?? 0
   const bestScore    = Math.max(...correctedEssays.map(e => e.corrections[0]?.total_score ?? 0))
   const overallDelta = correctedCount >= 2 ? lastScore - firstScore : null
 
   // Per-competency evolution: current vs first, delta, avg
   const compEvolution = COMPETENCIES.map(c => {
-    const currentScore = lastCorr[c.key] ?? 0
-    const startScore   = correctedCount >= 2 ? (firstCorr[c.key] ?? 0) : null
+    const currentScore = lastCorr?.[c.key] ?? 0
+    const startScore   = correctedCount >= 2 ? (firstCorr?.[c.key] ?? 0) : null
     const delta        = startScore !== null ? currentScore - startScore : null
     const avg          = Math.round(
       correctedEssays.reduce((s, e) => s + (e.corrections[0]?.[c.key] ?? 0), 0) / correctedCount
@@ -121,7 +121,7 @@ export default async function EvolucaoPage() {
   if (overallDelta !== null && overallDelta >= 80) achievements.push({ icon: '🚀', label: `+${overallDelta} pontos de evolução`, cls: 'text-green-400 bg-green-500/10 border-green-500/20' })
   if (correctedCount >= 5) achievements.push({ icon: '🎯', label: '5 redações corrigidas', cls: 'text-purple-400 bg-purple-500/10 border-purple-500/20' })
   if (correctedCount >= 10) achievements.push({ icon: '💎', label: '10 redações corrigidas', cls: 'text-amber-400 bg-amber-500/10 border-amber-500/20' })
-  const maxAnyComp = Math.max(...compKeys.map(k => lastCorr[k] ?? 0))
+  const maxAnyComp = Math.max(...compKeys.map(k => lastCorr?.[k] ?? 0))
   if (maxAnyComp >= 200) achievements.push({ icon: '⭐', label: 'Nota máxima em uma competência', cls: 'text-amber-400 bg-amber-500/10 border-amber-500/20' })
   if (correctedCount >= 3) {
     const last3 = correctedEssays.slice(0, 3).map(e => e.corrections[0]?.total_score ?? 0)
