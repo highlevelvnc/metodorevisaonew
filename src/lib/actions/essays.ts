@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -147,16 +148,32 @@ export async function submitEssay(
   console.info('[submitEssay] Essay created:', essayIdStr)
 
   // ── Write upload metadata to essay row (non-fatal if it fails) ───────────
-  // This backfills upload_type and original_file_url added in migration 004.
+  // Uses the admin client (service-role key) because:
+  //   1. The student's anon-key client has no essays UPDATE RLS policy.
+  //   2. Even if it did, the regular client would silently write 0 rows.
+  // 'done' is the correct processing_status value per the CHECK constraint in
+  // migration 004 ('pending','processing','done','failed'). Using 'uploaded'
+  // would violate the constraint and cause the entire UPDATE to fail.
   if (uploadType !== 'text' && originalFileUrl) {
-    const { error: metaErr } = await db
-      .from('essays')
-      .update({ upload_type: uploadType, original_file_url: originalFileUrl, processing_status: 'uploaded' })
-      .eq('id', essayIdStr)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminDb = createAdminClient() as any
+      const { error: metaErr } = await adminDb
+        .from('essays')
+        .update({ upload_type: uploadType, original_file_url: originalFileUrl, processing_status: 'done' })
+        .eq('id', essayIdStr)
 
-    if (metaErr) {
-      // Non-fatal: essay was created, redirect proceeds. Metadata is cosmetic for now.
-      console.error('[submitEssay] Failed to write upload metadata (non-fatal):', metaErr.message)
+      if (metaErr) {
+        // Non-fatal: essay row was created, redirect proceeds.
+        // Likely cause: migration 004 not applied yet (columns don't exist).
+        console.error('[submitEssay] Failed to write upload metadata (non-fatal):', metaErr.message)
+      } else {
+        console.info('[submitEssay] Upload metadata written:', { upload_type: uploadType, essayId: essayIdStr })
+      }
+    } catch (adminErr) {
+      // Admin client not configured (SUPABASE_SERVICE_ROLE_KEY missing) — non-fatal.
+      console.error('[submitEssay] Admin client unavailable for metadata write (non-fatal):',
+        adminErr instanceof Error ? adminErr.message : String(adminErr))
     }
   }
 

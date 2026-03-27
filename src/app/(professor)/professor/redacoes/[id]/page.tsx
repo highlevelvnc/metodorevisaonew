@@ -22,7 +22,7 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
   const db = supabase as any
 
   // Fetch essay (notes field included for reviewer context)
-  const { data: essayRaw } = await db.from('essays')
+  const { data: essayRaw, error: essayFetchError } = await db.from('essays')
     .select(`
       id, theme_title, content_text, notes, status, student_id, upload_type, original_file_url,
       student:users!essays_student_id_fkey(id, full_name),
@@ -31,6 +31,18 @@ export default async function ProfessorCorrigirPage({ params }: { params: { id: 
     .eq('id', params.id)
     .single()
 
+  if (essayFetchError) {
+    // PGRST116 = "0 rows" (genuine not-found). Any other code = DB/schema error
+    // (e.g. 42703 = column does not exist if migration 004 was not applied).
+    // Log the full error so Vercel logs show the exact failure, then surface as 404.
+    console.error('[professor/redacoes/[id]] Essay query failed:', {
+      code:    essayFetchError.code,
+      message: essayFetchError.message,
+      hint:    essayFetchError.hint ?? null,
+      essayId: params.id,
+    })
+    notFound()
+  }
   if (!essayRaw) notFound()
 
   type EssayRaw = {
