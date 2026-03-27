@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Sparkles, BookOpen, Target, MessageCircle, FileText, Flame, PenLine, Clock } from 'lucide-react'
+import { ArrowRight, BookOpen, Target, MessageCircle, FileText, Flame, PenLine, Clock } from 'lucide-react'
 
 interface BiiaCardProps {
   worstCompKey: string | null
@@ -134,12 +134,23 @@ export function BiiaCard({
 
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-600/25 border border-purple-500/30 flex items-center justify-center">
-              <Sparkles size={17} className="text-purple-300" />
+            {/* Biia avatar with glow halo */}
+            <div className="relative flex-shrink-0">
+              <div
+                className="absolute inset-[-3px] rounded-full animate-pulse"
+                style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.50) 0%, transparent 70%)' }}
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/biia.webp"
+                alt="Biia"
+                className="relative w-10 h-10 rounded-full object-cover ring-1 ring-purple-500/50"
+                style={{ boxShadow: '0 0 16px rgba(124,58,237,0.45)' }}
+              />
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Biia AI</p>
-              <p className="text-[11px] text-purple-400/80">Tutora de redação ENEM</p>
+              <p className="text-[11px] text-purple-400/80">Analisou seu perfil · tem recomendações</p>
             </div>
           </div>
 
@@ -182,8 +193,10 @@ export function BiiaCard({
       {/* Chat bubble */}
       <div className="px-5 py-4 flex-1">
         <div className="flex gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-purple-600/20 border border-purple-500/25 flex-shrink-0 flex items-center justify-center mt-0.5">
-            <Sparkles size={11} className="text-purple-400" />
+          <div className="w-7 h-7 rounded-full overflow-hidden border border-purple-500/35 flex-shrink-0 mt-0.5"
+               style={{ boxShadow: '0 0 8px rgba(124,58,237,0.30)' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/biia.webp" alt="Biia" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1">
             <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl rounded-tl-sm px-4 py-3">
@@ -214,10 +227,10 @@ export function BiiaCard({
       <div className="px-5 pb-5">
         <Link
           href="/aluno/biia"
-          className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-purple-700/20 border border-purple-600/30 text-sm font-semibold text-purple-300 hover:bg-purple-700/35 hover:text-purple-200 hover:border-purple-500/50 transition-all"
+          className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-purple-700/20 border border-purple-600/30 text-sm font-semibold text-purple-300 hover:bg-purple-700/35 hover:text-purple-200 hover:border-purple-500/50 hover:scale-[1.02] hover:shadow-[0_0_16px_rgba(124,58,237,0.25)] transition-all duration-200"
         >
           <MessageCircle size={14} />
-          Abrir conversa com Biia
+          Falar com a Biia
           <ArrowRight size={13} className="opacity-50" />
         </Link>
       </div>

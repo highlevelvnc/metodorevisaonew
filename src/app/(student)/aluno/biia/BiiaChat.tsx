@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Sparkles, Send, RotateCcw, ChevronRight } from 'lucide-react'
+import { Send, RotateCcw, ChevronRight } from 'lucide-react'
 
 interface Message {
   id: string
@@ -490,16 +490,19 @@ function MessageBubble({ message }: { message: Message }) {
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-      <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center self-end mb-0.5 ${
-        isUser
-          ? 'bg-white/[0.08] border border-white/[0.12]'
-          : 'bg-purple-600/25 border border-purple-500/30'
-      }`}>
-        {isUser
-          ? <span className="text-[10px] font-bold text-gray-400">Eu</span>
-          : <Sparkles size={11} className="text-purple-400" />
-        }
-      </div>
+      {isUser ? (
+        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center self-end mb-0.5">
+          <span className="text-[10px] font-bold text-gray-400">Eu</span>
+        </div>
+      ) : (
+        <div
+          className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden border border-purple-500/35 self-end mb-0.5"
+          style={{ boxShadow: '0 0 7px rgba(124,58,237,0.30)' }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/biia.webp" alt="Biia" className="w-full h-full object-cover" />
+        </div>
+      )}
 
       <div className={`max-w-[82%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed ${
         isUser
@@ -515,8 +518,12 @@ function MessageBubble({ message }: { message: Message }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-3 items-end">
-      <div className="w-7 h-7 rounded-full bg-purple-600/25 border border-purple-500/30 flex items-center justify-center">
-        <Sparkles size={11} className="text-purple-400" />
+      <div
+        className="w-7 h-7 rounded-full overflow-hidden border border-purple-500/35 flex-shrink-0"
+        style={{ boxShadow: '0 0 7px rgba(124,58,237,0.30)' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/biia.webp" alt="Biia" className="w-full h-full object-cover" />
       </div>
       <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl rounded-bl-sm px-4 py-3">
         <div className="flex gap-1.5 items-center h-4">
@@ -643,13 +650,20 @@ export function BiiaChat({ firstName, worstCompKey, avgScore, lastTheme, isNewUs
       {/* Suggestions — only before user sends any message */}
       {messages.length === 1 && !isTyping && (
         <div className="py-3 border-t border-white/[0.05]">
-          <p className="text-[10px] text-gray-700 font-semibold uppercase tracking-wider mb-2">Sugestões</p>
+          {/* Biia is suggesting — anchor with her avatar */}
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="w-4 h-4 rounded-full overflow-hidden border border-purple-500/30 flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/biia.webp" alt="" className="w-full h-full object-cover" />
+            </div>
+            <p className="text-[10px] text-purple-400/70 font-semibold uppercase tracking-wider">Biia sugere</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {suggestions.map(s => (
               <button
                 key={s.label}
                 onClick={() => sendMessage(s.prompt)}
-                className="group text-left px-3 py-2.5 rounded-xl border border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.05] hover:border-purple-500/25 transition-all"
+                className="group text-left px-3 py-2.5 rounded-xl border border-white/[0.07] bg-white/[0.02] hover:bg-purple-500/[0.05] hover:border-purple-500/25 hover:scale-[1.01] active:scale-[0.99] transition-all duration-150"
               >
                 <span className="flex items-center gap-2">
                   <ChevronRight size={11} className="text-purple-500 group-hover:text-purple-400 flex-shrink-0 transition-colors" />

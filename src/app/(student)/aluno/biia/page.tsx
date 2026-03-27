@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect }      from 'next/navigation'
 import { createClient }  from '@/lib/supabase/server'
 import {
-  Sparkles, TrendingUp, BookOpen, Flame,
+  TrendingUp, BookOpen, Flame,
   PenLine, Target, MessageCircle, Zap,
   FileText, GitBranch, Link2, GraduationCap,
 } from 'lucide-react'
@@ -183,8 +183,19 @@ export default async function BiiaPage() {
       {/* Page header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/25 flex items-center justify-center">
-            <Sparkles size={16} className="text-purple-400" />
+          {/* Biia avatar with glow ring */}
+          <div className="relative flex-shrink-0">
+            <div
+              className="absolute inset-[-4px] rounded-full animate-pulse"
+              style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.55) 0%, transparent 70%)' }}
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/biia.webp"
+              alt="Biia"
+              className="relative w-11 h-11 rounded-full object-cover ring-1 ring-purple-500/50"
+              style={{ boxShadow: '0 0 20px rgba(124,58,237,0.50)' }}
+            />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Biia AI</h1>
@@ -192,7 +203,7 @@ export default async function BiiaPage() {
           </div>
           <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-[10px] font-semibold text-green-400">Online</span>
+            <span className="text-[10px] font-semibold text-green-400">Online · responde em instantes</span>
           </div>
         </div>
       </div>
@@ -204,10 +215,14 @@ export default async function BiiaPage() {
           {/* Chat header */}
           <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.05]">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-9 h-9 rounded-xl bg-purple-600/25 border border-purple-500/30 flex items-center justify-center">
-                  <Sparkles size={16} className="text-purple-400" />
-                </div>
+              <div className="relative flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/biia.webp"
+                  alt="Biia"
+                  className="w-9 h-9 rounded-full object-cover ring-1 ring-purple-500/40"
+                  style={{ boxShadow: '0 0 12px rgba(124,58,237,0.40)' }}
+                />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-[#0b1121]" />
               </div>
               <div>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, BookOpen, MessageCircle, Sparkles, TrendingUp, Flame, Zap } from 'lucide-react'
+import { VideoBackground } from './VideoBackground'
 
 interface DashboardHeroProps {
   firstName: string
@@ -78,22 +79,26 @@ export function DashboardHero({
 
   return (
     <div className="relative mb-6 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b1121]">
+
+      {/* ── Video background (client-only — zero SSR risk) ── */}
+      <VideoBackground src="/correcao.mp4" />
+
       {/* Top accent line */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
 
-      {/* Background glows */}
+      {/* Background glows — sit on top of the video overlay */}
       <div
         className="pointer-events-none absolute -top-32 -right-20 h-72 w-72 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 65%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 65%)' }}
       />
       <div
         className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 65%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 65%)' }}
       />
 
       {/* Dot grid texture */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        className="pointer-events-none absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
           backgroundSize: '24px 24px',
@@ -218,12 +223,18 @@ export function DashboardHero({
 
           {/* ── Right: CTAs ── */}
           <div className="flex flex-row sm:flex-col items-start gap-2.5 sm:items-end shrink-0">
-            <Link href="/aluno/redacoes/nova" className="btn-primary gap-2 whitespace-nowrap">
+            <Link
+              href="/aluno/redacoes/nova"
+              className="btn-primary gap-2 whitespace-nowrap hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(124,58,237,0.35)] transition-all duration-200"
+            >
               <Sparkles size={14} />
               Enviar redação
             </Link>
 
-            <Link href="/aluno/biia" className="btn-secondary gap-2 whitespace-nowrap">
+            <Link
+              href="/aluno/biia"
+              className="btn-secondary gap-2 whitespace-nowrap hover:scale-[1.02] transition-all duration-200"
+            >
               <MessageCircle size={14} />
               Falar com Biia
             </Link>

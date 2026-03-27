@@ -177,7 +177,7 @@ function HabitBar({
       {/* Recommended action */}
       <Link
         href={recommendedAction.href}
-        className={`group rounded-2xl border px-4 py-3.5 flex items-center gap-3 hover:opacity-90 transition-all ${cfg.card}`}
+        className={`group rounded-2xl border px-4 py-3.5 flex items-center gap-3 hover:opacity-90 hover:scale-[1.02] hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)] active:scale-[0.99] transition-all duration-200 ${cfg.card}`}
       >
         <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
           <ActionIcon size={14} className={cfg.color} />
