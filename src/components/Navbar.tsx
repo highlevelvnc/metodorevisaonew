@@ -26,8 +26,8 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-slate-950/90 backdrop-blur-xl border-b border-gray-800/50'
-          : 'bg-transparent'
+          ? 'bg-[#070c14]/92 backdrop-blur-xl border-b border-white/[0.07] shadow-[0_1px_0_rgba(124,58,237,0.10),0_4px_24px_rgba(0,0,0,0.30)]'
+          : 'bg-[#070c14]/20 backdrop-blur-sm'
       }`}
     >
       <nav
@@ -121,7 +121,7 @@ export default function Navbar() {
 
       {/* ── Mobile menu ───────────────────────────────────────────── */}
       {open && (
-        <div className="lg:hidden bg-slate-950/97 backdrop-blur-xl border-t border-gray-800/50 px-5 py-5 space-y-1">
+        <div className="lg:hidden bg-[#070c14]/97 backdrop-blur-xl border-t border-white/[0.06] px-5 py-5 space-y-1">
           {/* Nav links */}
           {navLinks.map((link) => (
             <Link
