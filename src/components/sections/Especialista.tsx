@@ -18,12 +18,12 @@ const FOUNDERS = [
   },
   {
     name:        'Beatriz Dias',
-    designation: 'Corretora especialista',
+    designation: 'Corretora especialista ENEM',
     badge:       'Sócia fundadora',
     imageSrc:    '/bia.jpg',
     alt:         'Beatriz Dias — fundadora e corretora especialista ENEM',
-    description: 'Especialista em correção estratégica para ENEM e vestibulares. Responsável pela aplicação prática do método e pelo acompanhamento da evolução dos alunos. Foco em diagnóstico preciso e evolução contínua.',
-    tags: ['Correção estratégica', 'Foco em evolução', 'Método aplicado'],
+    description: 'Graduada em Letras — Literatura pela UNESA. Com mais de 3 anos de experiência em correção estratégica para ENEM e vestibulares. Responsável pela aplicação prática do método e pelo acompanhamento da evolução dos alunos. Foco em diagnóstico preciso, identificação de padrões de erro e evolução contínua.',
+    tags: ['Letras — Literatura · UNESA', '+3 anos de experiência', 'Correção estratégica'],
   },
 ]
 
