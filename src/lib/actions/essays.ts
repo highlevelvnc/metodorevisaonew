@@ -112,7 +112,9 @@ export async function submitEssay(
     return { error: 'Erro ao salvar redação. Tente novamente.' }
   }
 
-  if (!essayId)
+  // Validate that essayId is a non-empty string UUID before redirecting
+  const essayIdStr = typeof essayId === 'string' ? essayId : null
+  if (!essayIdStr)
     return { error: 'Erro ao salvar redação. Tente novamente.' }
 
   revalidatePath('/aluno')
@@ -121,5 +123,5 @@ export async function submitEssay(
   revalidatePath('/professor')
   revalidatePath('/professor/redacoes')
 
-  redirect(`/aluno/redacoes/${essayId}`)
+  redirect(`/aluno/redacoes/${essayIdStr}`)
 }

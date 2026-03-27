@@ -76,6 +76,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
+// ─── Safe date parser ──────────────────────────────────────────────────────────
+
+/** Returns a valid timestamp (ms) for an ISO date string, or null if invalid. */
+function safeDateMs(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const ms = new Date(iso).getTime()
+  return isNaN(ms) ? null : ms
+}
+
 // ─── Streak engine ─────────────────────────────────────────────────────────────
 
 function computeWeekStreak(essayList: { submitted_at: string }[]): number {
@@ -84,8 +93,12 @@ function computeWeekStreak(essayList: { submitted_at: string }[]): number {
   const now = Date.now()
   const activeWeeks = new Set<number>()
   for (const e of essayList) {
-    activeWeeks.add(Math.floor((now - new Date(e.submitted_at).getTime()) / MS_WEEK))
+    const ms = safeDateMs(e.submitted_at)
+    if (ms === null) continue  // skip essays with null/invalid submitted_at
+    const weekIdx = Math.floor((now - ms) / MS_WEEK)
+    if (weekIdx >= 0) activeWeeks.add(weekIdx)  // only non-negative (past) weeks
   }
+  if (activeWeeks.size === 0) return 0
   // Grace: start from this week (0) if active, else last week (1)
   const start = activeWeeks.has(0) ? 0 : 1
   let streak = 0, i = start
@@ -225,7 +238,9 @@ export default async function AlunoDashboardPage() {
 
   const profile  = profileRaw as { full_name: string } | null
   const sub      = subRaw as SubData | null
-  const essays   = (essaysRaw as EssayData[]) ?? []
+  // Guard: filter out any malformed rows (missing id or submitted_at) to prevent render crashes
+  const essaysRaw2 = (essaysRaw as EssayData[]) ?? []
+  const essays = essaysRaw2.filter(e => e && typeof e.id === 'string')
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -234,7 +249,7 @@ export default async function AlunoDashboardPage() {
   const creditsLeft  = sub ? Math.max(0, sub.essays_limit - sub.essays_used) : 0
   const creditsTotal = sub?.essays_limit ?? 1
 
-  const correctedEssays = essays.filter(e => e.status === 'corrected' && e.corrections?.length > 0)
+  const correctedEssays = essays.filter(e => e.status === 'corrected' && (e.corrections?.length ?? 0) > 0)
   const lastCorrection  = correctedEssays[0]?.corrections?.[0] ?? null
   const pendingCount    = essays.filter(e => e.status === 'pending' || e.status === 'in_review').length
 
@@ -269,7 +284,7 @@ export default async function AlunoDashboardPage() {
 
   // Weekly activity
   const oneWeekAgo              = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const weeklyCount             = essays.filter(e => e.submitted_at >= oneWeekAgo).length
+  const weeklyCount             = essays.filter(e => e.submitted_at != null && e.submitted_at >= oneWeekAgo).length
   const daysSinceLastCorrection = lastCorrection?.corrected_at
     ? Math.floor((Date.now() - new Date(lastCorrection.corrected_at).getTime()) / (1000 * 60 * 60 * 24))
     : null

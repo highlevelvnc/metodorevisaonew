@@ -16,8 +16,12 @@ const STATUS_CONFIG: Record<EssayStatus, { label: string; dot: string; text: str
   corrected: { label: 'Devolutiva pronta', dot: 'bg-green-400',              text: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
 }
 
-function relativeDate(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
+function relativeDate(iso: string | null | undefined) {
+  if (!iso) return '—'
+  const ms = new Date(iso).getTime()
+  if (isNaN(ms)) return '—'
+  const diff = Date.now() - ms
+  if (diff < 0) return 'agora'
   const h = Math.floor(diff / 3_600_000)
   if (h < 1) return 'há menos de 1h'
   if (h < 24) return `há ${h}h`
@@ -127,8 +131,8 @@ export default async function RedacoesPage() {
     .order('submitted_at', { ascending: false })
     .limit(200)
 
-  const essays: Essay[] = essaysRaw ?? []
-  const correctedEssays = essays.filter(e => e.status === 'corrected' && e.corrections.length > 0)
+  const essays: Essay[] = (essaysRaw ?? []).filter((e: unknown) => e && typeof (e as Essay).id === 'string')
+  const correctedEssays = essays.filter(e => e.status === 'corrected' && (e.corrections?.length ?? 0) > 0)
 
   return (
     <div className="max-w-3xl">
@@ -155,10 +159,10 @@ export default async function RedacoesPage() {
         const maxScore   = Math.max(...sparkData.map(e => e.corrections[0]?.total_score ?? 0))
 
         // Best competency from the most recent correction
-        const lastCorr = correctedEssays[0].corrections[0]
+        const lastCorr = correctedEssays[0].corrections?.[0]
         const compKeys  = ['c1_score', 'c2_score', 'c3_score', 'c4_score', 'c5_score'] as const
         const compLabels: Record<string, string> = { c1_score: 'C1', c2_score: 'C2', c3_score: 'C3', c4_score: 'C4', c5_score: 'C5' }
-        const bestKey  = compKeys.reduce((a, b) => (lastCorr[a] ?? 0) >= (lastCorr[b] ?? 0) ? a : b)
+        const bestKey  = lastCorr ? compKeys.reduce((a, b) => (lastCorr[a] ?? 0) >= (lastCorr[b] ?? 0) ? a : b) : 'c5_score'
 
         return (
           <div className="card-dark rounded-2xl p-5 mb-6">
@@ -228,11 +232,11 @@ export default async function RedacoesPage() {
           {essays.map((essay, index) => {
             const cfg        = STATUS_CONFIG[essay.status] ?? STATUS_CONFIG.pending
             const isCorrected = essay.status === 'corrected'
-            const correction  = essay.corrections[0] ?? null
+            const correction  = essay.corrections?.[0] ?? null
             // Delta: difference with the previous corrected essay
             const correctedIdx  = correctedEssays.findIndex(e => e.id === essay.id)
             const prevScore     = correctedIdx >= 0 && correctedIdx + 1 < correctedEssays.length
-              ? correctedEssays[correctedIdx + 1].corrections[0]?.total_score ?? null
+              ? correctedEssays[correctedIdx + 1].corrections?.[0]?.total_score ?? null
               : null
             const delta = correction && prevScore !== null ? correction.total_score - prevScore : null
 

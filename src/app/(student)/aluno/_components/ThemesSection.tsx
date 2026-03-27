@@ -57,13 +57,21 @@ export async function ThemesSection({ worstCompKey }: { worstCompKey: string | n
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   // Fetch community trending themes (platform-wide, last 30 days)
-  const { data: rawTrending } = await db
-    .from('essays')
-    .select('theme_title')
-    .is('theme_id', null)
-    .not('theme_title', 'is', null)
-    .gte('submitted_at', thirtyDaysAgo)
-    .limit(300)
+  // Wrapped in try/catch: this component must never crash the parent page.
+  let rawTrending: { theme_title: string }[] | null = null
+  try {
+    const { data } = await db
+      .from('essays')
+      .select('theme_title')
+      .is('theme_id', null)
+      .not('theme_title', 'is', null)
+      .gte('submitted_at', thirtyDaysAgo)
+      .limit(300)
+    rawTrending = data
+  } catch {
+    // Non-fatal: fall back to static themes below
+    rawTrending = null
+  }
 
   // Aggregate with deduplication
   const countMap = new Map<string, { title: string; count: number }>()
