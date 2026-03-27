@@ -1,5 +1,6 @@
 'use client'
 import { LandingCheckoutButton } from '@/components/LandingCheckoutButton'
+import { GlowCard } from '@/components/ui/spotlight-card'
 
 const planos = [
   {
@@ -105,71 +106,76 @@ export default function Planos() {
           {planos.map((p) => (
             <div
               key={p.name}
-              className={`relative flex flex-col rounded-2xl border transition-all duration-300 ${
-                p.popular
-                  ? 'border-purple-500/40 shadow-glow-purple bg-gradient-to-b from-purple-600/[0.09] to-purple-700/[0.04] lg:scale-[1.04] lg:-translate-y-1 z-10'
-                  : 'border-white/[0.07] bg-gradient-to-b from-white/[0.04] to-transparent hover:border-white/[0.12]'
+              className={`relative transition-all duration-300 ${
+                p.popular ? 'lg:scale-[1.04] lg:-translate-y-1 z-10' : ''
               }`}
             >
+              {/* Popular badge — floats above the GlowCard */}
               {p.popular && (
-                <div className="absolute -top-3.5 inset-x-0 flex justify-center">
+                <div className="absolute -top-3.5 inset-x-0 flex justify-center z-20">
                   <span className="bg-purple-600 text-white text-xs font-bold px-5 py-1.5 rounded-full shadow-btn-primary">
                     Mais escolhido
                   </span>
                 </div>
               )}
 
-              <div className="p-6 sm:p-7 flex flex-col flex-1">
-                {/* Name & tagline */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-extrabold text-white">{p.name}</h3>
-                    {p.savings && (
-                      <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
-                        {p.savings}
-                      </span>
-                    )}
+              <GlowCard
+                customSize
+                glowColor={p.popular ? 'purple' : 'blue'}
+                className="w-full flex flex-col !p-0 !gap-0 !rounded-2xl overflow-hidden"
+              >
+                <div className="p-6 sm:p-7 flex flex-col flex-1">
+                  {/* Name & tagline */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-extrabold text-white">{p.name}</h3>
+                      {p.savings && (
+                        <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+                          {p.savings}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 leading-snug">{p.tagline}</p>
                   </div>
-                  <p className="text-xs text-gray-500 leading-snug">{p.tagline}</p>
+
+                  {/* Price block */}
+                  <div className="mb-1">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm text-gray-500">R$</span>
+                      <span className="text-4xl font-extrabold text-white tabular-nums">{p.price}</span>
+                      <span className="text-sm text-gray-500">/mês</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="text-xs text-gray-600">{p.corrections} correções</span>
+                      <span className="text-gray-800">·</span>
+                      <span className="text-xs text-gray-600">R$ {p.perCorrection} /redação</span>
+                      <span className="text-gray-800">·</span>
+                      <span className="text-xs text-gray-600 font-medium">R$ {p.pricePerDay}/dia</span>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="divider my-5" />
+
+                  {/* Features */}
+                  <ul className="space-y-3 flex-1 mb-7">
+                    {p.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2.5">
+                        <CheckIcon active={p.popular} />
+                        <span className={`text-sm leading-snug ${p.popular ? 'text-gray-300' : 'text-gray-500'}`}>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  <LandingCheckoutButton
+                    planSlug={p.slug}
+                    label={p.cta}
+                    variant={p.popular ? 'primary' : 'secondary'}
+                  />
+                  <p className="text-xs text-gray-700 mt-3 text-center">{p.sub}</p>
                 </div>
-
-                {/* Price block */}
-                <div className="mb-1">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-sm text-gray-500">R$</span>
-                    <span className="text-4xl font-extrabold text-white tabular-nums">{p.price}</span>
-                    <span className="text-sm text-gray-500">/mês</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-xs text-gray-600">{p.corrections} correções</span>
-                    <span className="text-gray-800">·</span>
-                    <span className="text-xs text-gray-600">R$ {p.perCorrection} /redação</span>
-                    <span className="text-gray-800">·</span>
-                    <span className="text-xs text-gray-600 font-medium">R$ {p.pricePerDay}/dia</span>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="divider my-5" />
-
-                {/* Features */}
-                <ul className="space-y-3 flex-1 mb-7">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5">
-                      <CheckIcon active={p.popular} />
-                      <span className={`text-sm leading-snug ${p.popular ? 'text-gray-300' : 'text-gray-500'}`}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* CTA */}
-                <LandingCheckoutButton
-                  planSlug={p.slug}
-                  label={p.cta}
-                  variant={p.popular ? 'primary' : 'secondary'}
-                />
-                <p className="text-xs text-gray-700 mt-3 text-center">{p.sub}</p>
-              </div>
+              </GlowCard>
             </div>
           ))}
         </div>
