@@ -5,6 +5,7 @@ import ComoFunciona from '@/components/sections/ComoFunciona'
 import Especialista from '@/components/sections/Especialista'
 import Diferenciais from '@/components/sections/Diferenciais'
 import Transformacao from '@/components/sections/Transformacao'
+import ParaEscolasTeaser from '@/components/sections/ParaEscolasTeaser'
 import Planos from '@/components/sections/Planos'
 import Garantia from '@/components/sections/Garantia'
 import Depoimentos from '@/components/sections/Depoimentos'
@@ -24,6 +25,7 @@ export default function Home() {
       <Especialista />
       <Diferenciais />
       <Transformacao />
+      <ParaEscolasTeaser />
       <Planos />
       <Garantia />
       <Depoimentos />
