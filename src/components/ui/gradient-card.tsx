@@ -45,13 +45,13 @@ export const GradientCard = ({
   return (
     <motion.div
       ref={cardRef}
-      className="relative rounded-[32px] overflow-hidden w-full"
+      className="relative rounded-2xl overflow-hidden w-full"
       style={{
-        minHeight: '380px',
+        minHeight: '280px',
         transformStyle: 'preserve-3d',
-        backgroundColor: '#0e131f',
+        backgroundColor: '#080d17',
         boxShadow:
-          '0 -10px 100px 10px rgba(78, 99, 255, 0.20), 0 0 10px 0 rgba(0,0,0,0.5)',
+          '0 -6px 50px 4px rgba(78, 99, 255, 0.10), 0 0 8px 0 rgba(0,0,0,0.5)',
       }}
       initial={{ y: 0 }}
       animate={{
@@ -82,7 +82,7 @@ export const GradientCard = ({
         className="absolute inset-0"
         style={{
           zIndex: 0,
-          background: 'linear-gradient(180deg, #000000 0%, #000000 70%)',
+          background: 'linear-gradient(180deg, #080d17 0%, #06080f 70%)',
         }}
       />
 
@@ -97,29 +97,29 @@ export const GradientCard = ({
 
       {/* Purple/blue bottom glow */}
       <motion.div
-        className="absolute bottom-0 left-0 right-0 h-2/3 pointer-events-none"
+        className="absolute bottom-0 left-0 right-0 h-1/2 pointer-events-none"
         style={{
           zIndex: 20,
           background: `
-            radial-gradient(ellipse at bottom right, rgba(172,92,255,0.7) -10%, rgba(79,70,229,0) 70%),
-            radial-gradient(ellipse at bottom left,  rgba(56,189,248,0.7) -10%, rgba(79,70,229,0) 70%)
+            radial-gradient(ellipse at bottom right, rgba(172,92,255,0.45) -10%, rgba(79,70,229,0) 70%),
+            radial-gradient(ellipse at bottom left,  rgba(56,189,248,0.35) -10%, rgba(79,70,229,0) 70%)
           `,
-          filter: 'blur(40px)',
+          filter: 'blur(24px)',
         }}
-        animate={{ opacity: isHovered ? 0.9 : 0.75 }}
+        animate={{ opacity: isHovered ? 0.85 : 0.6 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       />
 
       {/* Central purple glow */}
       <motion.div
-        className="absolute bottom-0 left-0 right-0 h-2/3 pointer-events-none"
+        className="absolute bottom-0 left-0 right-0 h-1/2 pointer-events-none"
         style={{
           zIndex: 21,
           background:
-            'radial-gradient(circle at bottom center, rgba(161,58,229,0.7) -20%, rgba(79,70,229,0) 60%)',
-          filter: 'blur(45px)',
+            'radial-gradient(circle at bottom center, rgba(161,58,229,0.45) -20%, rgba(79,70,229,0) 60%)',
+          filter: 'blur(28px)',
         }}
-        animate={{ opacity: isHovered ? 0.85 : 0.7, y: '10%' }}
+        animate={{ opacity: isHovered ? 0.75 : 0.55, y: '10%' }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       />
 
@@ -176,12 +176,12 @@ export const GradientCard = ({
 
       {/* ── Card content ─────────────────────────────────────────── */}
       <motion.div
-        className="relative flex flex-col h-full p-8"
-        style={{ zIndex: 40, minHeight: '380px' }}
+        className="relative flex flex-col h-full p-5"
+        style={{ zIndex: 40, minHeight: '280px' }}
       >
         {/* Icon bubble */}
         <motion.div
-          className="w-12 h-12 rounded-full flex items-center justify-center mb-6 text-purple-400 flex-shrink-0"
+          className="w-10 h-10 rounded-full flex items-center justify-center mb-4 text-purple-400 flex-shrink-0"
           style={{
             background: 'linear-gradient(225deg, #171c2c 0%, #121624 100%)',
             position: 'relative',
@@ -227,7 +227,7 @@ export const GradientCard = ({
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
           <motion.h3
-            className="text-xl font-semibold text-white mb-3 leading-snug"
+            className="text-[15px] font-semibold text-white mb-2 leading-snug"
             style={{ letterSpacing: '-0.01em' }}
             animate={{
               textShadow: isHovered ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
@@ -238,7 +238,7 @@ export const GradientCard = ({
           </motion.h3>
 
           <motion.p
-            className="text-sm text-gray-400 leading-relaxed mb-6 flex-1"
+            className="text-sm text-gray-400 leading-relaxed mb-4 flex-1"
             style={{ fontWeight: 400 }}
             animate={{ opacity: isHovered ? 0.95 : 0.8 }}
             transition={{ duration: 0.4 }}

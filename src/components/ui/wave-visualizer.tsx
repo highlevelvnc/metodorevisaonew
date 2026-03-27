@@ -132,67 +132,55 @@ export default function WaveVisualizer() {
           />
 
           {/* Card body */}
-          <div className="p-5">
+          <div className="p-5 flex flex-col items-center text-center">
 
-            {/* Avatar + name row */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="relative w-11 h-11 rounded-full overflow-hidden ring-2 ring-purple-500/40 flex-shrink-0">
-                <Image
-                  src="/bia.jpg"
-                  alt="Especialista Método Revisão"
-                  fill
-                  sizes="44px"
-                  className="object-cover object-top"
-                  priority
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white leading-tight">
-                  Bianca Lima
-                </p>
-                <p className="text-[11px] text-gray-500 leading-snug">
-                  Especialista em redação ENEM
-                </p>
-              </div>
-              {/* Live indicator */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[10px] text-green-400 font-medium">Online</span>
-              </div>
+            {/* Portrait — primary visual anchor */}
+            <div className="relative w-20 h-20 rounded-full overflow-hidden ring-2 ring-purple-500/50 mb-3 flex-shrink-0"
+              style={{ boxShadow: '0 0 24px 4px rgba(139,92,246,0.25)' }}
+            >
+              <Image
+                src="/bia.jpg"
+                alt="Especialista Método Revisão"
+                fill
+                sizes="80px"
+                className="object-cover object-top"
+                priority
+              />
+            </div>
+
+            {/* Name + role */}
+            <p className="text-sm font-bold text-white leading-tight mb-0.5">
+              Bianca Lima
+            </p>
+            <p className="text-[11px] text-gray-500 leading-snug mb-1">
+              Especialista em redação ENEM
+            </p>
+
+            {/* Live indicator */}
+            <div className="flex items-center justify-center gap-1.5 mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-[10px] text-green-400 font-medium">Online agora</span>
             </div>
 
             {/* Divider */}
             <div
-              className="w-full h-px mb-5"
+              className="w-full h-px mb-4"
               style={{ background: 'rgba(255,255,255,0.05)' }}
             />
 
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-2 mb-5">
+            <div className="grid grid-cols-3 gap-2 w-full">
               {[
-                { value: '+5.000', label: 'Redações' },
-                { value: '+10.000', label: 'Alunos' },
-                { value: '4.9 ★', label: 'Avaliação' },
+                { value: '+5k', label: 'Redações' },
+                { value: '+10k', label: 'Alunos' },
+                { value: '4.9★', label: 'Avaliação' },
               ].map((s) => (
                 <div key={s.label} className="text-center">
-                  <p className="text-[15px] font-extrabold text-white tabular-nums leading-none mb-0.5">
+                  <p className="text-sm font-extrabold text-white tabular-nums leading-none mb-0.5">
                     {s.value}
                   </p>
                   <p className="text-[10px] text-gray-600 leading-none">{s.label}</p>
                 </div>
-              ))}
-            </div>
-
-            {/* Tag badges */}
-            <div className="flex flex-wrap gap-1.5">
-              {['ENEM', 'C1–C5', 'Estratégia', '48h'].map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[10px] font-semibold text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-400/25"
-                  style={{ background: 'rgba(99,102,241,0.10)' }}
-                >
-                  {tag}
-                </span>
               ))}
             </div>
           </div>
