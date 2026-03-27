@@ -14,7 +14,8 @@ import { LessonsGrid }        from './_components/LessonsGrid'
 import { SimuladosSection }   from './_components/SimuladosSection'
 import { MentoriasSection }   from './_components/MentoriasSection'
 import { ClubeLivroSection }  from './_components/ClubeLivroSection'
-import { CorrectorSelection } from './_components/CorrectorSelection'
+import { CorrectorSelection }  from './_components/CorrectorSelection'
+import { OnboardingDashboard } from './_components/OnboardingDashboard'
 
 export const dynamic = 'force-dynamic'
 
@@ -256,6 +257,17 @@ export default async function AlunoDashboardPage() {
   })()
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  // First-time student: show premium onboarding experience instead of empty shell
+  if (essays.length === 0) {
+    return (
+      <OnboardingDashboard
+        firstName={firstName}
+        planName={planName}
+        creditsLeft={creditsLeft}
+      />
+    )
+  }
 
   return (
     <div className="max-w-6xl">

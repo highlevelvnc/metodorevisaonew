@@ -5,7 +5,7 @@ export const metadata = { title: 'Biblioteca de Temas | Método Revisão' }
 
 const YEARS = ['2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015']
 
-// Comp-driven theme suggestions — mirrors dashboard SUGGESTED_THEMES
+// Comp-driven theme suggestions
 const COMP_THEME_SUGGESTION: Record<string, { title: string; reason: string; trains: string }> = {
   c1_score: {
     title: 'O impacto das redes sociais na língua portuguesa',
@@ -43,12 +43,39 @@ const COMP_NAMES: Record<string, string> = {
   c5_score: 'Proposta de intervenção',
 }
 
-type Theme = { id: string; title: string; year: number | null; category: string | null }
+type OfficialTheme = { id: string; title: string; year: number | null; category: string | null }
+
+// Normalize a title for deduplication: lowercase, no accents, no punctuation
+function normalizeTitle(t: string): string {
+  return t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+type SourceTag = 'oficial' | 'mais-praticado' | 'recente' | 'comunidade'
+
+interface CommunityTheme {
+  title: string
+  count: number
+  lastSeen: string // ISO
+  source: SourceTag
+}
+
+const SOURCE_CONFIG: Record<SourceTag, { label: string; pill: string }> = {
+  'oficial':         { label: 'Oficial ENEM',     pill: 'text-purple-400 bg-purple-500/10 border-purple-500/25' },
+  'mais-praticado':  { label: 'Mais praticado',   pill: 'text-amber-400 bg-amber-500/10 border-amber-500/25' },
+  'recente':         { label: 'Recente',           pill: 'text-blue-400 bg-blue-500/10 border-blue-500/25' },
+  'comunidade':      { label: 'Comunidade',        pill: 'text-gray-400 bg-white/[0.04] border-white/[0.10]' },
+}
 
 export default async function TemasPage({
   searchParams,
 }: {
-  searchParams: { ano?: string; treino?: string }
+  searchParams: { ano?: string; treino?: string; fonte?: string }
 }) {
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,7 +83,7 @@ export default async function TemasPage({
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  /* ── Parallel data fetching ─────────────────────────────────────────────── */
+  /* ── Parallel data fetching ────────────────────────────────────────────── */
   let themeQuery = db
     .from('themes')
     .select('id, title, year, category')
@@ -65,11 +92,22 @@ export default async function TemasPage({
 
   if (searchParams.ano) themeQuery = themeQuery.eq('year', parseInt(searchParams.ano))
 
-  const [{ data: themesRaw }, { data: essaysRaw }, { data: latestCorrRaw }] = await Promise.all([
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  const [
+    { data: themesRaw },
+    { data: essaysRaw },
+    { data: latestCorrRaw },
+    { data: communityEssaysRaw },
+  ] = await Promise.all([
     themeQuery,
+
+    // This student's essay-theme counts (for trained/untrained filter)
     user
       ? db.from('essays').select('theme_id').eq('student_id', user.id).not('theme_id', 'is', null)
       : Promise.resolve({ data: [] }),
+
+    // Weakest competency from most recent correction
     user
       ? db
           .from('essays')
@@ -79,16 +117,27 @@ export default async function TemasPage({
           .order('submitted_at', { ascending: false })
           .limit(1)
       : Promise.resolve({ data: [] }),
+
+    // Community themes: free-text titles from all essays platform-wide
+    // Only essays WITHOUT a theme FK (custom/free titles)
+    db
+      .from('essays')
+      .select('theme_title, submitted_at')
+      .is('theme_id', null)
+      .not('theme_title', 'is', null)
+      .order('submitted_at', { ascending: false })
+      .limit(500),
   ])
 
-  /* ── Essay counts per theme ─────────────────────────────────────────────── */
+  /* ── Essay counts per official theme ─────────────────────────────────── */
   const essayCounts: Record<string, number> = {}
   for (const row of (essaysRaw ?? []) as { theme_id: string }[]) {
     if (row.theme_id) essayCounts[row.theme_id] = (essayCounts[row.theme_id] ?? 0) + 1
   }
 
-  /* ── Weakest competency ──────────────────────────────────────────────────── */
+  /* ── Weakest competency ──────────────────────────────────────────────── */
   const compKeys = ['c1_score', 'c2_score', 'c3_score', 'c4_score', 'c5_score']
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const latestCorr = (latestCorrRaw as any[])?.[0]?.corrections?.[0] ?? null
   let weakestCompKey: string | null = null
   if (latestCorr) {
@@ -98,18 +147,67 @@ export default async function TemasPage({
   }
   const suggestion = weakestCompKey ? COMP_THEME_SUGGESTION[weakestCompKey] : null
 
-  /* ── Apply treino filter ─────────────────────────────────────────────────── */
-  let allThemes = (themesRaw ?? []) as Theme[]
-  const treinoFilter = searchParams.treino ?? null
-  if (treinoFilter === 'novo') {
-    allThemes = allThemes.filter((t) => !essayCounts[t.id])
-  } else if (treinoFilter === 'treinado') {
-    allThemes = allThemes.filter((t) => !!essayCounts[t.id])
+  /* ── Build official themes list ─────────────────────────────────────── */
+  const officialNorms = new Set<string>()
+  const allOfficial = ((themesRaw ?? []) as OfficialTheme[]).map(t => {
+    officialNorms.add(normalizeTitle(t.title))
+    return t
+  })
+
+  /* ── Build community themes from free-text essays ───────────────────── */
+  const communityMap = new Map<string, { title: string; count: number; lastSeen: string }>()
+  for (const row of (communityEssaysRaw ?? []) as { theme_title: string; submitted_at: string }[]) {
+    if (!row.theme_title?.trim()) continue
+    const norm = normalizeTitle(row.theme_title)
+    if (officialNorms.has(norm)) continue // skip duplicates of official themes
+    if (communityMap.has(norm)) {
+      const existing = communityMap.get(norm)!
+      communityMap.set(norm, {
+        title: existing.title,
+        count: existing.count + 1,
+        lastSeen: existing.lastSeen > row.submitted_at ? existing.lastSeen : row.submitted_at,
+      })
+    } else {
+      communityMap.set(norm, { title: row.theme_title.trim(), count: 1, lastSeen: row.submitted_at })
+    }
   }
 
-  const novosCount   = ((themesRaw ?? []) as Theme[]).filter((t) => !essayCounts[t.id]).length
-  const treinadosCount = ((themesRaw ?? []) as Theme[]).filter((t) => !!essayCounts[t.id]).length
-  const selectedYear = searchParams.ano ?? null
+  // Tag community themes by usage/recency and filter noise
+  const communityThemes: CommunityTheme[] = Array.from(communityMap.values())
+    .filter(t => t.title.length > 15) // filter very short/noise titles
+    .map(t => {
+      let source: SourceTag = 'comunidade'
+      if (t.count >= 5) source = 'mais-praticado'
+      else if (t.lastSeen >= thirtyDaysAgo) source = 'recente'
+      return { ...t, source }
+    })
+    .sort((a, b) => {
+      // Sort: mais-praticado first, then recente, then by count
+      if (a.source === 'mais-praticado' && b.source !== 'mais-praticado') return -1
+      if (b.source === 'mais-praticado' && a.source !== 'mais-praticado') return 1
+      if (a.source === 'recente' && b.source === 'comunidade') return -1
+      if (b.source === 'recente' && a.source === 'comunidade') return 1
+      return b.count - a.count
+    })
+    .slice(0, 40) // cap at 40 community themes
+
+  /* ── Apply filters to official themes ──────────────────────────────── */
+  let filteredOfficial = allOfficial
+  const treinoFilter = searchParams.treino ?? null
+  const fonteFilter  = searchParams.fonte ?? null
+
+  if (treinoFilter === 'novo') {
+    filteredOfficial = filteredOfficial.filter(t => !essayCounts[t.id])
+  } else if (treinoFilter === 'treinado') {
+    filteredOfficial = filteredOfficial.filter(t => !!essayCounts[t.id])
+  }
+
+  const novosCount    = allOfficial.filter(t => !essayCounts[t.id]).length
+  const treinadosCount = allOfficial.filter(t => !!essayCounts[t.id]).length
+  const selectedYear  = searchParams.ano ?? null
+
+  // Show community section: only when not filtering by year or treino
+  const showCommunity = !selectedYear && !treinoFilter && !fonteFilter && communityThemes.length > 0
 
   return (
     <div className="max-w-4xl">
@@ -117,11 +215,11 @@ export default async function TemasPage({
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white mb-1">Biblioteca de Temas</h1>
         <p className="text-sm text-gray-500">
-          Temas reais do ENEM e vestibulares para praticar com contexto e profundidade.
+          Temas oficiais do ENEM · mais praticados na plataforma · recentes da comunidade
         </p>
       </div>
 
-      {/* Suggestion card — only when we know the weakest comp */}
+      {/* Suggestion card */}
       {suggestion && weakestCompKey && (
         <div className="rounded-2xl border border-purple-500/[0.2] bg-gradient-to-br from-purple-900/20 to-purple-950/10 p-5 mb-6">
           <div className="flex items-start gap-3">
@@ -155,6 +253,23 @@ export default async function TemasPage({
         </div>
       )}
 
+      {/* Stats bar */}
+      <div className="flex items-center gap-4 mb-5 text-xs text-gray-600">
+        <span className="tabular-nums"><span className="text-white font-semibold">{allOfficial.length}</span> temas oficiais</span>
+        {communityThemes.length > 0 && (
+          <>
+            <span className="text-white/10">·</span>
+            <span className="tabular-nums"><span className="text-white font-semibold">{communityThemes.length}</span> da comunidade</span>
+          </>
+        )}
+        {treinadosCount > 0 && (
+          <>
+            <span className="text-white/10">·</span>
+            <span className="tabular-nums"><span className="text-green-400 font-semibold">{treinadosCount}</span> já treinados</span>
+          </>
+        )}
+      </div>
+
       {/* Filters row */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
         {/* Treino filter */}
@@ -184,7 +299,6 @@ export default async function TemasPage({
           })}
         </div>
 
-        {/* Divider */}
         <div className="hidden sm:block w-px h-4 bg-white/[0.08]" />
 
         {/* Year filter */}
@@ -218,9 +332,9 @@ export default async function TemasPage({
         </div>
       </div>
 
-      {/* Themes list */}
-      {allThemes.length === 0 ? (
-        <div className="card-dark rounded-2xl p-10 text-center">
+      {/* ── Official themes list ──────────────────────────────────────────────── */}
+      {filteredOfficial.length === 0 ? (
+        <div className="card-dark rounded-2xl p-10 text-center mb-6">
           <div className="w-12 h-12 rounded-2xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-4">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-purple-400">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
@@ -233,8 +347,8 @@ export default async function TemasPage({
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {allThemes.map((theme) => {
+        <div className="space-y-2 mb-6">
+          {filteredOfficial.map((theme) => {
             const count = essayCounts[theme.id] ?? 0
             const alreadyTrained = count > 0
             return (
@@ -247,7 +361,6 @@ export default async function TemasPage({
                 }`}
               >
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {/* Trained indicator */}
                   <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
                     alreadyTrained
                       ? 'bg-emerald-500/15 border border-emerald-500/25'
@@ -269,11 +382,15 @@ export default async function TemasPage({
                           {theme.year}
                         </span>
                       )}
+                      {/* Source tag */}
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${SOURCE_CONFIG['oficial'].pill}`}>
+                        {SOURCE_CONFIG['oficial'].label}
+                      </span>
                       {theme.category && (
                         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                           alreadyTrained
                             ? 'bg-white/[0.03] border-white/[0.06] text-gray-600'
-                            : 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+                            : 'bg-white/[0.04] border-white/[0.09] text-gray-500'
                         }`}>
                           {theme.category}
                         </span>
@@ -313,13 +430,71 @@ export default async function TemasPage({
         </div>
       )}
 
-      {/* Count footer */}
-      {allThemes.length > 0 && (
-        <p className="mt-5 text-xs text-gray-700 text-center">
-          {allThemes.length} tema{allThemes.length !== 1 ? 's' : ''}
-          {treinoFilter === 'novo' ? ' ainda não treinados' : treinoFilter === 'treinado' ? ' já treinados' : ''}
-          {selectedYear ? ` de ${selectedYear}` : ' disponíveis'}
+      {/* Count footer for official section */}
+      {filteredOfficial.length > 0 && (
+        <p className="mb-8 text-xs text-gray-700 text-center">
+          {filteredOfficial.length} tema{filteredOfficial.length !== 1 ? 's' : ''}
+          {treinoFilter === 'novo' ? ' ainda não treinados' : treinoFilter === 'treinado' ? ' já treinados' : ' oficiais'}
+          {selectedYear ? ` de ${selectedYear}` : ''}
         </p>
+      )}
+
+      {/* ── Community themes section ──────────────────────────────────────────── */}
+      {showCommunity && (
+        <div>
+          <div className="flex items-center gap-3 mb-4 px-0.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 whitespace-nowrap">
+              Temas da comunidade
+            </p>
+            <div className="flex-1 h-px bg-white/[0.05]" />
+            <p className="text-[10px] text-gray-700 whitespace-nowrap">Mais praticados na plataforma</p>
+          </div>
+
+          <div className="space-y-2">
+            {communityThemes.map((theme, i) => {
+              const cfg = SOURCE_CONFIG[theme.source]
+              return (
+                <div
+                  key={i}
+                  className="card-dark rounded-2xl p-4 flex items-center justify-between gap-4 border border-white/[0.07] hover:border-white/[0.12] transition-all"
+                >
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="shrink-0 w-5 h-5 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mt-0.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/[0.15]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.pill}`}>
+                          {cfg.label}
+                        </span>
+                        {theme.count > 1 && (
+                          <span className="text-[10px] text-gray-700 tabular-nums">
+                            {theme.count} redaç{theme.count !== 1 ? 'ões' : 'ão'} escritas
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-white leading-snug">{theme.title}</p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/aluno/redacoes/nova?tema_livre=${encodeURIComponent(theme.title)}`}
+                    className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-white/[0.09] text-gray-500 hover:text-gray-300 hover:border-white/[0.18] transition-all"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Escrever
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="mt-5 text-xs text-gray-700 text-center">
+            {communityThemes.length} tema{communityThemes.length !== 1 ? 's' : ''} praticados na plataforma
+          </p>
+        </div>
       )}
     </div>
   )
