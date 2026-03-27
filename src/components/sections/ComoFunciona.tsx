@@ -1,5 +1,8 @@
 'use client'
+import { useState } from 'react'
+import { BookOpen, PenLine, Send, Star, Sparkles, TrendingUp } from 'lucide-react'
 import { trackEvent } from '@/components/Analytics'
+import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline'
 
 const WA_LINK =
   'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
@@ -194,6 +197,83 @@ const mobileCards = [
   },
 ]
 
+// ─── Orbital timeline data (jornada do aluno) ────────────────────────────
+
+const metodoProceso = [
+  {
+    id: 1,
+    title: 'Tema',
+    date: 'Passo 1',
+    content:
+      'Escolha um tema oficial do ENEM, use nossa proposta da semana ou peça à Biia o tema ideal para treinar sua competência mais fraca.',
+    category: 'Início',
+    icon: BookOpen,
+    relatedIds: [2, 6],
+    status: 'completed' as const,
+    energy: 100,
+  },
+  {
+    id: 2,
+    title: 'Escreva',
+    date: 'Passo 2',
+    content:
+      'Redija sua dissertação no seu ritmo. Consulte o banco de repertórios da Biia, os guias de estrutura e a análise prévia de competências.',
+    category: 'Redação',
+    icon: PenLine,
+    relatedIds: [1, 3],
+    status: 'completed' as const,
+    energy: 90,
+  },
+  {
+    id: 3,
+    title: 'Envie',
+    date: 'Passo 3',
+    content:
+      'Submeta sua redação pelo canal exclusivo. Sem plataformas complicadas. A especialista recebe e entra em ação em até 24h.',
+    category: 'Envio',
+    icon: Send,
+    relatedIds: [2, 4],
+    status: 'in-progress' as const,
+    energy: 75,
+  },
+  {
+    id: 4,
+    title: 'Devolutiva',
+    date: 'Passo 4',
+    content:
+      'Em até 48h: nota por competência C1–C5, anotações em cada parágrafo e diagnóstico dos padrões de erro que se repetem.',
+    category: 'Correção',
+    icon: Star,
+    relatedIds: [3, 5],
+    status: 'in-progress' as const,
+    energy: 60,
+  },
+  {
+    id: 5,
+    title: 'Biia',
+    date: 'Passo 5',
+    content:
+      'A Biia analisa seu histórico, identifica padrões de evolução e gera recomendações personalizadas: próximo tema, foco de treino, repertório ideal.',
+    category: 'IA',
+    icon: Sparkles,
+    relatedIds: [4, 6],
+    status: 'pending' as const,
+    energy: 45,
+  },
+  {
+    id: 6,
+    title: 'Evolua',
+    date: 'Passo 6',
+    content:
+      'Cada ciclo eleva sua nota. Acompanhe a evolução por competência no painel de progresso e veja sua nota deixar de estacionar.',
+    category: 'Progresso',
+    icon: TrendingUp,
+    relatedIds: [5, 1],
+    status: 'pending' as const,
+    energy: 30,
+  },
+]
+
 // ─── Inline text renderer ────────────────────────────────────────────────
 
 function Seg({ s, idx }: { s: Seg; idx: number }) {
@@ -263,6 +343,8 @@ function Seg({ s, idx }: { s: Seg; idx: number }) {
 // ─── Main component ──────────────────────────────────────────────────────
 
 export default function ComoFunciona() {
+  const [activeTab, setActiveTab] = useState<'processo' | 'orbital'>('processo')
+
   return (
     <section
       id="como-funciona"
@@ -294,7 +376,47 @@ export default function ComoFunciona() {
           </p>
         </div>
 
-        {/* ── Two-column grid ──────────────────────────── */}
+        {/* ── Tab bar ──────────────────────────────────── */}
+        <div className="flex items-center justify-center gap-1.5 mb-10">
+          {([
+            { key: 'processo', label: 'Como funciona' },
+            { key: 'orbital',  label: 'Explicação de processos' },
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold border transition-all duration-200 ${
+                activeTab === tab.key
+                  ? 'bg-purple-700/20 border-purple-500/30 text-purple-300'
+                  : 'border-white/[0.07] text-gray-500 hover:text-gray-300 hover:border-white/[0.14] hover:bg-white/[0.03]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Orbital timeline tab ─────────────────────── */}
+        {activeTab === 'orbital' && (
+          <div className="rounded-2xl overflow-hidden border border-white/[0.07]" style={{ height: '680px' }}>
+            {/* Hint bar above the orbital */}
+            <div className="flex items-center justify-between px-5 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
+              <p className="text-xs text-gray-600">
+                Clique em qualquer nó para ver os detalhes de cada etapa · Clique no fundo para resetar
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                <span className="text-[11px] text-purple-400 font-medium">Jornada do Aluno</span>
+              </div>
+            </div>
+            <div style={{ height: 'calc(680px - 41px)' }}>
+              <RadialOrbitalTimeline timelineData={metodoProceso} />
+            </div>
+          </div>
+        )}
+
+        {/* ── Two-column grid (Como funciona tab) ─────── */}
+        {activeTab === 'processo' && (
         <div className="grid lg:grid-cols-[2fr_3fr] gap-12 lg:gap-14 items-start">
 
           {/* Left: steps + CTA */}
@@ -653,6 +775,8 @@ export default function ComoFunciona() {
 
           </div>
         </div>
+        )} {/* end activeTab === 'processo' */}
+
       </div>
     </section>
   )
