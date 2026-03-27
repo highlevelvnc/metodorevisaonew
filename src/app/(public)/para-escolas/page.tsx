@@ -120,12 +120,44 @@ export default function ParaEscolasPage() {
           HERO
       ════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden pt-32 pb-24 md:pt-40 md:pb-32">
+
+        {/* ── Layer 1: Background video ─────────────────────────────── */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        >
+          <source src="/escola.mp4" type="video/mp4" />
+        </video>
+
+        {/* ── Layer 2: Cinematic overlay ────────────────────────────── */}
+        {/*
+          Multi-stop gradient strategy:
+          - Top: very dark   → seamless navbar transition + badge readability
+          - Mid-upper: opens → video texture visible, adds institutional feel
+          - Mid-lower: closes→ keeps body copy clean
+          - Bottom: very dark→ CTA + trust bar always readable
+          Fallback: bg-[#080d18] ensures solid dark if video fails
+        */}
+        <div
+          className="absolute inset-0 bg-[#080d18]"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(8,13,24,0.90) 0%, rgba(8,13,24,0.54) 38%, rgba(8,13,24,0.68) 65%, rgba(8,13,24,0.94) 100%)',
+          }}
+        />
+
+        {/* ── Layer 3: Brand color wash ─────────────────────────────── */}
+        {/* Keeps the purple identity alive over the real-world footage */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-purple-700/10 rounded-full blur-3xl" />
-          <div className="absolute top-20 right-0 w-[400px] h-[300px] bg-blue-700/6 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[320px] bg-purple-700/[0.14] rounded-full blur-3xl" />
         </div>
 
-        <div className="section-container relative text-center">
+        {/* ── Layer 4: Content ──────────────────────────────────────── */}
+        <div className="section-container relative z-10 text-center">
           <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold px-4 py-1.5 rounded-full mb-8 tracking-widest uppercase">
             Método Revisão · Para Escolas
           </div>
@@ -137,7 +169,8 @@ export default function ParaEscolasPage() {
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg text-gray-400 leading-relaxed max-w-xl mx-auto mb-10">
+          {/* Subheadline: bumped to gray-300 — video texture behind needs lighter text */}
+          <p className="text-base sm:text-lg text-gray-300 leading-relaxed max-w-xl mx-auto mb-10">
             Correção individual e estratégica com devolutiva em 24h, para cada aluno da sua escola —
             sem mudar a rotina, sem treinamento de plataforma, sem burocracia.
           </p>
@@ -153,16 +186,18 @@ export default function ParaEscolasPage() {
             </a>
             <Link
               href="#como-funciona"
-              className="text-sm text-gray-500 hover:text-gray-300 transition-colors duration-200 underline underline-offset-4"
+              className="text-sm text-gray-400 hover:text-white transition-colors duration-200 underline underline-offset-4"
             >
               Ver como funciona ↓
             </Link>
           </div>
 
-          {/* Low-friction note under primary CTA */}
-          <p className="text-xs text-gray-700 mb-10">A conversa leva em média 20 minutos. Proposta enviada em até 24h. Sem compromisso.</p>
+          {/* Low-friction note — bumped to gray-500 for video legibility */}
+          <p className="text-xs text-gray-500 mb-10">
+            A conversa leva em média 20 minutos. Proposta enviada em até 24h. Sem compromisso.
+          </p>
 
-          {/* Trust bar */}
+          {/* Trust bar — labels bumped to gray-400 for video legibility */}
           <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2">
             {[
               { dot: 'bg-green-400',  label: '10.000+ redações corrigidas' },
@@ -172,7 +207,7 @@ export default function ParaEscolasPage() {
             ].map((t) => (
               <div key={t.label} className="flex items-center gap-1.5">
                 <div className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
-                <span className="text-xs text-gray-500">{t.label}</span>
+                <span className="text-xs text-gray-400">{t.label}</span>
               </div>
             ))}
           </div>
