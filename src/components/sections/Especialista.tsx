@@ -1,31 +1,33 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
+import { TeamSection } from '@/components/ui/team-section-1'
 
 // ─── Founders data ─────────────────────────────────────────────────────────────
 
 const FOUNDERS = [
   {
     name:        'Patrícia Guimarães',
-    role:        'Sócia fundadora · Professora de redação ENEM',
-    image:       '/patricia.jpeg',
+    designation: 'Professora de redação ENEM',
+    badge:       'Sócia fundadora',
+    imageSrc:    '/patricia.jpeg',
     alt:         'Patrícia Guimarães — fundadora e professora de redação ENEM',
-    description: 'Formada em Letras pela UERJ, com duas pós-graduações e mestrado pela Universidade de Coimbra. Professora da rede pública do Rio de Janeiro há mais de 36 anos. Especialista em formação de base, estrutura textual e desenvolvimento de argumentação consistente.',
+    description: 'Formada em Letras pela UERJ, com duas pós-graduações e mestrado pela Universidade de Coimbra. Professora da rede pública do Rio de Janeiro há mais de 36 anos. Especialista em formação de base, estrutura textual e argumentação consistente.',
     tags: ['36+ anos de experiência', 'UERJ + Coimbra', 'Formação sólida'],
   },
   {
     name:        'Beatriz Dias',
-    role:        'Sócia fundadora · Corretora especialista',
-    image:       '/bia.jpg',
+    designation: 'Corretora especialista',
+    badge:       'Sócia fundadora',
+    imageSrc:    '/bia.jpg',
     alt:         'Beatriz Dias — fundadora e corretora especialista ENEM',
-    description: 'Especialista em correção estratégica para ENEM e vestibulares. Responsável pela aplicação prática do método e acompanhamento da evolução dos alunos. Foco em diagnóstico preciso, identificação de padrões de erro e evolução contínua.',
+    description: 'Especialista em correção estratégica para ENEM e vestibulares. Responsável pela aplicação prática do método e pelo acompanhamento da evolução dos alunos. Foco em diagnóstico preciso e evolução contínua.',
     tags: ['Correção estratégica', 'Foco em evolução', 'Método aplicado'],
   },
 ]
 
-// ─── Platform stats (replaces bullet-list credentials) ────────────────────────
+// ─── Platform stats ───────────────────────────────────────────────────────────
 
 const STATS = [
   {
@@ -77,7 +79,7 @@ export default function Especialista() {
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-600/30 to-transparent" />
       <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-600/20 to-transparent" />
 
-      {/* Subtle ambient glow */}
+      {/* Ambient glow */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] pointer-events-none"
         style={{
@@ -89,36 +91,22 @@ export default function Especialista() {
 
       <div className="section-container relative">
 
-        {/* ── LAYER 1: Header ───────────────────────────────────────────── */}
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <p className="section-label justify-center">
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-            </svg>
-            As especialistas
-          </p>
-          <h2 className="section-title mt-3 mb-5">
-            Quem está por trás da<br />
-            <span className="gradient-text">sua evolução</span>
-          </h2>
-          <p className="text-gray-400 text-base leading-relaxed">
-            Você não está enviando sua redação para um sistema. Está sendo corrigido por especialistas com décadas de experiência real em ensino e aprovação.
-          </p>
-        </div>
-
-        {/* ── LAYER 2: Founder cards ────────────────────────────────────── */}
-        <div className="grid lg:grid-cols-2 gap-6 xl:gap-8 max-w-4xl mx-auto">
-          {FOUNDERS.map((founder) => (
-            <FounderCard key={founder.name} {...founder} />
-          ))}
-        </div>
+        {/* ── LAYER 1 + 2: Header + Founder cards via TeamSection ──────── */}
+        <TeamSection
+          label="As especialistas"
+          title={
+            <>
+              Quem está por trás da<br />
+              <span className="gradient-text">sua evolução</span>
+            </>
+          }
+          description="Você não está enviando sua redação para um sistema. Está sendo corrigido por especialistas com décadas de experiência real em ensino e aprovação."
+          members={FOUNDERS}
+        />
 
         {/* ── LAYER 3: Platform trust metrics ──────────────────────────── */}
         <div className="mt-14 max-w-4xl mx-auto">
 
-          {/* Divider line */}
           <div className="flex items-center gap-4 mb-10">
             <div className="flex-1 h-px bg-white/[0.05]" />
             <p className="text-xs text-gray-600 font-medium tracking-widest uppercase whitespace-nowrap">
@@ -170,134 +158,5 @@ export default function Especialista() {
 
       </div>
     </section>
-  )
-}
-
-// ─── FounderCard ──────────────────────────────────────────────────────────────
-
-interface FounderCardProps {
-  name:        string
-  role:        string
-  image:       string
-  alt:         string
-  description: string
-  tags:        string[]
-}
-
-function FounderCard({ name, role, image, alt, description, tags }: FounderCardProps) {
-  return (
-    <article
-      className="group rounded-2xl overflow-hidden flex flex-col"
-      style={{
-        background: 'linear-gradient(160deg, rgba(14,19,33,0.95) 0%, rgba(9,13,23,0.98) 100%)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 4px 32px rgba(0,0,0,0.40)',
-        transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-      }}
-    >
-
-      {/* ── Photo area ──────────────────────────────────────────────────── */}
-      <div className="relative w-full flex-shrink-0" style={{ height: '280px' }}>
-
-        {/* Portrait image */}
-        <Image
-          src={image}
-          alt={alt}
-          fill
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover object-top"
-          priority
-        />
-
-        {/* Gradient fade — photo blends into card content below */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              'linear-gradient(to top, rgba(9,13,23,1) 0%, rgba(9,13,23,0.5) 30%, transparent 60%)',
-          }}
-          aria-hidden="true"
-        />
-
-        {/* Top shimmer accent */}
-        <div
-          className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-          style={{
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.50) 50%, transparent 100%)',
-          }}
-          aria-hidden="true"
-        />
-
-        {/* Founder badge pinned to bottom of photo area */}
-        <div className="absolute bottom-4 left-5">
-          <span
-            className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full"
-            style={{
-              background: 'rgba(139,92,246,0.18)',
-              border: '1px solid rgba(139,92,246,0.35)',
-              color: 'rgba(196,168,255,0.9)',
-              backdropFilter: 'blur(6px)',
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: 'rgba(139,92,246,0.9)' }}
-            />
-            Sócia fundadora
-          </span>
-        </div>
-
-      </div>
-
-      {/* ── Content area ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 px-6 pb-6 pt-5">
-
-        {/* Role */}
-        <p className="text-[11px] text-purple-400/80 font-semibold uppercase tracking-widest leading-none mb-2">
-          {role.split('·')[1]?.trim() ?? role}
-        </p>
-
-        {/* Name */}
-        <h3 className="text-xl font-bold text-white leading-tight mb-3">
-          {name}
-        </h3>
-
-        {/* Description — max 4 lines visible */}
-        <p className="text-sm text-gray-400 leading-relaxed line-clamp-4 mb-5">
-          {description}
-        </p>
-
-        {/* Tags — flex-wrap keeps them inside the card at all viewport widths */}
-        <div className="flex flex-wrap gap-2 mt-auto">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center text-[11px] font-medium px-3 py-1 rounded-full whitespace-nowrap"
-              style={{
-                background: 'rgba(139,92,246,0.08)',
-                border:     '1px solid rgba(139,92,246,0.20)',
-                color:      'rgba(196,168,255,0.85)',
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-      </div>
-
-      {/* Bottom glow accent on hover */}
-      <div
-        className="h-[1.5px] w-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background:
-            'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.60) 50%, transparent 100%)',
-          boxShadow: '0 0 12px 3px rgba(139,92,246,0.30)',
-        }}
-        aria-hidden="true"
-      />
-
-    </article>
   )
 }
