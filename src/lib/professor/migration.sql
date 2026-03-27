@@ -197,3 +197,63 @@ create policy "monthly_payouts_admin"  on monthly_payouts
 --   status        = excluded.status,
 --   closed_at     = now(),
 --   updated_at    = now();
+
+
+-- ── 4. professor_payout_profiles ──────────────────────────────────────────────
+-- Stores PIX payment details for each professor. One row per professor (unique).
+-- Referenced by the /professor/perfil page and snapshotted at closing time.
+
+create table if not exists professor_payout_profiles (
+  id             uuid        primary key default gen_random_uuid(),
+  professor_id   uuid        not null references users(id) on delete cascade,
+  pix_key        text,
+  pix_key_type   text        check (pix_key_type in ('cpf', 'cnpj', 'email', 'phone', 'random')),
+  cpf            text,
+  short_bio      text,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  constraint professor_payout_profiles_professor_id_key unique (professor_id)
+);
+
+-- RLS
+alter table professor_payout_profiles enable row level security;
+
+drop policy if exists "professors can view own payout profile" on professor_payout_profiles;
+drop policy if exists "professors can upsert own payout profile" on professor_payout_profiles;
+drop policy if exists "admins can view all payout profiles" on professor_payout_profiles;
+
+create policy "professors can view own payout profile"
+  on professor_payout_profiles for select
+  using (professor_id = auth.uid());
+
+create policy "professors can upsert own payout profile"
+  on professor_payout_profiles for all
+  using (professor_id = auth.uid())
+  with check (professor_id = auth.uid());
+
+create policy "admins can view all payout profiles"
+  on professor_payout_profiles for select
+  using (
+    exists (
+      select 1 from users
+      where id = auth.uid() and role = 'admin'
+    )
+  );
+
+-- Index
+create index if not exists professor_payout_profiles_professor_id_idx
+  on professor_payout_profiles (professor_id);
+
+-- updated_at trigger (reuse existing trigger function if present)
+create or replace trigger professor_payout_profiles_updated_at
+  before update on professor_payout_profiles
+  for each row execute function update_updated_at_column();
+
+
+-- ── 5. monthly_payouts — add payment columns ──────────────────────────────────
+-- Add payment_method and pix_key_snapshot to monthly_payouts if not present.
+-- pix_key_snapshot captures the professor's PIX key at the moment of closing.
+
+alter table monthly_payouts
+  add column if not exists payment_method   text default 'pix',
+  add column if not exists pix_key_snapshot text;

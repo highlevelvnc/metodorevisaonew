@@ -5,6 +5,7 @@ export type EssayStatus       = 'pending' | 'in_review' | 'corrected'
 export type SubscriptionStatus = 'active' | 'cancelled' | 'expired'
 export type LessonStatus      = 'scheduled' | 'completed' | 'cancelled'
 export type PayoutStatus      = 'open' | 'closed' | 'paid'
+export type PixKeyType        = 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'
 
 export interface Database {
   public: {
@@ -254,6 +255,8 @@ export interface Database {
           lessons_amount:      number
           total_amount:        number        // generated column: essays_amount + lessons_amount
           status:              PayoutStatus
+          payment_method:      string | null // e.g. 'pix'
+          pix_key_snapshot:    string | null // PIX key captured at closing time
           closed_at:           string | null
           paid_at:             string | null
           payment_reference:   string | null
@@ -271,6 +274,8 @@ export interface Database {
           lessons_amount?:     number
           // total_amount is generated — do not insert
           status?:             PayoutStatus
+          payment_method?:     string | null
+          pix_key_snapshot?:   string | null
           closed_at?:          string | null
           paid_at?:            string | null
           payment_reference?:  string | null
@@ -284,11 +289,42 @@ export interface Database {
           essays_amount?:      number
           lessons_amount?:     number
           status?:             PayoutStatus
+          payment_method?:     string | null
+          pix_key_snapshot?:   string | null
           closed_at?:          string | null
           paid_at?:            string | null
           payment_reference?:  string | null
           notes?:              string | null
           updated_at?:         string
+        }
+      }
+      professor_payout_profiles: {
+        Row: {
+          id:            string
+          professor_id:  string
+          pix_key:       string | null
+          pix_key_type:  PixKeyType | null
+          cpf:           string | null
+          short_bio:     string | null
+          created_at:    string
+          updated_at:    string
+        }
+        Insert: {
+          id?:           string
+          professor_id:  string
+          pix_key?:      string | null
+          pix_key_type?: PixKeyType | null
+          cpf?:          string | null
+          short_bio?:    string | null
+          created_at?:   string
+          updated_at?:   string
+        }
+        Update: {
+          pix_key?:      string | null
+          pix_key_type?: PixKeyType | null
+          cpf?:          string | null
+          short_bio?:    string | null
+          updated_at?:   string
         }
       }
     }
@@ -318,9 +354,10 @@ export type ThemeRow        = Database['public']['Tables']['themes']['Row']
 export type EssayRow        = Database['public']['Tables']['essays']['Row']
 export type CorrectionRow   = Database['public']['Tables']['corrections']['Row']
 
-export type ProfessorRateRow  = Database['public']['Tables']['professor_rates']['Row']
-export type LessonSessionRow  = Database['public']['Tables']['lesson_sessions']['Row']
-export type MonthlyPayoutRow  = Database['public']['Tables']['monthly_payouts']['Row']
+export type ProfessorRateRow         = Database['public']['Tables']['professor_rates']['Row']
+export type LessonSessionRow         = Database['public']['Tables']['lesson_sessions']['Row']
+export type MonthlyPayoutRow         = Database['public']['Tables']['monthly_payouts']['Row']
+export type ProfessorPayoutProfileRow = Database['public']['Tables']['professor_payout_profiles']['Row']
 
 /** Essay with its correction (if any) */
 export type EssayWithCorrection = EssayRow & {
