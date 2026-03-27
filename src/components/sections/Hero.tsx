@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
+import { ProductDemo } from '@/components/ui/product-demo'
 
 // ─── Authority stamp ──────────────────────────────────────────────────────────
 
@@ -266,9 +267,9 @@ export default function Hero() {
             </p>
           </div>
 
-          {/* ─── RIGHT: Dashboard screenshot ────────────────────── */}
+          {/* ─── RIGHT: Animated product demo ───────────────────── */}
           <div className="relative flex items-center justify-center lg:justify-end">
-            <DashboardFrame />
+            <ProductDemo />
           </div>
 
         </div>
