@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { Banknote, FileText, Video, TrendingUp, ChevronRight, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { RATE_ESSAY, RATE_LESSON, formatBRL } from '@/lib/professor/rates'
+import type { ProfessorRateRow } from '@/lib/supabase/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +45,7 @@ export default async function ProfessorGanhosPage() {
   // ── Parallel queries ─────────────────────────────────────────────────────────
   const [
     { data: monthCorrectionsRaw },
-    { data: rateRow },
+    { data: rateRowRaw },
     { count: lessonsCountRaw },
   ] = await Promise.all([
 
@@ -75,6 +76,11 @@ export default async function ProfessorGanhosPage() {
       .gte('session_date', firstDateStr)
       .lte('session_date', lastDateStr),
   ])
+
+  // supabase-js column-selector inference collapses to `never` for this table
+  // inside Promise.all on some TS versions — assert the concrete shape explicitly.
+  type RatePickRow = Pick<ProfessorRateRow, 'essay_rate' | 'lesson_rate'>
+  const rateRow: RatePickRow | null = rateRowRaw as RatePickRow | null
 
   // Effective rates — DB row takes precedence over shared constants
   const effectiveEssayRate  = rateRow?.essay_rate  ?? RATE_ESSAY
