@@ -17,6 +17,15 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // ── Skip auth callback/processing routes ────────────────────────────────
+  // The auth callback needs to read the PKCE verifier cookie and exchange
+  // the code for a session. Running getUser() here before the route handler
+  // can interfere with cookie state (e.g. clear stale tokens, trigger setAll
+  // that overwrites the request). Let the callback handle auth on its own.
+  if (pathname.startsWith('/auth/')) {
+    return NextResponse.next()
+  }
+
   // Create a response to potentially modify (set refreshed cookies)
   let response = NextResponse.next({
     request: { headers: request.headers },

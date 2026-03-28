@@ -34,11 +34,17 @@ import { getSiteUrl }                 from '@/lib/get-site-url'
 // ─── Helper: Supabase client that writes cookies to a response object ─────────
 
 function makeSupabaseClient(request: NextRequest, response: NextResponse) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseKey = (
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
-  )
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      `[auth/callback] Missing Supabase env vars: ` +
+      `URL=${supabaseUrl ? 'set' : 'MISSING'} KEY=${supabaseKey ? 'set' : 'MISSING'}`
+    )
+  }
 
   return createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
@@ -48,6 +54,10 @@ function makeSupabaseClient(request: NextRequest, response: NextResponse) {
       },
       // Write to the outgoing response — this is what actually sets browser cookies
       setAll(cookiesToSet) {
+        console.log(
+          `[auth/callback] setAll writing ${cookiesToSet.length} cookies: ` +
+          `[${cookiesToSet.map(c => c.name).join(', ')}]`
+        )
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options)
         })
@@ -151,7 +161,13 @@ export async function GET(request: NextRequest) {
     const successResponse = NextResponse.redirect(`${canonical}${next}`)
 
     // Build Supabase client that writes to successResponse's cookies
-    const supabase = makeSupabaseClient(request, successResponse)
+    let supabase
+    try {
+      supabase = makeSupabaseClient(request, successResponse)
+    } catch (envErr) {
+      console.error(`${tag} ✗ makeSupabaseClient failed:`, envErr)
+      return NextResponse.redirect(`${canonical}/login?error=server_error&next=${encodeURIComponent(next)}`)
+    }
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
@@ -170,6 +186,23 @@ export async function GET(request: NextRequest) {
 
     const userId = data.session?.user?.id ?? 'unknown'
     console.log(`${tag} ✓ session exchanged — user=${userId}`)
+
+    // Verify that Set-Cookie headers were actually written to the response
+    const setCookieHeaders = successResponse.headers.getSetCookie()
+    const sbSetCookies = setCookieHeaders.filter(h => h.startsWith('sb-'))
+    console.log(
+      `${tag} Set-Cookie headers on response: total=${setCookieHeaders.length} ` +
+      `sb-count=${sbSetCookies.length}`
+    )
+    if (sbSetCookies.length === 0) {
+      console.error(
+        `${tag} ⚠️  NO sb- Set-Cookie headers on redirect response!\n` +
+        `  exchangeCodeForSession succeeded but session cookies were NOT written.\n` +
+        `  The user will arrive at ${next} without a session → immediate redirect to /login.\n` +
+        `  Check: was setAll() called by the SDK? Check logs above for "setAll writing" line.`
+      )
+    }
+
     console.log(`${tag} → redirecting to ${canonical}${next}`)
 
     // successResponse already has Set-Cookie headers from setAll() above
@@ -183,13 +216,24 @@ export async function GET(request: NextRequest) {
     const targetPath = type === 'recovery' ? '/auth/atualizar-senha' : next
     const tokenResponse = NextResponse.redirect(`${canonical}${targetPath}`)
 
-    const supabase = makeSupabaseClient(request, tokenResponse)
+    let supabase
+    try {
+      supabase = makeSupabaseClient(request, tokenResponse)
+    } catch (envErr) {
+      console.error(`${tag} ✗ makeSupabaseClient failed:`, envErr)
+      return NextResponse.redirect(`${canonical}/login?error=server_error&next=${encodeURIComponent(next)}`)
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
 
     if (error) {
-      console.error(`${tag} verifyOtp failed: ${error.message}`)
+      console.error(
+        `${tag} ✗ verifyOtp FAILED\n` +
+        `  message : ${error.message}\n` +
+        `  code    : ${error.code    ?? 'n/a'}\n` +
+        `  status  : ${error.status  ?? 'n/a'}`
+      )
       return NextResponse.redirect(
         `${canonical}/login?error=link_expirado&next=${encodeURIComponent(next)}`,
       )
@@ -197,6 +241,10 @@ export async function GET(request: NextRequest) {
 
     const userId = data.session?.user?.id ?? 'unknown'
     console.log(`${tag} ✓ OTP verified — user=${userId} → ${canonical}${targetPath}`)
+
+    // Verify cookies were written
+    const setCookieHeaders = tokenResponse.headers.getSetCookie()
+    console.log(`${tag} Set-Cookie headers: ${setCookieHeaders.length} total`)
 
     return tokenResponse
   }
