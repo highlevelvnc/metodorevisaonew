@@ -23,11 +23,11 @@ function AuthorityBadge() {
       <span className="text-sm text-gray-300 font-medium">
         Correção por especialista humana, não IA
       </span>
-      <span className="flex items-center gap-1 text-yellow-400 text-xs font-semibold">
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      <span className="flex items-center gap-1 text-emerald-400 text-xs font-semibold">
+        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
         </svg>
-        4.9
+        Devolutiva em 24h
       </span>
     </div>
   )
@@ -81,7 +81,7 @@ function DashboardFrame() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             <span className="text-[9.5px] text-gray-700 select-none font-mono tracking-tight">
-              app.metodorevisao.com.br/aluno
+              app.metodorevisao.com/aluno
             </span>
           </div>
           {/* Live indicator */}

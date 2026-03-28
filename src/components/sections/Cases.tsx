@@ -1,8 +1,9 @@
 'use client'
 import { trackEvent } from '@/components/Analytics'
+import { WHATSAPP_URL } from '@/lib/contact'
 
 const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20site%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20saber%20mais%20sobre%20as%20aulas.'
+  `${WHATSAPP_URL}?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20site%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20saber%20mais%20sobre%20as%20aulas.`
 
 const cases = [
   {

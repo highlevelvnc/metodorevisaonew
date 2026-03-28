@@ -180,7 +180,7 @@ export function ProductDemo() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             <span className="text-[9.5px] text-gray-700 select-none font-mono tracking-tight">
-              app.metodorevisao.com.br/aluno
+              app.metodorevisao.com/aluno
             </span>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">

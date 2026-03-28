@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { WHATSAPP_URL } from '@/lib/contact'
 
 const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20site%20e%20quero%20saber%20sobre%20as%20aulas%20de%20Reda%C3%A7%C3%A3o%20ENEM.'
+  `${WHATSAPP_URL}?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20site%20e%20quero%20saber%20sobre%20as%20aulas%20de%20Reda%C3%A7%C3%A3o%20ENEM.`
 
 export const metadata: Metadata = {
   title: 'Redação ENEM | Correção e Acompanhamento Personalizado Online',

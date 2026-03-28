@@ -2,6 +2,7 @@
 
 import { motion, MotionConfig } from 'framer-motion'
 import Link from 'next/link'
+import { WHATSAPP_URL } from '@/lib/contact'
 
 // ─── Animation tokens ──────────────────────────────────────────────────────────
 
@@ -182,9 +183,9 @@ function WaIcon() {
   )
 }
 
-const WA_GENERAL = 'https://wa.me/5522992682207?text=Ol%C3%A1%2C+tenho+interesse+em+levar+o+M%C3%A9todo+Revis%C3%A3o+para+minha+escola.+Gostaria+de+entender+como+funciona.'
-const WA_PILOT   = 'https://wa.me/5522992682207?text=Ol%C3%A1%2C+gostaria+de+entender+como+seria+um+piloto+do+M%C3%A9todo+Revis%C3%A3o+na+minha+escola.'
-const WA_PROPOSTA = 'https://wa.me/5522992682207?text=Ol%C3%A1%2C+gostaria+de+receber+uma+proposta+do+M%C3%A9todo+Revis%C3%A3o+para+minha+escola.'
+const WA_GENERAL = `${WHATSAPP_URL}?text=Ol%C3%A1%2C+tenho+interesse+em+levar+o+M%C3%A9todo+Revis%C3%A3o+para+minha+escola.+Gostaria+de+entender+como+funciona.`
+const WA_PILOT   = `${WHATSAPP_URL}?text=Ol%C3%A1%2C+gostaria+de+entender+como+seria+um+piloto+do+M%C3%A9todo+Revis%C3%A3o+na+minha+escola.`
+const WA_PROPOSTA = `${WHATSAPP_URL}?text=Ol%C3%A1%2C+gostaria+de+receber+uma+proposta+do+M%C3%A9todo+Revis%C3%A3o+para+minha+escola.`
 
 // ─── Page component ────────────────────────────────────────────────────────────
 

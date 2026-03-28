@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { trackEvent } from '@/components/Analytics'
+import { WHATSAPP_URL } from '@/lib/contact'
 
 const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1%2C%20Beatriz!%20Quero%20entrar%20na%20lista%20de%20espera%20da%20Plataforma%20M%C3%A9todo%20Revis%C3%A3o.'
+  `${WHATSAPP_URL}?text=Ol%C3%A1%2C%20Beatriz!%20Quero%20entrar%20na%20lista%20de%20espera%20da%20Plataforma%20M%C3%A9todo%20Revis%C3%A3o.`
 
 const benefits = [
   { icon: '🗺️', label: 'Trilhas personalizadas por nível e série' },

@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { WHATSAPP_URL } from '@/lib/contact'
 
 const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20site%20e%20quero%20saber%20sobre%20o%20refor%C3%A7o%20escolar%20de%20Portugu%C3%AAs%20e%20Ingl%C3%AAs.'
+  `${WHATSAPP_URL}?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20site%20e%20quero%20saber%20sobre%20o%20refor%C3%A7o%20escolar%20de%20Portugu%C3%AAs%20e%20Ingl%C3%AAs.`
 
 export const metadata: Metadata = {
   title: 'Reforço Escolar de Português e Inglês Online | Método Revisão',

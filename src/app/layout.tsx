@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Analytics from '@/components/Analytics'
+import { WHATSAPP_NUMBER, SUPPORT_EMAIL } from '@/lib/contact'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://metodorevisao.com'),
@@ -58,8 +59,8 @@ const jsonLdOrganization = {
   description: 'Correção estratégica de redação para o ENEM com acompanhamento real e devolutiva por competência.',
   contactPoint: {
     '@type': 'ContactPoint',
-    telephone: '+5522992682207',
-    email: 'suporte@metodorevisao.com',
+    telephone: `+${WHATSAPP_NUMBER}`,
+    email: SUPPORT_EMAIL,
     contactType: 'customer service',
     availableLanguage: 'Portuguese',
   },

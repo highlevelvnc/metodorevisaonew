@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
+import { WHATSAPP_URL } from '@/lib/contact'
 
 export default function CTAFinal() {
   return (
@@ -73,7 +74,7 @@ export default function CTAFinal() {
               </svg>
             </a>
             <a
-              href="https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20ainda%20tenho%20d%C3%BAvidas%20sobre%20o%20M%C3%A9todo%20Revis%C3%A3o."
+              href={`${WHATSAPP_URL}?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20ainda%20tenho%20d%C3%BAvidas%20sobre%20o%20M%C3%A9todo%20Revis%C3%A3o.`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary-lg sm:whitespace-nowrap"
@@ -85,11 +86,11 @@ export default function CTAFinal() {
 
           {/* Micro trust */}
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-700">
-            <span>10.000+ redações corrigidas</span>
+            <span>Diagnóstico C1–C5 completo</span>
             <span className="text-gray-800">·</span>
-            <span>Evolução média de +180 pontos</span>
+            <span>Devolutiva em até 24h</span>
             <span className="text-gray-800">·</span>
-            <span>4.9/5 de avaliação</span>
+            <span>100% correção humana</span>
           </div>
         </div>
       </div>
