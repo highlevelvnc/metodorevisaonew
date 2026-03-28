@@ -128,6 +128,7 @@ export interface Database {
           content_text: string | null
           notes: string | null
           status: EssayStatus
+          share_token: string | null
           submitted_at: string
           created_at: string
         }
@@ -139,10 +140,11 @@ export interface Database {
           content_text?: string | null
           notes?: string | null
           status?: EssayStatus
+          share_token?: string | null
           submitted_at?: string
           created_at?: string
         }
-        Update: { theme_title?: string; status?: EssayStatus; notes?: string | null }
+        Update: { theme_title?: string; status?: EssayStatus; notes?: string | null; share_token?: string | null }
       }
       corrections: {
         Row: {

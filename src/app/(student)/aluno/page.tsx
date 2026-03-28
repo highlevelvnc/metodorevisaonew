@@ -7,6 +7,7 @@ import { PenLine, FileText, Target, Clock, ArrowRight, Flame } from 'lucide-reac
 import { DashboardHero }      from './_components/DashboardHero'
 import { StatsRow }           from './_components/StatsRow'
 import { NextStepCard }       from './_components/NextStepCard'
+import { PlanCreditsCard }    from './_components/PlanCreditsCard'
 import { ProgressLoop }       from './_components/ProgressLoop'
 import { CorrectionsList }    from './_components/CorrectionsList'
 import { BiiaCard }           from './_components/BiiaCard'
@@ -18,6 +19,7 @@ import { MentoriasSection }   from './_components/MentoriasSection'
 import { ClubeLivroSection }  from './_components/ClubeLivroSection'
 import { CorrectorSelection }  from './_components/CorrectorSelection'
 import { OnboardingDashboard } from './_components/OnboardingDashboard'
+import { InviteCard }          from './_components/InviteCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -423,6 +425,19 @@ export default async function AlunoDashboardPage() {
         lastScore={lastCorrection?.total_score ?? null}
         suggestedGoal={suggestedGoal}
       />
+
+      {/* ── 1d. Plan + Credits — always visible, understandable in 5s ──── */}
+      <PlanCreditsCard
+        planName={planName}
+        creditsLeft={creditsLeft}
+        creditsTotal={creditsTotal}
+        nextPlanName={planTier.nextPlan}
+      />
+
+      {/* ── Invite card — shown after 2+ corrected essays (G5) ─────────────── */}
+      {correctedEssays.length >= 2 && (
+        <InviteCard firstName={firstName} avgScore={avgScore} />
+      )}
 
       {/* ── 2. Stats ────────────────────────────────────────────────────────── */}
       <StatsRow

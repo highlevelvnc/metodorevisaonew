@@ -9,6 +9,7 @@
  */
 
 import { getSiteUrl } from '@/lib/get-site-url'
+import { SUPPORT_EMAIL, NOREPLY_EMAIL } from '@/lib/contact'
 
 // ─── Email via Resend ────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ async function sendEmail({ to, subject, html }: SendEmailParams): Promise<boolea
     return false
   }
 
-  const from = process.env.RESEND_FROM_EMAIL ?? 'Método Revisão <noreply@metodorevisao.com>'
+  const from = process.env.RESEND_FROM_EMAIL ?? NOREPLY_EMAIL
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -108,7 +109,7 @@ export async function notifyCorrectionReady(params: {
 
     <!-- Footer -->
     <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
-      Método Revisão — Correção estratégica de redação ENEM
+      Método Revisão — Correção estratégica de redação ENEM<br/>Dúvidas? ${SUPPORT_EMAIL}
     </p>
   </div>
 </body>
@@ -154,7 +155,7 @@ export async function notifyInactivity24h(params: {
       </div>
     </div>
     <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
-      Método Revisão — Correção estratégica de redação ENEM
+      Método Revisão — Correção estratégica de redação ENEM<br/>Dúvidas? ${SUPPORT_EMAIL}
     </p>
   </div>
 </body>
@@ -204,7 +205,62 @@ export async function notifyInactivity48h(params: {
       </div>
     </div>
     <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
-      Método Revisão — Correção estratégica de redação ENEM
+      Método Revisão — Correção estratégica de redação ENEM<br/>Dúvidas? ${SUPPORT_EMAIL}
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject, html })
+}
+
+// ─── Winback for paying-but-inactive (M5) ────────────────────────────────────
+
+export async function notifyPayingWinback(params: {
+  studentEmail: string
+  studentName: string
+  creditsLeft: number
+  planName: string
+  avgScore: number | null
+}): Promise<void> {
+  const { studentEmail, studentName, creditsLeft, planName, avgScore } = params
+  const siteUrl = getSiteUrl()
+  const firstName = studentName.split(' ')[0] || 'Aluno'
+
+  const subject = `${firstName}, você tem ${creditsLeft} correç${creditsLeft === 1 ? 'ão' : 'ões'} esperando por você`
+
+  const scoreLine = avgScore !== null
+    ? `Sua média está em <strong style="color:#fff;">${avgScore} pts</strong>. A próxima redação vai mostrar se você está subindo — e onde focar para avançar mais rápido.`
+    : 'Cada redação corrigida te dá um diagnóstico mais preciso. Quanto mais cedo você enviar, mais tempo tem para evoluir.'
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 8px;">Oi, ${firstName}!</p>
+      <h2 style="font-size:20px;color:#fff;margin:0 0 16px;font-weight:700;">
+        Você tem correções não usadas
+      </h2>
+      <p style="font-size:14px;color:#9ca3af;line-height:1.6;margin:0 0 16px;">
+        Seu plano <strong style="color:#fff;">${planName}</strong> ainda tem <strong style="color:#a78bfa;">${creditsLeft} correç${creditsLeft === 1 ? 'ão' : 'ões'}</strong> disponíve${creditsLeft === 1 ? 'l' : 'is'} neste ciclo.
+      </p>
+      <p style="font-size:14px;color:#9ca3af;line-height:1.6;margin:0 0 24px;">
+        ${scoreLine}
+      </p>
+      <div style="text-align:center;">
+        <a href="${siteUrl}/aluno/redacoes/nova" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Enviar redação agora →
+        </a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Correção estratégica de redação ENEM<br/>Dúvidas? ${SUPPORT_EMAIL}
     </p>
   </div>
 </body>
@@ -252,6 +308,9 @@ export async function notifyCreditsLow(params: {
         </a>
       </div>
     </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Correção estratégica de redação ENEM<br/>Dúvidas? ${SUPPORT_EMAIL}
+    </p>
   </div>
 </body>
 </html>`

@@ -66,16 +66,11 @@ export default function Depoimentos() {
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="text-center mb-14">
           <div className="section-label justify-center">Resultados</div>
-          <h2 className="section-title mb-5">Mais de 10.000 redações corrigidas. Essas são algumas das histórias.</h2>
+          <h2 className="section-title mb-5">O que nossos alunos dizem sobre a experiência.</h2>
 
-          {/* Rating summary */}
-          <div className="inline-flex items-center gap-3 bg-white/[0.04] border border-white/[0.07] rounded-xl px-5 py-3">
-            <span className="text-3xl font-extrabold text-white">4.9</span>
-            <div>
-              <Stars n={5} />
-              <p className="text-xs text-gray-500 mt-1">Avaliação média dos alunos</p>
-            </div>
-          </div>
+          <p className="text-sm text-gray-500 max-w-lg mx-auto">
+            Depoimentos de alunos reais. Resultados individuais variam de acordo com dedicação e frequência de prática.
+          </p>
         </div>
 
         {/* ── Horizontal carousel ────────────────────────────────────────── */}
@@ -115,12 +110,12 @@ export default function Depoimentos() {
             ))}
           </div>
 
-          {/* Trust stats */}
+          {/* Product facts — verifiable, not vanity metrics */}
           <div className="grid grid-cols-3 gap-3 pt-1">
             {[
-              { value: '10.000+', label: 'redações corrigidas' },
-              { value: '+180',   label: 'pts de evolução média' },
-              { value: '4.9 ★',  label: 'avaliação média dos alunos' },
+              { value: '24h',   label: 'prazo de devolutiva' },
+              { value: 'C1–C5', label: 'diagnóstico por competência' },
+              { value: '100%',  label: 'correção humana' },
             ].map((s) => (
               <div key={s.label} className="text-center rounded-xl border border-white/[0.06] bg-white/[0.02] px-2 py-3">
                 <p className="text-sm font-extrabold text-white tabular-nums leading-none mb-1">{s.value}</p>

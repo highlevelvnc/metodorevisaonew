@@ -37,7 +37,7 @@ export default function Contato() {
             Falar no WhatsApp
           </a>
           <a
-            href="mailto:revisaometodo@gmail.com"
+            href="mailto:suporte@metodorevisao.com"
             className="inline-flex items-center justify-center gap-3 border-2 border-white/30 text-white font-bold px-8 py-4 rounded-xl text-lg hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-white/50"
             onClick={() => trackEvent('contact_email', { source: 'contato_cta' })}
             aria-label="Enviar e-mail"
@@ -46,7 +46,7 @@ export default function Contato() {
               <rect x="2" y="4" width="20" height="16" rx="2" />
               <path d="M2 7l10 7 10-7" />
             </svg>
-            revisaometodo@gmail.com
+            suporte@metodorevisao.com
           </a>
         </div>
 

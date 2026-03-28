@@ -59,6 +59,7 @@ const jsonLdOrganization = {
   contactPoint: {
     '@type': 'ContactPoint',
     telephone: '+5522992682207',
+    email: 'suporte@metodorevisao.com',
     contactType: 'customer service',
     availableLanguage: 'Portuguese',
   },

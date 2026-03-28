@@ -114,8 +114,8 @@ export default async function ContaPage() {
           </div>
           <p className="text-[11px] text-gray-600 mt-1.5">
             {creditsLeft === 0
-              ? 'Créditos esgotados — faça upgrade para continuar'
-              : `${creditsLeft} ${creditsLeft === 1 ? 'crédito disponível' : 'créditos disponíveis'} neste ciclo`
+              ? 'Correções esgotadas — faça upgrade para continuar'
+              : `${creditsLeft} correç${creditsLeft === 1 ? 'ão disponível' : 'ões disponíveis'} neste ciclo`
             }
           </p>
         </div>

@@ -167,10 +167,10 @@ export default function NovaRedacaoForm({
             Devolutiva em até 24h
             {creditsLeft > 0 ? (
               <> · <span className={creditsLeft <= 1 ? 'text-amber-400' : 'text-gray-400'}>
-                {creditsLeft} crédito{creditsLeft !== 1 ? 's' : ''} restante{creditsLeft !== 1 ? 's' : ''}
+                {creditsLeft} correç{creditsLeft !== 1 ? 'ões' : 'ão'} restante{creditsLeft !== 1 ? 's' : ''}
               </span></>
             ) : (
-              <> · <span className="text-red-400">Sem créditos</span></>
+              <> · <span className="text-red-400">Sem correções</span></>
             )}
           </p>
         </div>
@@ -185,12 +185,26 @@ export default function NovaRedacaoForm({
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-red-300 mb-0.5">Créditos esgotados</p>
-            <p className="text-xs text-red-400/70 mb-3">Você usou todos os créditos do plano atual. Faça upgrade para continuar enviando redações.</p>
+            <p className="text-sm font-semibold text-red-300 mb-0.5">Correções esgotadas neste ciclo</p>
+            <p className="text-xs text-red-400/70 mb-3">
+              Você usou todas as correções disponíveis no seu plano atual.
+              Suas correções serão renovadas no próximo ciclo, ou faça upgrade para continuar agora.
+            </p>
             <Link href="/aluno/upgrade" className="text-xs font-semibold text-red-300 border border-red-400/30 bg-red-500/10 rounded-lg px-3 py-1.5 hover:bg-red-500/20 transition-colors">
-              Fazer upgrade →
+              Ver planos e continuar →
             </Link>
           </div>
+        </div>
+      )}
+
+      {/* Último crédito */}
+      {creditsLeft === 1 && (
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] px-4 py-3 flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+          <p className="text-xs text-amber-300/90">
+            <span className="font-semibold">Última correção deste ciclo.</span>{' '}
+            Foque na competência que mais precisa de atenção.
+          </p>
         </div>
       )}
 
@@ -444,7 +458,7 @@ export default function NovaRedacaoForm({
             title={
               !themeOk ? 'Informe o tema' :
               !textOk  ? (inputMode === 'text' ? 'Verifique o texto (mínimo 7 linhas)' : 'Selecione uma imagem') :
-              creditsLeft === 0 ? 'Sem créditos' : ''
+              creditsLeft === 0 ? 'Sem correções disponíveis' : ''
             }
             className="btn-primary flex-1 justify-center"
           >

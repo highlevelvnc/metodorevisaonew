@@ -21,7 +21,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { notifyInactivity24h, notifyInactivity48h } from '@/lib/notifications'
+import { notifyInactivity24h, notifyInactivity48h, notifyPayingWinback } from '@/lib/notifications'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,16 +49,29 @@ export async function GET(req: Request) {
   // ── Fetch active students with last_activity_at ─────────────────────────────
   const { data: activeSubs } = await db
     .from('subscriptions')
-    .select('user_id')
+    .select('user_id, essays_limit, essays_used, plans(name)')
     .eq('status', 'active')
 
   if (!activeSubs || activeSubs.length === 0) {
-    return NextResponse.json({ checked: 0, sent24h: 0, sent48h: 0, skippedDupe: 0 })
+    return NextResponse.json({ checked: 0, sent24h: 0, sent48h: 0, sentWinback: 0, skippedDupe: 0 })
   }
 
-  const userIds = Array.from(new Set((activeSubs as { user_id: string }[]).map(s => s.user_id))) as string[]
+  // Build map of userId → subscription info for credit-aware winback (M5)
+  const subMap = new Map<string, { essays_limit: number; essays_used: number; plan_name: string }>()
+  for (const s of (activeSubs as { user_id: string; essays_limit: number; essays_used: number; plans: { name: string } | null }[])) {
+    if (!subMap.has(s.user_id)) {
+      subMap.set(s.user_id, {
+        essays_limit: s.essays_limit ?? 0,
+        essays_used: s.essays_used ?? 0,
+        plan_name: s.plans?.name ?? 'Plano',
+      })
+    }
+  }
+
+  const userIds = Array.from(subMap.keys()) as string[]
   let sent24h = 0
   let sent48h = 0
+  let sentWinback = 0
   let skippedDupe = 0
 
   for (const userId of userIds) {
@@ -83,8 +96,8 @@ export async function GET(req: Request) {
 
       const hoursSinceActivity = (now - lastActivityMs) / (1000 * 60 * 60)
 
-      // Skip if active recently or too long ago (avoid spamming)
-      if (hoursSinceActivity < 24 || hoursSinceActivity > 72) continue
+      // Skip if active recently or way too long (>15 days — avoid spamming cold users)
+      if (hoursSinceActivity < 24 || hoursSinceActivity > 360) continue
 
       // ── Check existing nudge_events (R2 deduplication) ────────────────────
       const { data: existingNudges } = await db
@@ -95,6 +108,43 @@ export async function GET(req: Request) {
       const sentTypes = new Set(
         ((existingNudges ?? []) as { event_type: string }[]).map(n => n.event_type)
       )
+
+      // ── M5: Paying winback (5–15 days inactive, has credits left) ─────────
+      const subInfo = subMap.get(userId)
+      const creditsLeft = subInfo ? Math.max(0, subInfo.essays_limit - subInfo.essays_used) : 0
+
+      if (hoursSinceActivity >= 120 && creditsLeft > 0 && !sentTypes.has('paying_winback')) {
+        // Fetch avg score for email context
+        const { data: essays } = await db
+          .from('essays')
+          .select('status, corrections(total_score)')
+          .eq('student_id', userId)
+          .eq('status', 'corrected')
+          .limit(10)
+
+        const essayList = (essays as { status: string; corrections: { total_score: number }[] }[] | null) ?? []
+        const avgScore = essayList.length > 0
+          ? Math.round(essayList.reduce((sum, e) => sum + (e.corrections?.[0]?.total_score ?? 0), 0) / essayList.length)
+          : null
+
+        await notifyPayingWinback({
+          studentEmail: userData.email,
+          studentName: userData.full_name,
+          creditsLeft,
+          planName: subInfo?.plan_name ?? 'Plano',
+          avgScore,
+        })
+
+        await db.from('nudge_events').upsert(
+          { user_id: userId, event_type: 'paying_winback', sent_at: new Date().toISOString() },
+          { onConflict: 'user_id,event_type' }
+        )
+        sentWinback++
+        continue // Don't also send 24h/48h nudge in same run
+      }
+
+      // Skip standard nudges beyond 72h window
+      if (hoursSinceActivity > 72) continue
 
       // Determine which nudge to send
       if (hoursSinceActivity >= 48 && !sentTypes.has('inactivity_48h')) {
@@ -152,6 +202,6 @@ export async function GET(req: Request) {
     }
   }
 
-  console.log(`[cron/inactivity] Done: checked=${userIds.length}, sent24h=${sent24h}, sent48h=${sent48h}, skippedDupe=${skippedDupe}`)
-  return NextResponse.json({ checked: userIds.length, sent24h, sent48h, skippedDupe })
+  console.log(`[cron/inactivity] Done: checked=${userIds.length}, sent24h=${sent24h}, sent48h=${sent48h}, sentWinback=${sentWinback}, skippedDupe=${skippedDupe}`)
+  return NextResponse.json({ checked: userIds.length, sent24h, sent48h, sentWinback, skippedDupe })
 }

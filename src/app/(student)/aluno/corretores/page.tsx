@@ -198,7 +198,7 @@ export default async function CorretoresPage() {
                 No plano <strong className="text-gray-300">Intensivo</strong> você escolhe seu corretor preferido, recebe devolutivas em até 24h e tem prioridade na fila de correções. Você está no plano <strong className="text-gray-300">{planName}</strong>.
               </p>
               <Link
-                href="/checkout/intensivo"
+                href="/aluno/upgrade"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 hover:text-amber-200 transition-all"
               >
                 <Flame size={11} />
@@ -405,7 +405,7 @@ export default async function CorretoresPage() {
             </ul>
             {!isVIP && (
               <Link
-                href="/checkout/intensivo"
+                href="/aluno/upgrade"
                 className="mt-4 flex items-center justify-center gap-1.5 w-full h-8 rounded-xl text-[12px] font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-all"
               >
                 <Flame size={11} />

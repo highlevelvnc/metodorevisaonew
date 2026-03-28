@@ -74,8 +74,8 @@ export function DashboardHero({
   const creditsPct = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
   const barColor   = creditsPct > 50 ? 'bg-purple-500' : creditsPct > 20 ? 'bg-amber-500' : 'bg-red-500'
   const creditText = creditsLeft === 0
-    ? 'Ciclo esgotado'
-    : `${creditsLeft} crédito${creditsLeft !== 1 ? 's' : ''} restante${creditsLeft !== 1 ? 's' : ''}`
+    ? 'Correções esgotadas'
+    : `${creditsLeft} correç${creditsLeft === 1 ? 'ão' : 'ões'} restante${creditsLeft !== 1 ? 's' : ''}`
 
   return (
     <div className="relative mb-6 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b1121]">
@@ -173,7 +173,7 @@ export function DashboardHero({
             {/* Credits bar */}
             <div className="mt-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-600">Redações disponíveis</span>
+                <span className="text-xs text-gray-600">Correções disponíveis</span>
                 <span className={`text-xs font-semibold tabular-nums ${
                   creditsLeft === 0 ? 'text-red-400' : creditsLeft <= 1 ? 'text-amber-400' : 'text-gray-300'
                 }`}>
@@ -254,7 +254,7 @@ export function DashboardHero({
 
               {upgradeSignal && planTierNextPlan && (
                 <Link
-                  href={`/checkout/${planTierNextPlan.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`}
+                  href="/aluno/upgrade"
                   className="flex items-center gap-1.5 text-[11px] font-medium text-amber-400/80 hover:text-amber-300 transition-colors"
                 >
                   <Zap size={11} />

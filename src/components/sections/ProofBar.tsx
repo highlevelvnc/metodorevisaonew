@@ -1,8 +1,8 @@
 const metrics = [
-  { value: '10.000+', label: 'redações corrigidas',     icon: '📄' },
-  { value: '+180',   label: 'pontos de evolução média', icon: '📈' },
-  { value: '24h',    label: 'prazo de devolutiva',      icon: '⚡' },
-  { value: '4.9/5',  label: 'avaliação dos alunos',     icon: '⭐' },
+  { value: 'C1–C5',  label: 'diagnóstico por competência', icon: '📊' },
+  { value: '24h',    label: 'prazo de devolutiva',          icon: '⚡' },
+  { value: '100%',   label: 'correção humana',              icon: '✍️' },
+  { value: '5 min',  label: 'para enviar sua redação',      icon: '📝' },
 ]
 
 export default function ProofBar() {

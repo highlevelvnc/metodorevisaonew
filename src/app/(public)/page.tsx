@@ -2,6 +2,7 @@ import Hero from '@/components/sections/Hero'
 import ProofBar from '@/components/sections/ProofBar'
 import Dor from '@/components/sections/Dor'
 import ComoFunciona from '@/components/sections/ComoFunciona'
+import DemoSlot from '@/components/sections/DemoSlot'
 import Especialista from '@/components/sections/Especialista'
 import Diferenciais from '@/components/sections/Diferenciais'
 import Transformacao from '@/components/sections/Transformacao'
@@ -21,6 +22,7 @@ export default function Home() {
       <ProofBar />
       <Dor />
       <ComoFunciona />
+      <DemoSlot />
       <Especialista />
       <Diferenciais />
       <Transformacao />

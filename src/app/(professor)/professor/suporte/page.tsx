@@ -55,11 +55,11 @@ export default async function ProfessorSuportePage() {
             </p>
           </div>
           <a
-            href="mailto:suporte@metodorevisao.com.br"
+            href="mailto:suporte@metodorevisao.com"
             className="inline-flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium mt-auto"
           >
             <Mail size={11} />
-            suporte@metodorevisao.com.br
+            suporte@metodorevisao.com
           </a>
         </div>
 

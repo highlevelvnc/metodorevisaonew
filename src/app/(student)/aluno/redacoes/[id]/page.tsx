@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
-import { TrendingUp, ChevronRight } from 'lucide-react'
+import { TrendingUp, ChevronRight, Zap, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { CompetencyCards, type CompCardData } from './CompetencyCards'
 import { type CompKey } from '@/lib/competency-colors'
 import { MarkViewed } from './MarkViewed'
+import { ShareActions } from './ShareActions'
+import { FeedbackWidget } from './FeedbackWidget'
 
 export const metadata: Metadata = {
   title: 'Devolutiva',
@@ -263,14 +265,14 @@ function renderFeedback(text: string) {
 }
 
 type Correction = {
-  c1_score: number; c2_score: number; c3_score: number
+  id: string; c1_score: number; c2_score: number; c3_score: number
   c4_score: number; c5_score: number; total_score: number
   reviewer_name: string; corrected_at: string; general_feedback: string
 }
 type Essay = {
   id: string; theme_title: string; status: string
   submitted_at: string; content_text: string | null; student_id: string
-  corrections: Correction[]
+  share_token: string | null; corrections: Correction[]
 }
 
 export default async function DevolutivaPage({ params }: { params: { id: string } }) {
@@ -281,9 +283,9 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
-  const [{ data: essayRaw }, { data: prevRaw }] = await Promise.all([
+  const [{ data: essayRaw }, { data: prevRaw }, { data: subRaw }] = await Promise.all([
     db.from('essays')
-      .select('id, theme_title, status, submitted_at, content_text, student_id, corrections(c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at, general_feedback)')
+      .select('id, theme_title, status, submitted_at, content_text, student_id, share_token, corrections(id, c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at, general_feedback)')
       .eq('id', params.id)
       .single(),
     // Fetch the most recent corrected essay by this student (other than this one) for comparison
@@ -295,7 +297,19 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Fetch active subscription for credit-aware CTAs (M4)
+    db.from('subscriptions')
+      .select('essays_limit, essays_used, plans(name)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
+
+  // Credit state for post-correction CTAs
+  const sub = subRaw as { essays_limit: number; essays_used: number; plans: { name: string } | null } | null
+  const creditsLeft = sub ? Math.max(0, sub.essays_limit - sub.essays_used) : 0
 
   const essay = essayRaw as Essay | null
   if (!essay || essay.student_id !== user.id) notFound()
@@ -405,6 +419,15 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
     correction.total_score,
   )
 
+  // Check if student already gave feedback on this correction (G2)
+  const { data: existingFeedback } = await db
+    .from('correction_feedback')
+    .select('id')
+    .eq('correction_id', correction.id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const feedbackAlreadyGiven = !!existingFeedback
+
   return (
     <div className="max-w-4xl">
       {/* Track first correction view — R1 */}
@@ -433,10 +456,25 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
             </p>
           </div>
         </div>
-        <Link href="/aluno/redacoes/nova" className="btn-primary self-start sm:self-auto text-sm py-2 px-4 flex-shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
-          Enviar próxima redação
-        </Link>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+          <ShareActions
+            essayId={essay.id}
+            themeTitle={essay.theme_title}
+            totalScore={correction.total_score}
+            initialShareToken={essay.share_token}
+          />
+          {creditsLeft > 0 ? (
+            <Link href="/aluno/redacoes/nova" className="btn-primary text-sm py-2 px-4">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+              Enviar próxima
+            </Link>
+          ) : (
+            <Link href="/aluno/upgrade" className="inline-flex items-center gap-2 text-sm py-2 px-4 rounded-xl font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 transition-colors">
+              <Zap size={13} />
+              Mais correções
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* ── 1. Score hero + Comparação ─────────────────────────── */}
@@ -581,6 +619,9 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
         <p className="text-sm text-gray-300 leading-relaxed">{reviewerNote}</p>
       </div>
 
+      {/* ── Feedback widget (G2) ───────────────────────────────── */}
+      <FeedbackWidget correctionId={correction.id} alreadyGiven={feedbackAlreadyGiven} />
+
       {/* ── 5. Plano para a próxima ─────────────────────────────── */}
       <div className="card-dark rounded-2xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-4">
@@ -627,11 +668,43 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
           </div>
         )}
 
-        {/* CTA */}
-        <Link href="/aluno/redacoes/nova" className="btn-primary w-full justify-center">
-          Aplicar e enviar próxima redação
-          <ChevronRight size={14} />
-        </Link>
+        {/* CTA — credit-aware (M4) */}
+        {creditsLeft > 0 ? (
+          <div>
+            <Link href="/aluno/redacoes/nova" className="btn-primary w-full justify-center">
+              <Sparkles size={14} />
+              Aplicar e enviar próxima redação
+              <ChevronRight size={14} />
+            </Link>
+            {creditsLeft === 1 && (
+              <p className="text-center text-[10px] text-amber-400/70 mt-2">
+                Última correção disponível neste ciclo
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-amber-500/15 bg-amber-500/[0.04] p-4">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <Zap size={15} className="text-amber-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white mb-0.5">Correções esgotadas neste ciclo</p>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Para aplicar essas melhorias na próxima redação, renove ou faça upgrade do seu plano.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/aluno/upgrade"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 transition-colors"
+            >
+              <Zap size={13} />
+              Ver planos e continuar evoluindo
+              <ChevronRight size={13} />
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* ── 6. Texto / imagem da redação (contexto) ─────────────── */}

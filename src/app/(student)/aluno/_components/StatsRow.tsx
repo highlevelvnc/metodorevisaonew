@@ -99,14 +99,14 @@ export function StatsRow({
 
       <StatCard
         icon={<Zap size={17} />}
-        label="Créditos"
+        label="Correções"
         value={String(creditsLeft)}
         iconClass={creditIconClass}
         sub={
           <p className={`text-[11px] ${
             creditsLeft === 0 ? 'text-red-400' : creditsLeft <= 1 ? 'text-amber-400' : 'text-gray-600'
           }`}>
-            {creditsLeft === 0 ? 'Ciclo esgotado' : `disponíve${creditsLeft === 1 ? 'l' : 'is'} neste ciclo`}
+            {creditsLeft === 0 ? 'Esgotadas neste ciclo' : `disponíve${creditsLeft === 1 ? 'l' : 'is'} neste ciclo`}
           </p>
         }
       />

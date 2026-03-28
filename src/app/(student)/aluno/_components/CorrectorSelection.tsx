@@ -185,7 +185,7 @@ export function CorrectorSelection() {
             Faça upgrade para escolher seu corretor preferido e receber devolutivas prioritárias em até 24h.
           </p>
           <Link
-            href="/checkout/intensivo"
+            href="/aluno/upgrade"
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-amber-400 hover:text-amber-300 transition-colors"
           >
             Conhecer plano Intensivo <ArrowRight size={11} />

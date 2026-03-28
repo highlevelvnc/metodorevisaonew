@@ -149,7 +149,7 @@ export default async function ProfessorPerfilPage() {
               <p className="text-xs text-gray-600 mt-0.5">Gerenciada via autenticação Supabase</p>
             </div>
             <a
-              href="mailto:suporte@metodorevisao.com.br?subject=Alterar senha"
+              href="mailto:suporte@metodorevisao.com?subject=Alterar senha"
               className="text-[10px] text-amber-500/70 hover:text-amber-400 transition-colors"
             >
               Solicitar alteração

@@ -201,7 +201,7 @@ export default async function CorrectorDetailPage({
               <p className="text-[12px] text-gray-500 leading-relaxed mb-3">
                 Faça upgrade para escolher este corretor e receber devolutivas prioritárias.
               </p>
-              <Link href="/checkout/intensivo" className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-amber-400 hover:text-amber-300 transition-colors">
+              <Link href="/aluno/upgrade" className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-amber-400 hover:text-amber-300 transition-colors">
                 Conhecer plano Intensivo <ArrowRight size={11} />
               </Link>
             </div>

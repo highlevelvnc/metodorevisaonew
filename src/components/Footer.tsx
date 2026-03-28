@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { SUPPORT_EMAIL, WHATSAPP_URL } from '@/lib/contact'
 
 const WA_LINK =
-  'https://wa.me/5522992682207?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.'
+  `${WHATSAPP_URL}?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20M%C3%A9todo%20Revis%C3%A3o%20e%20quero%20come%C3%A7ar%20minha%20evolu%C3%A7%C3%A3o%20na%20reda%C3%A7%C3%A3o.`
 
 export default function Footer() {
   return (
@@ -38,7 +39,7 @@ export default function Footer() {
                 </svg>
               </a>
               <a
-                href="mailto:revisaometodo@gmail.com"
+                href="mailto:suporte@metodorevisao.com"
                 className="text-gray-500 hover:text-purple-400 transition-colors"
                 aria-label="Email"
               >
@@ -64,7 +65,7 @@ export default function Footer() {
             <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Contato</h3>
             <ul className="space-y-2.5 text-sm">
               <li><a href={WA_LINK} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-purple-400 transition-colors">WhatsApp</a></li>
-              <li><a href="mailto:revisaometodo@gmail.com" className="text-gray-500 hover:text-purple-400 transition-colors">revisaometodo@gmail.com</a></li>
+              <li><a href="mailto:suporte@metodorevisao.com" className="text-gray-500 hover:text-purple-400 transition-colors">{SUPPORT_EMAIL}</a></li>
               <li><Link href="/blog" className="text-gray-500 hover:text-purple-400 transition-colors">Blog</Link></li>
             </ul>
           </div>

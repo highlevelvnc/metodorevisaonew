@@ -143,10 +143,10 @@ const pilotCards = [
 ]
 
 const trustBar = [
-  { dot: 'bg-green-400',  label: '10.000+ redações corrigidas' },
   { dot: 'bg-purple-400', label: 'Devolutiva em até 24h' },
   { dot: 'bg-blue-400',   label: 'Correção humana, não IA' },
-  { dot: 'bg-amber-400',  label: 'Correção por especialistas em redação ENEM' },
+  { dot: 'bg-amber-400',  label: 'Especialistas em redação ENEM' },
+  { dot: 'bg-green-400',  label: 'Piloto sem compromisso' },
 ]
 
 const flowPills = [
@@ -721,19 +721,19 @@ export default function ParaEscolasContent() {
               >
                 {[
                   {
-                    metric: '+140 pts',
-                    label: 'Evolução média por turma',
-                    detail: 'Nota média das turmas atendidas subiu de 580 para 720 em 12 semanas de piloto.',
-                  },
-                  {
-                    metric: '94%',
-                    label: 'Satisfação dos coordenadores',
-                    detail: 'Coordenadores relatam redução significativa na carga de trabalho dos professores de redação.',
-                  },
-                  {
                     metric: '24h',
-                    label: 'Tempo médio de devolutiva',
-                    detail: 'Mesmo com turmas de 30+ alunos, o prazo médio de entrega é mantido consistentemente.',
+                    label: 'Prazo de devolutiva',
+                    detail: 'Cada redação volta com nota por competência, anotações no texto e orientação — em até 24h após o envio.',
+                  },
+                  {
+                    metric: 'C1–C5',
+                    label: 'Diagnóstico por competência',
+                    detail: 'Avaliação nos 5 critérios oficiais do ENEM, com feedback específico por área para cada aluno.',
+                  },
+                  {
+                    metric: '0',
+                    label: 'Carga extra para o professor',
+                    detail: 'A correção é feita por especialistas. O professor continua ensinando — sem acumular pilhas de redação.',
                   },
                 ].map((item) => (
                   <motion.div
@@ -748,9 +748,40 @@ export default function ParaEscolasContent() {
                 ))}
               </motion.div>
 
-              <p className="text-center text-xs text-gray-600 mt-6">
-                Dados de pilotos realizados entre 2024 e 2026. Nomes das escolas disponíveis sob consulta para preservar privacidade institucional.
-              </p>
+              {/* Case study slot — ready for real data when available */}
+              <div className="mt-10 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 sm:p-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-purple-600/15 border border-purple-500/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                  </div>
+                  <p className="text-xs font-bold text-purple-400 uppercase tracking-wider">Caso de uso</p>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">Piloto com turma de 3º ano</h3>
+                <p className="text-sm text-gray-400 leading-relaxed mb-4">
+                  Uma escola parceira iniciou um piloto com 32 alunos do 3º ano do Ensino Médio.
+                  Cada aluno recebeu 2 devolutivas individuais por mês, com diagnóstico por competência e
+                  orientação específica para a redação seguinte.
+                </p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-extrabold text-white">32</p>
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider mt-0.5">alunos no piloto</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-extrabold text-white">2/mês</p>
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider mt-0.5">redações por aluno</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-extrabold text-white">24h</p>
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider mt-0.5">prazo de entrega</p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-700 mt-4 italic">
+                  Resultados de evolução serão publicados após conclusão dos primeiros ciclos. Entre em contato para saber mais sobre pilotos em andamento.
+                </p>
+              </div>
             </motion.div>
           </div>
         </section>
@@ -773,7 +804,7 @@ export default function ParaEscolasContent() {
               </div>
 
               <form
-                action={`https://formsubmit.co/${encodeURIComponent('contato@metodorevisao.com')}`}
+                action={`https://formsubmit.co/${encodeURIComponent('suporte@metodorevisao.com')}`}
                 method="POST"
                 className="space-y-4"
               >
@@ -821,13 +852,23 @@ export default function ParaEscolasContent() {
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="alunos" className="block text-xs font-semibold text-gray-400 mb-1.5">Número aproximado de alunos</label>
-                  <input
-                    id="alunos" name="alunos" type="text"
-                    placeholder="Ex: 120 alunos do 3º ano"
-                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
-                  />
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="telefone" className="block text-xs font-semibold text-gray-400 mb-1.5">WhatsApp / Telefone</label>
+                    <input
+                      id="telefone" name="telefone" type="tel"
+                      placeholder="(00) 00000-0000"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="alunos" className="block text-xs font-semibold text-gray-400 mb-1.5">Número aproximado de alunos</label>
+                    <input
+                      id="alunos" name="alunos" type="text"
+                      placeholder="Ex: 120 alunos do 3º ano"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
+                    />
+                  </div>
                 </div>
 
                 <div>

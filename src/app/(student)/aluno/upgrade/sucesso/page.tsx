@@ -96,8 +96,8 @@ export default async function SucessoPage({
             </h1>
             <p className="text-sm text-gray-400 leading-relaxed">
               {subscriptionActive
-                ? `Você tem ${creditsAvailable} ${creditsAvailable === 1 ? 'crédito' : 'créditos'} disponíveis. Envie sua primeira redação hoje e receba a devolutiva em até 24h.`
-                : `Seu plano ${finalPlanName} está sendo ativado. Em instantes seus créditos estarão disponíveis.`
+                ? `Você tem ${creditsAvailable} correç${creditsAvailable === 1 ? 'ão' : 'ões'} disponíve${creditsAvailable === 1 ? 'l' : 'is'}. Envie sua primeira redação hoje e receba a devolutiva em até 24h.`
+                : `Seu plano ${finalPlanName} está sendo ativado. Em instantes suas correções estarão disponíveis.`
               }
             </p>
           </div>
@@ -110,7 +110,7 @@ export default async function SucessoPage({
                 <p className="text-[11px] font-bold text-amber-400">Ativando plano…</p>
               </div>
               <p className="text-[11px] text-gray-600 leading-relaxed">
-                Confirmação em até 30 segundos. Se os créditos não aparecerem, recarregue o painel.
+                Confirmação em até 30 segundos. Se as correções não aparecerem, recarregue o painel.
               </p>
             </div>
           )}
@@ -126,7 +126,7 @@ export default async function SucessoPage({
               <div>
                 <p className="text-xs font-bold text-white">Plano {finalPlanName}</p>
                 {essayCount > 0 && (
-                  <p className="text-[10px] text-gray-600">{essayCount} redações · devolutiva C1–C5</p>
+                  <p className="text-[10px] text-gray-600">{essayCount} correções por mês · devolutiva C1–C5</p>
                 )}
               </div>
             </div>
@@ -216,7 +216,7 @@ export default async function SucessoPage({
       {/* ── Footer reassurance ───────────────────────────────────────────────── */}
       <p className="text-center text-xs text-gray-700 mt-5 leading-relaxed">
         Você receberá um e-mail de confirmação do Stripe.
-        Dúvidas? Entre em contato pelo chat da plataforma.
+        Dúvidas? <a href="mailto:suporte@metodorevisao.com" className="text-purple-400 hover:text-purple-300 underline underline-offset-2 transition-colors">suporte@metodorevisao.com</a>
       </p>
     </div>
   )

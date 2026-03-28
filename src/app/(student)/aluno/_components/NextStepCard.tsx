@@ -98,9 +98,11 @@ function resolveStep(props: NextStepCardProps): NextStepConfig {
     return {
       case: 'low_credits',
       icon: <AlertTriangle size={18} />,
-      headline: 'Seus créditos acabaram',
-      subtext: 'Faça upgrade para continuar sua evolução sem pausas.',
-      ctaLabel: 'Ver planos',
+      headline: 'Suas correções acabaram neste ciclo',
+      subtext: lastScore
+        ? `Sua última nota foi ${lastScore} pts. Para continuar evoluindo, renove ou faça upgrade do plano.`
+        : 'Suas correções serão renovadas no próximo ciclo, ou faça upgrade para continuar agora.',
+      ctaLabel: 'Ver planos e continuar',
       ctaHref: '/aluno/upgrade',
       accent: 'border-amber-500/20 bg-amber-500/[0.04]',
       ctaClass: 'bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)]',
@@ -108,16 +110,24 @@ function resolveStep(props: NextStepCardProps): NextStepConfig {
   }
 
   // P4 — Steady state: all corrections viewed, has credits → next essay
+  // Sub-variant: last credit warning (honest, not aggressive)
+  const isLastCredit = creditsLeft === 1
   return {
     case: 'viewed_correction',
     icon: <TrendingUp size={18} />,
-    headline: 'Envie sua próxima redação',
-    subtext: lastScore
-      ? `Sua última nota: ${lastScore} pts. Cada redação é uma chance de melhorar.`
-      : 'Cada nova redação traz um diagnóstico mais preciso da sua evolução.',
-    ctaLabel: 'Escrever nova redação',
+    headline: isLastCredit
+      ? 'Última correção deste ciclo'
+      : 'Envie sua próxima redação',
+    subtext: isLastCredit
+      ? 'Use sua última correção com estratégia. Foque na competência que mais precisa de atenção.'
+      : lastScore
+        ? `Sua última nota: ${lastScore} pts. Cada redação é uma chance de melhorar.`
+        : 'Cada nova redação traz um diagnóstico mais preciso da sua evolução.',
+    ctaLabel: isLastCredit ? 'Usar última correção' : 'Escrever nova redação',
     ctaHref: '/aluno/redacoes/nova',
-    accent: 'border-purple-500/20 bg-purple-500/[0.04]',
+    accent: isLastCredit
+      ? 'border-amber-500/15 bg-amber-500/[0.03]'
+      : 'border-purple-500/20 bg-purple-500/[0.04]',
     ctaClass: 'bg-purple-600 hover:bg-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.25)]',
   }
 }

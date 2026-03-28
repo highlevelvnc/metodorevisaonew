@@ -40,7 +40,7 @@ export default function RootError({
         <h1 className="text-lg font-bold text-white mb-2">Algo deu errado</h1>
         <p className="text-gray-500 text-sm mb-6 leading-relaxed">
           Ocorreu um erro inesperado. Tente novamente — se o problema persistir,
-          entre em contato com o suporte.
+          entre em contato: <a href="mailto:suporte@metodorevisao.com" className="text-purple-400 hover:text-purple-300 underline underline-offset-2 transition-colors">suporte@metodorevisao.com</a>
         </p>
 
         <div className="flex items-center justify-center gap-3 flex-wrap">
