@@ -5,6 +5,7 @@ import { TrendingUp, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { CompetencyCards, type CompCardData } from './CompetencyCards'
 import { type CompKey } from '@/lib/competency-colors'
+import { MarkViewed } from './MarkViewed'
 
 export const metadata: Metadata = {
   title: 'Devolutiva',
@@ -406,6 +407,9 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
 
   return (
     <div className="max-w-4xl">
+      {/* Track first correction view — R1 */}
+      <MarkViewed essayId={essay.id} />
+
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex items-start gap-3">

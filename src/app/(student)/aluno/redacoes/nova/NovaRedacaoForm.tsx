@@ -24,16 +24,19 @@ type InputMode = 'text' | 'image'
 export default function NovaRedacaoForm({
   themes,
   creditsLeft,
+  prefilledTheme,
 }: {
   themes: Theme[]
   creditsLeft: number
+  prefilledTheme?: string | null
 }) {
   const router = useRouter()
 
-  // Theme — default to 'free' if no themes are available from the server
-  const [themeMode, setThemeMode]           = useState<'list' | 'free'>(themes.length === 0 ? 'free' : 'list')
+  // Theme — default to 'free' if a prefilledTheme is provided, or if no themes available
+  const hasPrefilledTheme = !!prefilledTheme
+  const [themeMode, setThemeMode]           = useState<'list' | 'free'>(hasPrefilledTheme || themes.length === 0 ? 'free' : 'list')
   const [selectedThemeId, setSelectedThemeId] = useState('')
-  const [freeTheme, setFreeTheme]           = useState('')
+  const [freeTheme, setFreeTheme]           = useState(prefilledTheme ?? '')
 
   // Input mode: typed text or image upload
   const [inputMode, setInputMode]           = useState<InputMode>('text')

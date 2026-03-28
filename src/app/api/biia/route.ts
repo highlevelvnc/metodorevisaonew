@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { touchActivity } from '@/lib/actions/activity'
 
 export const runtime = 'nodejs'
 
@@ -19,6 +20,13 @@ function buildSystemPrompt(ctx: StudentContext): string {
     `- Respostas devem ter no máximo 400 palavras. Seja densa e prática, nunca genérica.`,
     `- Use negrito (**texto**) para destaque, mas sem exagero.`,
     `- Termine com uma pergunta ou sugestão de próximo passo quando fizer sentido.`,
+    ``,
+    `FORMATO DE RESPOSTA OBRIGATÓRIO quando o aluno perguntar sobre erros ou como melhorar:`,
+    `Sempre organize a resposta em seções claras:`,
+    `1. **Principais erros** — liste os erros mais comuns ou relevantes`,
+    `2. **Como melhorar** — dê orientações práticas e específicas`,
+    `3. **Exemplo reescrito** — quando aplicável, mostre um antes/depois com a correção`,
+    `Se o aluno colar um texto, OBRIGATORIAMENTE inclua essas 3 seções na resposta.`,
     ``,
     `COMPETÊNCIAS DO ENEM:`,
     `C1 — Norma Culta da Língua Portuguesa (concordância, regência, pontuação, ortografia)`,
@@ -133,6 +141,10 @@ export async function POST(req: Request) {
     }
 
     console.log(`[biia] Response generated in ${Date.now() - t0}ms for user=${user.id}`)
+
+    // Update last_activity_at (R3 — non-blocking, non-fatal)
+    touchActivity().catch(() => {})
+
     return NextResponse.json({ reply })
   } catch (err) {
     console.error(`[biia] LLM call failed:`, err instanceof Error ? err.message : err)

@@ -117,6 +117,102 @@ export async function notifyCorrectionReady(params: {
   await sendEmail({ to: studentEmail, subject, html })
 }
 
+// ─── Inactivity nudge (24h) ───────────────────────────────────────────────────
+
+export async function notifyInactivity24h(params: {
+  studentEmail: string
+  studentName: string
+  lastEssayCount: number
+}): Promise<void> {
+  const { studentEmail, studentName, lastEssayCount } = params
+  const siteUrl = getSiteUrl()
+  const firstName = studentName.split(' ')[0] || 'Aluno'
+
+  const subject = 'Você ainda não enviou sua próxima redação'
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 16px;">Oi, ${firstName}!</p>
+      <p style="font-size:14px;color:#9ca3af;line-height:1.6;margin:0 0 24px;">
+        ${lastEssayCount === 0
+          ? 'Você se cadastrou mas ainda não enviou sua primeira redação. Leva menos de 2 minutos — e você recebe uma devolutiva detalhada em até 24h.'
+          : `Já faz um tempo desde sua última redação. Você tem ${lastEssayCount} redaç${lastEssayCount !== 1 ? 'ões' : 'ão'} no histórico — envie a próxima para manter sua evolução.`
+        }
+      </p>
+      <div style="text-align:center;">
+        <a href="${siteUrl}/aluno/redacoes/nova" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Enviar redação agora →
+        </a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Correção estratégica de redação ENEM
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject, html })
+}
+
+// ─── Inactivity nudge (48h) ───────────────────────────────────────────────────
+
+export async function notifyInactivity48h(params: {
+  studentEmail: string
+  studentName: string
+  avgScore: number | null
+}): Promise<void> {
+  const { studentEmail, studentName, avgScore } = params
+  const siteUrl = getSiteUrl()
+  const firstName = studentName.split(' ')[0] || 'Aluno'
+
+  const subject = 'Você está deixando pontos na mesa'
+
+  const scoreContext = avgScore !== null
+    ? `Com média de <strong style="color:#fff;">${avgScore} pts</strong>, sua próxima redação pode te levar a ${Math.min(1000, avgScore + 100)}+.`
+    : 'Cada redação corrigida te mostra exatamente onde subir a nota.'
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 8px;">Oi, ${firstName}!</p>
+      <h2 style="font-size:20px;color:#fff;margin:0 0 16px;font-weight:700;">
+        Você está deixando pontos na mesa
+      </h2>
+      <p style="font-size:14px;color:#9ca3af;line-height:1.6;margin:0 0 24px;">
+        ${scoreContext} Quanto mais você escreve, mais a professora entende seus padrões de erro — e mais precisas ficam as devolutivas.
+      </p>
+      <div style="text-align:center;">
+        <a href="${siteUrl}/aluno/redacoes/nova" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Escrever próxima redação →
+        </a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Correção estratégica de redação ENEM
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject, html })
+}
+
 // ─── Credits running low ─────────────────────────────────────────────────────
 
 export async function notifyCreditsLow(params: {

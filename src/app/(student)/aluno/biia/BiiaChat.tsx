@@ -150,6 +150,31 @@ function MessageBubble({ message }: { message: Message }) {
   )
 }
 
+// ─── Quick action buttons (shown after assistant responses) ───────────────────
+
+const QUICK_ACTIONS = [
+  { label: 'Ver erros principais', prompt: 'Liste meus principais erros com base nas minhas redações e como evitar cada um.' },
+  { label: 'Melhorar introdução', prompt: 'Me ensine a escrever uma introdução forte para redação ENEM com contextualização e tese clara. Dê um exemplo.' },
+  { label: 'Aumentar nota', prompt: 'Qual a estratégia mais rápida para eu aumentar minha nota na próxima redação? Foque nas competências com maior potencial de ganho.' },
+]
+
+function QuickActions({ onSend, disabled }: { onSend: (text: string) => void; disabled: boolean }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2 ml-10">
+      {QUICK_ACTIONS.map(a => (
+        <button
+          key={a.label}
+          onClick={() => onSend(a.prompt)}
+          disabled={disabled}
+          className="text-[11px] px-3 py-1.5 rounded-lg border border-purple-500/20 bg-purple-500/[0.06] text-purple-300 hover:bg-purple-500/[0.12] hover:border-purple-500/30 disabled:opacity-40 transition-all"
+        >
+          {a.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function TypingIndicator() {
   return (
     <div className="flex gap-3 items-end">
@@ -339,8 +364,14 @@ export function BiiaChat({
     <div className="flex flex-col h-full">
       {/* Chat area */}
       <div className="flex-1 overflow-y-auto px-0 py-4 space-y-4 min-h-0">
-        {messages.map(msg => (
-          <MessageBubble key={msg.id} message={msg} />
+        {messages.map((msg, i) => (
+          <div key={msg.id}>
+            <MessageBubble message={msg} />
+            {/* Quick actions: show after the last assistant message when not typing */}
+            {msg.role === 'assistant' && i === messages.length - 1 && i > 0 && !isTyping && (
+              <QuickActions onSend={sendMessage} disabled={isTyping} />
+            )}
+          </div>
         ))}
         {isTyping && <TypingIndicator />}
         <div ref={bottomRef} />

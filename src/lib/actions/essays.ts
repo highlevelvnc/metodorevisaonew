@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { touchActivity } from '@/lib/actions/activity'
 
 export type EssayState = { error: string; code?: string } | null
 
@@ -182,6 +183,9 @@ export async function submitEssay(
   // Notify admin queue so the new essay appears immediately
   revalidatePath('/professor')
   revalidatePath('/professor/redacoes')
+
+  // Update last_activity_at + clear nudge events (R3 — non-blocking)
+  touchActivity().catch(() => {})
 
   redirect(`/aluno/redacoes/${essayIdStr}`)
 }

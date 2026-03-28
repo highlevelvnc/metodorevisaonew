@@ -18,6 +18,7 @@ export interface Database {
           role: UserRole
           avatar_url: string | null
           stripe_customer_id: string | null
+          last_activity_at: string | null
           created_at: string
           updated_at: string
         }
@@ -28,6 +29,7 @@ export interface Database {
           role?: UserRole
           avatar_url?: string | null
           stripe_customer_id?: string | null
+          last_activity_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +39,7 @@ export interface Database {
           role?: UserRole
           avatar_url?: string | null
           stripe_customer_id?: string | null
+          last_activity_at?: string | null
           updated_at?: string
         }
       }
@@ -155,6 +158,7 @@ export interface Database {
           total_score: number
           general_feedback: string
           annotations: Json
+          viewed_at: string | null
           corrected_at: string
           created_at: string
         }
@@ -171,6 +175,7 @@ export interface Database {
           total_score: number
           general_feedback: string
           annotations?: Json
+          viewed_at?: string | null
           corrected_at?: string
           created_at?: string
         }
@@ -185,6 +190,7 @@ export interface Database {
           total_score?: number
           general_feedback?: string
           annotations?: Json
+          viewed_at?: string | null
           corrected_at?: string
         }
       }

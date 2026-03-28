@@ -8,10 +8,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function NovaRedacaoPage() {
+export default async function NovaRedacaoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tema_livre?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const params = await searchParams
+  const prefilledTheme = params.tema_livre ?? null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
@@ -35,5 +42,5 @@ export default async function NovaRedacaoPage() {
   // Clamp to 0 — essays_used can exceed essays_limit in edge cases (concurrent submits, admin overrides)
   const creditsLeft = sub ? Math.max(0, sub.essays_limit - sub.essays_used) : 0
 
-  return <NovaRedacaoForm themes={themes} creditsLeft={creditsLeft} />
+  return <NovaRedacaoForm themes={themes} creditsLeft={creditsLeft} prefilledTheme={prefilledTheme} />
 }

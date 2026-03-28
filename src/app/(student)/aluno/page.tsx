@@ -6,6 +6,8 @@ import { PenLine, FileText, Target, Clock, ArrowRight, Flame } from 'lucide-reac
 
 import { DashboardHero }      from './_components/DashboardHero'
 import { StatsRow }           from './_components/StatsRow'
+import { NextStepCard }       from './_components/NextStepCard'
+import { ProgressLoop }       from './_components/ProgressLoop'
 import { CorrectionsList }    from './_components/CorrectionsList'
 import { BiiaCard }           from './_components/BiiaCard'
 import { AdaptiveContent }    from './_components/AdaptiveContent'
@@ -32,6 +34,7 @@ type CorrectionData = {
   c1_score: number; c2_score: number; c3_score: number
   c4_score: number; c5_score: number; total_score: number
   reviewer_name: string; corrected_at: string
+  viewed_at: string | null
 }
 type EssayData = {
   id: string; theme_title: string; status: string
@@ -236,7 +239,7 @@ export default async function AlunoDashboardPage() {
         .limit(1)
         .maybeSingle(),
       db.from('essays')
-        .select('id, theme_title, status, submitted_at, corrections(c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at)')
+        .select('id, theme_title, status, submitted_at, corrections(c1_score, c2_score, c3_score, c4_score, c5_score, total_score, reviewer_name, corrected_at, viewed_at)')
         .eq('student_id', user.id)
         .order('submitted_at', { ascending: false })
         .limit(200),
@@ -344,6 +347,15 @@ export default async function AlunoDashboardPage() {
     return { label: 'Enviar nova redação', sub: 'Cada envio traz um diagnóstico de evolução', href: '/aluno/redacoes/nova', kind: 'write' }
   })()
 
+  // Next-step card: detect unviewed correction using real viewed_at field (R1)
+  const hasUnviewedCorrection = (() => {
+    if (!lastCorrection?.corrected_at) return false
+    return lastCorrection.viewed_at === null
+  })()
+
+  // Suggested goal: 100 pts above current average, capped at 1000
+  const suggestedGoal = avgScore !== null ? Math.min(1000, Math.ceil((avgScore + 100) / 20) * 20) : 700
+
   // Upgrade signal
   const creditsPct       = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
   const planTier         = PLAN_TIERS[planName] ?? PLAN_TIERS['Evolução']
@@ -392,6 +404,24 @@ export default async function AlunoDashboardPage() {
         lastCorrectedEssayId={lastCorrectedEssayId}
         upgradeSignal={upgradeSignal}
         planTierNextPlan={planTier.nextPlan}
+      />
+
+      {/* ── 1b. Next Step — always visible, always actionable ───────────── */}
+      <NextStepCard
+        totalEssays={essays.length}
+        pendingCount={pendingCount}
+        lastCorrectedEssayId={lastCorrectedEssayId}
+        hasUnviewedCorrection={hasUnviewedCorrection}
+        creditsLeft={creditsLeft}
+        lastScore={lastCorrection?.total_score ?? null}
+      />
+
+      {/* ── 1c. Progress Loop — reinforce progress ────────────────────── */}
+      <ProgressLoop
+        totalEssays={essays.length}
+        avgScore={avgScore}
+        lastScore={lastCorrection?.total_score ?? null}
+        suggestedGoal={suggestedGoal}
       />
 
       {/* ── 2. Stats ────────────────────────────────────────────────────────── */}
