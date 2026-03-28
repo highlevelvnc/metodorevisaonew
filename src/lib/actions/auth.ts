@@ -97,8 +97,16 @@ export async function signUp(
       return { error: 'E-mail inválido. Verifique o formato.' }
     if (msg.includes('password'))
       return { error: 'Senha muito fraca. Use pelo menos 6 caracteres.' }
-    // Never expose raw Supabase/Postgres errors to the client
+    // Log the raw error for debugging — never expose it to the client
+    console.error('[signUp] Unhandled Supabase error:', error.message, error.status)
     return { error: 'Erro ao criar conta. Tente novamente.' }
+  }
+
+  // Supabase with email confirmation enabled: when signing up with an already-registered
+  // email, it returns data.user with identities: [] (no error) to prevent email enumeration.
+  // Detect this and show a helpful message instead of a fake "check your email" state.
+  if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+    return { error: 'Este e-mail já está cadastrado. Tente entrar.' }
   }
 
   // Supabase exige confirmação de e-mail → session é null
