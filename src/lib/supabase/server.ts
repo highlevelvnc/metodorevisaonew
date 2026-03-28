@@ -10,12 +10,19 @@ export async function createClient() {
   const cookieStore = await cookies()
 
   // Supabase renomeou a chave em projetos novos; suporta ambas as variantes
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      `Missing Supabase env vars: URL=${supabaseUrl ? 'set' : 'MISSING'} KEY=${supabaseKey ? 'set' : 'MISSING'}`
+    )
+  }
 
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     supabaseKey,
     {
       cookies: {

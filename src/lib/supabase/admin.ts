@@ -8,7 +8,12 @@ import type { Database } from './types'
  * - NEVER import in client components or expose to the browser.
  */
 export function createAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set.')
+  }
   if (!serviceKey) {
     throw new Error(
       'SUPABASE_SERVICE_ROLE_KEY is not set. Add it to your .env.local for local dev ' +
@@ -17,7 +22,7 @@ export function createAdminClient() {
   }
 
   return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     serviceKey,
     {
       auth: {
