@@ -65,8 +65,8 @@ export interface BuildSessionParams {
 // ─── Core function ────────────────────────────────────────────────────────────
 
 /**
- * Looks up (or creates) a Stripe Customer, then creates a one-time
- * Checkout Session and returns the hosted checkout URL.
+ * Looks up (or creates) a Stripe Customer, then creates a recurring
+ * Stripe Checkout Session (mode: 'subscription') and returns the URL.
  *
  * Never calls redirect() — caller decides what to do with the URL.
  * Safe to use inside try/catch (no NEXT_REDIRECT throws here).
@@ -151,15 +151,17 @@ export async function buildStripeSession({
           price_data: {
             currency:     'brl',
             unit_amount:  unitAmount,
+            recurring:    { interval: 'month' },
             product_data: {
               name:        `Método Revisão — Plano ${plan.name}`,
-              description: `${plan.essay_count} redações com devolutiva completa C1–C5 por ciclo`,
+              description: `${plan.essay_count} correções estratégicas de redação ENEM por mês`,
             },
           },
           quantity: 1,
         },
       ],
-      mode:        'payment',
+      mode:                 'subscription',
+      subscription_data:    { metadata: { userId, planSlug: plan.slug } },
       success_url: `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  cancelUrl ?? `${siteUrl}/checkout/${planSlug}?cancelado=1`,
       metadata:    { userId, planSlug: plan.slug },

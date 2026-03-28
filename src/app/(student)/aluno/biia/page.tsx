@@ -245,6 +245,8 @@ export default async function BiiaPage() {
               lastTheme={lastTheme}
               isNewUser={isNewUser}
               recentThemes={recentThemes}
+              compAverages={compAverages}
+              totalCorrected={corrected.length}
             />
           </div>
         </div>

@@ -5,8 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 /**
  * POST /api/webhooks/stripe
  *
- * Receives Stripe webhook events, verifies the signature, and activates
- * the purchased subscription for the user.
+ * Receives Stripe webhook events, verifies the signature, and manages
+ * the subscription lifecycle for the user.
  *
  * Key security properties:
  * - Signature verified using STRIPE_WEBHOOK_SECRET before any DB write
@@ -15,8 +15,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * - Uses service-role Supabase client (bypasses RLS — runs server-to-server)
  *
  * Events handled:
- *   checkout.session.completed            → immediate card payments
+ *   checkout.session.completed            → initial subscription activation
  *   checkout.session.async_payment_succeeded → async methods (future: Pix/boleto)
+ *   invoice.payment_succeeded             → monthly renewal → reset credits
+ *   customer.subscription.deleted         → cancellation → expire subscription
+ *   customer.subscription.updated         → plan changes (future)
  */
 
 // Force Node.js runtime — `stripe.webhooks.constructEvent` needs the raw body
@@ -52,7 +55,7 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        // Only activate on confirmed payment (card payments are immediate)
+        // For subscription mode, payment_status is 'paid' when card is charged
         if (session.payment_status === 'paid') {
           await activateSubscription(session)
         }
@@ -63,6 +66,31 @@ export async function POST(req: Request) {
       case 'checkout.session.async_payment_succeeded': {
         const session = event.data.object as Stripe.Checkout.Session
         await activateSubscription(session)
+        break
+      }
+
+      // Monthly renewal — reset essay credits for the billing cycle
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice
+        await handleRenewal(invoice)
+        break
+      }
+
+      // Subscription cancelled (by user via portal, or by Stripe due to failed payments)
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription
+        await handleCancellation(subscription)
+        break
+      }
+
+      // Subscription updated (plan change, etc.) — log for now
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        console.log(`[webhook] Subscription updated: ${subscription.id} status=${subscription.status}`)
+        // Handle payment failure → past_due
+        if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+          console.warn(`[webhook] Subscription ${subscription.id} is ${subscription.status} — will expire on deletion`)
+        }
         break
       }
 
@@ -80,7 +108,7 @@ export async function POST(req: Request) {
   return new Response('OK', { status: 200 })
 }
 
-/* ── Core activation logic ────────────────────────────────────────────────── */
+/* ── Core activation logic (initial subscription) ────────────────────────── */
 async function activateSubscription(session: Stripe.Checkout.Session) {
   const t0       = Date.now()
   const userId   = session.metadata?.userId ?? session.client_reference_id
@@ -98,8 +126,6 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
   const db = createAdminClient() as any
 
   /* ── Idempotency check ─────────────────────────────────────────────────── */
-  // If the session was already processed (e.g. Stripe retried), skip silently.
-  // The UNIQUE constraint on stripe_checkout_session_id also enforces this at DB level.
   const { data: existing } = await db
     .from('subscriptions')
     .select('id')
@@ -124,7 +150,6 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
   }
 
   /* ── Deactivate all previous active subscriptions ──────────────────────── */
-  // A user can only have one active subscription at a time.
   const { error: expireErr } = await db
     .from('subscriptions')
     .update({ status: 'expired' })
@@ -135,6 +160,11 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
     console.error('[webhook] Failed to expire old subscriptions:', expireErr)
     throw expireErr
   }
+
+  /* ── Extract Stripe subscription ID ────────────────────────────────────── */
+  const stripeSubscriptionId = typeof session.subscription === 'string'
+    ? session.subscription
+    : (session.subscription as Stripe.Subscription | null)?.id ?? null
 
   /* ── Create new active subscription ───────────────────────────────────── */
   const { error: insertErr } = await db
@@ -147,6 +177,7 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
       essays_limit:               plan.essay_count,
       stripe_checkout_session_id: session.id,
       stripe_customer_id:         (session.customer as string | null) ?? null,
+      stripe_subscription_id:     stripeSubscriptionId,
     })
 
   if (insertErr) {
@@ -163,6 +194,87 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
   }
 
   console.log(
-    `[webhook] Subscription activated — user: ${userId} | plan: ${planSlug} | session: ${session.id} | total: ${Date.now() - t0}ms`
+    `[webhook] Subscription activated — user: ${userId} | plan: ${planSlug} | stripe_sub: ${stripeSubscriptionId} | session: ${session.id} | total: ${Date.now() - t0}ms`
   )
+}
+
+/* ── Monthly renewal — reset credits ─────────────────────────────────────── */
+async function handleRenewal(invoice: Stripe.Invoice) {
+  const t0 = Date.now()
+
+  // Skip the first invoice (handled by activateSubscription via checkout.session.completed)
+  if (invoice.billing_reason === 'subscription_create') {
+    console.log(`[webhook] Skipping initial invoice ${invoice.id} (handled by checkout.session.completed)`)
+    return
+  }
+
+  // In Stripe API 2026+, subscription may be in subscription_details or as a direct field
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const invoiceAny = invoice as any
+  const rawSub = invoiceAny.subscription ?? invoiceAny.subscription_details?.id ?? null
+  const stripeSubId: string | null = typeof rawSub === 'string'
+    ? rawSub
+    : rawSub?.id ?? null
+
+  if (!stripeSubId) {
+    console.warn(`[webhook] invoice.payment_succeeded without subscription ID: ${invoice.id}`)
+    return
+  }
+
+  console.log(`[webhook] handleRenewal — invoice=${invoice.id} subscription=${stripeSubId}`)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createAdminClient() as any
+
+  // Find our subscription row by Stripe subscription ID
+  const { data: sub, error: subErr } = await db
+    .from('subscriptions')
+    .select('id, essays_limit, user_id')
+    .eq('stripe_subscription_id', stripeSubId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (subErr || !sub) {
+    console.warn(`[webhook] No active subscription found for stripe_sub=${stripeSubId}`, subErr)
+    return
+  }
+
+  // Reset essay credits for the new billing cycle
+  const { error: updateErr } = await db
+    .from('subscriptions')
+    .update({ essays_used: 0 })
+    .eq('id', sub.id)
+
+  if (updateErr) {
+    console.error(`[webhook] Failed to reset credits for sub=${sub.id}:`, updateErr)
+    throw updateErr
+  }
+
+  console.log(
+    `[webhook] Credits reset — sub=${sub.id} user=${sub.user_id} limit=${sub.essays_limit} | total: ${Date.now() - t0}ms`
+  )
+}
+
+/* ── Subscription cancelled ──────────────────────────────────────────────── */
+async function handleCancellation(subscription: Stripe.Subscription) {
+  const t0 = Date.now()
+  const stripeSubId = subscription.id
+
+  console.log(`[webhook] handleCancellation — subscription=${stripeSubId}`)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = createAdminClient() as any
+
+  const { error: updateErr } = await db
+    .from('subscriptions')
+    .update({ status: 'cancelled' })
+    .eq('stripe_subscription_id', stripeSubId)
+    .eq('status', 'active')
+
+  if (updateErr) {
+    console.error(`[webhook] Failed to cancel subscription stripe_sub=${stripeSubId}:`, updateErr)
+    throw updateErr
+  }
+
+  console.log(`[webhook] Subscription cancelled — stripe_sub=${stripeSubId} | total: ${Date.now() - t0}ms`)
 }

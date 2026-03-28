@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { Annotation } from '@/lib/annotations'
+import { notifyCorrectionReady } from '@/lib/notifications'
 
 export type ScoreKey = 'c1' | 'c2' | 'c3' | 'c4' | 'c5'
 export type Scores = Record<ScoreKey, number>
@@ -50,6 +51,24 @@ export async function saveCorrection(
     .single()
 
   if (!essay) return { error: 'Redação não encontrada.' }
+
+  const essayRow = essay as { id: string; status: string; student_id: string }
+
+  // ── Safety: prevent duplicate final corrections ─────────────────────────────
+  // If essay is already 'corrected' and this is NOT a draft save by the same reviewer,
+  // another professor already submitted the final correction. Block overwrite.
+  if (!isDraft && essayRow.status === 'corrected') {
+    const { data: existingCorr } = await supabase
+      .from('corrections')
+      .select('id, reviewer_id')
+      .eq('essay_id', essayId)
+      .maybeSingle()
+
+    const existingCorrData = existingCorr as { id: string; reviewer_id: string } | null
+    if (existingCorrData && existingCorrData.reviewer_id !== user.id) {
+      return { error: 'Esta redação já foi corrigida por outro professor.' }
+    }
+  }
 
   const total = scores.c1 + scores.c2 + scores.c3 + scores.c4 + scores.c5
   const now   = new Date().toISOString()
@@ -115,6 +134,39 @@ export async function saveCorrection(
   revalidatePath(`/aluno/redacoes/${essayId}`)
   revalidatePath('/aluno')
   revalidatePath('/aluno/redacoes')
+
+  // ── Send email notification to student (non-blocking, non-fatal) ──────────
+  if (!isDraft && essay) {
+    const essayData = essay as { id: string; student_id: string; status: string }
+    // Fetch student info for the email
+    const { data: student } = await supabase
+      .from('users')
+      .select('email, full_name')
+      .eq('id', essayData.student_id)
+      .single()
+
+    const studentData = student as { email: string; full_name: string } | null
+
+    // Fetch theme title for the email
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: essayDetail } = await (supabase as any)
+      .from('essays')
+      .select('theme_title')
+      .eq('id', essayId)
+      .single()
+
+    if (studentData?.email) {
+      // Fire-and-forget — never block the correction save
+      notifyCorrectionReady({
+        studentEmail: studentData.email,
+        studentName: studentData.full_name ?? 'Aluno',
+        essayId,
+        themeTitle: (essayDetail as { theme_title: string } | null)?.theme_title ?? 'Redação',
+        totalScore: total,
+        reviewerName: profileData.full_name,
+      }).catch(err => console.error('[saveCorrection] notification failed (non-fatal):', err))
+    }
+  }
 
   if (!isDraft) redirect(nextEssayId ? `/professor/redacoes/${nextEssayId}` : '/professor/redacoes')
 

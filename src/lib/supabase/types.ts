@@ -76,6 +76,7 @@ export interface Database {
           stripe_checkout_session_id: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
+          stripe_subscription_id: string | null
           created_at: string
         }
         Insert: {
@@ -90,6 +91,7 @@ export interface Database {
           stripe_checkout_session_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
           created_at?: string
         }
         Update: {
@@ -99,6 +101,7 @@ export interface Database {
           stripe_checkout_session_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
         }
       }
       themes: {

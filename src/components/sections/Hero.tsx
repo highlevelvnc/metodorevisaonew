@@ -214,16 +214,16 @@ export default function Hero() {
 
             {/* CTA group */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mb-5">
-              <Link
-                href="/checkout/estrategia"
-                onClick={() => trackEvent('checkout_started', { plan: 'estrategia', source: 'hero' })}
+              <a
+                href="#planos"
+                onClick={() => trackEvent('cta_click', { source: 'hero' })}
                 className="btn-primary-lg animate-glow-pulse sm:whitespace-nowrap"
               >
                 Quero começar minha evolução
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-              </Link>
+              </a>
               <a
                 href="#como-funciona"
                 className="btn-secondary-lg sm:whitespace-nowrap"

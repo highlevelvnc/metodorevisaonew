@@ -87,16 +87,9 @@ export async function POST(request: NextRequest) {
   // ── 2. Authenticate ──────────────────────────────────────────────────────
   const supabase = makeSupabaseClient(request)
 
-  // getSession() reads JWT locally (no network call) — fast sanity check
-  const { data: sessionData } = await supabase.auth.getSession()
-  console.log(
-    `${tag} getSession() → ` +
-    (sessionData.session
-      ? `session present, user=${sessionData.session.user.id}, expires=${new Date((sessionData.session.expires_at ?? 0) * 1000).toISOString()}`
-      : 'null (no session in cookies)')
-  )
-
-  // getUser() verifies the JWT with Supabase's API (authoritative)
+  // getUser() verifies the JWT with Supabase's API (authoritative).
+  // Never use getSession() for authorization — it trusts the local JWT
+  // without server verification and can be spoofed.
   const { data: userData, error: authErr } = await supabase.auth.getUser()
   console.log(
     `${tag} getUser() → ` +

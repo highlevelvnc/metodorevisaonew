@@ -13,7 +13,6 @@ import ParaQuem from '@/components/sections/ParaQuem'
 import FAQ from '@/components/sections/FAQ'
 import CTAFinal from '@/components/sections/CTAFinal'
 import FloatingCTA from '@/components/sections/FloatingCTA'
-import SocialProofToast from '@/components/sections/SocialProofToast'
 
 export default function Home() {
   return (
@@ -34,7 +33,6 @@ export default function Home() {
       <CTAFinal />
       {/* Global conversion elements */}
       <FloatingCTA />
-      <SocialProofToast />
     </>
   )
 }

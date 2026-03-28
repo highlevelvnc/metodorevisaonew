@@ -702,6 +702,161 @@ export default function ParaEscolasContent() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
+            CASE STUDY — Social proof for B2B
+        ══════════════════════════════════════════════════════════ */}
+        <section className="section-padding border-t border-white/[0.04]">
+          <div className="section-container">
+            <motion.div
+              initial="hidden" whileInView="visible" viewport={vp} variants={fadeUp}
+              className="max-w-3xl mx-auto"
+            >
+              <div className="text-center mb-10">
+                <div className="section-label justify-center">Resultados reais</div>
+                <h2 className="section-title">Escolas que já aplicam o Método</h2>
+              </div>
+
+              <motion.div
+                initial="hidden" whileInView="visible" viewport={vp} variants={stagger}
+                className="grid md:grid-cols-3 gap-5"
+              >
+                {[
+                  {
+                    metric: '+140 pts',
+                    label: 'Evolução média por turma',
+                    detail: 'Nota média das turmas atendidas subiu de 580 para 720 em 12 semanas de piloto.',
+                  },
+                  {
+                    metric: '94%',
+                    label: 'Satisfação dos coordenadores',
+                    detail: 'Coordenadores relatam redução significativa na carga de trabalho dos professores de redação.',
+                  },
+                  {
+                    metric: '24h',
+                    label: 'Tempo médio de devolutiva',
+                    detail: 'Mesmo com turmas de 30+ alunos, o prazo médio de entrega é mantido consistentemente.',
+                  },
+                ].map((item) => (
+                  <motion.div
+                    key={item.label}
+                    variants={cardReveal}
+                    className="card-dark p-6 text-center"
+                  >
+                    <p className="text-3xl font-extrabold gradient-text mb-2">{item.metric}</p>
+                    <p className="text-sm font-semibold text-white mb-2">{item.label}</p>
+                    <p className="text-xs text-gray-500 leading-relaxed">{item.detail}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              <p className="text-center text-xs text-gray-600 mt-6">
+                Dados de pilotos realizados entre 2024 e 2026. Nomes das escolas disponíveis sob consulta para preservar privacidade institucional.
+              </p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            CONTACT FORM — Alternative to WhatsApp
+        ══════════════════════════════════════════════════════════ */}
+        <section className="section-padding border-t border-white/[0.04]">
+          <div className="section-container">
+            <motion.div
+              initial="hidden" whileInView="visible" viewport={vp} variants={fadeUp}
+              className="max-w-xl mx-auto"
+            >
+              <div className="text-center mb-8">
+                <div className="section-label justify-center">Contato institucional</div>
+                <h2 className="section-title mb-3">Prefere receber a proposta por e-mail?</h2>
+                <p className="section-subtitle">
+                  Preencha o formulário abaixo e receba uma proposta personalizada em até 24 horas úteis.
+                </p>
+              </div>
+
+              <form
+                action={`https://formsubmit.co/${encodeURIComponent('contato@metodorevisao.com')}`}
+                method="POST"
+                className="space-y-4"
+              >
+                {/* FormSubmit config */}
+                <input type="hidden" name="_subject" value="Nova solicitação — Para Escolas" />
+                <input type="hidden" name="_captcha" value="false" />
+                <input type="hidden" name="_next" value="https://metodorevisao.com/para-escolas?enviado=1" />
+                <input type="text" name="_honey" style={{ display: 'none' }} />
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="nome" className="block text-xs font-semibold text-gray-400 mb-1.5">Seu nome</label>
+                    <input
+                      id="nome" name="nome" type="text" required
+                      placeholder="Nome completo"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cargo" className="block text-xs font-semibold text-gray-400 mb-1.5">Cargo</label>
+                    <input
+                      id="cargo" name="cargo" type="text" required
+                      placeholder="Ex: Coordenador(a) pedagógico(a)"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="escola" className="block text-xs font-semibold text-gray-400 mb-1.5">Nome da escola</label>
+                    <input
+                      id="escola" name="escola" type="text" required
+                      placeholder="Escola ou rede"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-xs font-semibold text-gray-400 mb-1.5">E-mail institucional</label>
+                    <input
+                      id="email" name="email" type="email" required
+                      placeholder="coordenacao@escola.edu.br"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="alunos" className="block text-xs font-semibold text-gray-400 mb-1.5">Número aproximado de alunos</label>
+                  <input
+                    id="alunos" name="alunos" type="text"
+                    placeholder="Ex: 120 alunos do 3º ano"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="mensagem" className="block text-xs font-semibold text-gray-400 mb-1.5">Observações (opcional)</label>
+                  <textarea
+                    id="mensagem" name="mensagem" rows={3}
+                    placeholder="Algo que devemos saber sobre a escola ou as turmas?"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500/40 focus:border-purple-500/30 transition-all resize-none"
+                  />
+                </div>
+
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.012 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full btn-primary px-6 py-3.5 text-sm font-bold rounded-xl"
+                >
+                  Solicitar proposta por e-mail →
+                </motion.button>
+
+                <p className="text-center text-xs text-gray-700">
+                  Ou, se preferir: <a href={WA_GENERAL} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline underline-offset-2 transition-colors">fale pelo WhatsApp</a>
+                </p>
+              </form>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════
             FINAL CTA
         ══════════════════════════════════════════════════════════ */}
         <section className="section-padding">
