@@ -444,11 +444,11 @@ export default function ComoFunciona() {
 
               {/* Primary CTA — positioned right after process is understood */}
               <Link
-                href="/checkout/evolucao"
+                href="/cadastro"
                 className="btn-primary"
-                onClick={() => trackEvent('cta_click', { source: 'como-funciona-primary' })}
+                onClick={() => { trackEvent('landing_cta_clicked', { source: 'como-funciona', target: 'cadastro' }); trackEvent('cta_click', { source: 'como-funciona-primary' }) }}
               >
-                Quero começar minha evolução
+                Enviar redação e receber correção grátis
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
@@ -456,7 +456,7 @@ export default function ComoFunciona() {
 
               {/* Trust micro-copy below CTA */}
               <p className="text-xs text-gray-700 mt-3">
-                Sem fidelidade · Cancele quando quiser · Devolutiva em até 24h
+                Sem cartão · Sem compromisso · Devolutiva em até 24h
               </p>
             </div>
           </div>
@@ -752,11 +752,11 @@ export default function ComoFunciona() {
 
               {/* Secondary CTA — converts after visual proof */}
               <Link
-                href="/checkout/evolucao"
+                href="/cadastro"
                 className="flex-shrink-0 inline-flex items-center gap-2 text-sm font-bold text-white bg-purple-700/60 hover:bg-purple-600/80 border border-purple-500/50 hover:border-purple-400/70 rounded-xl px-5 py-3 transition-all duration-200 whitespace-nowrap hover:shadow-btn-primary hover:-translate-y-px active:scale-[0.98]"
-                onClick={() => trackEvent('cta_click', { source: 'como-funciona-secondary' })}
+                onClick={() => { trackEvent('landing_cta_clicked', { source: 'como-funciona-secondary', target: 'cadastro' }); trackEvent('cta_click', { source: 'como-funciona-secondary' }) }}
               >
-                Quero minha primeira devolutiva
+                Receber minha primeira correção grátis
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>

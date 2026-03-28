@@ -93,15 +93,29 @@ export default async function UpgradePage({
   return (
     <div className="max-w-4xl">
       <TrackPageView event="upgrade_page_viewed" userId={user.id} metadata={{ current_plan: currentSlug }} />
-      {/* Masthead */}
+      {/* Masthead — trial-aware */}
       <div className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-purple-400/70 mb-1.5">
           Planos
         </p>
-        <h1 className="text-2xl font-bold text-white mb-1.5">Escolha seu plano</h1>
-        <p className="text-sm text-gray-500">
-          Cada redação corrigida por uma especialista real. Sem IA, sem correção genérica.
-        </p>
+        {currentSlug === 'trial' ? (
+          <>
+            <h1 className="text-2xl font-bold text-white mb-1.5">Continue sua evolução</h1>
+            <p className="text-sm text-gray-500">
+              {subRaw && subRaw.essays_used >= subRaw.essays_limit
+                ? 'Agora que você viu como funciona, escolha um plano para receber mais devolutivas e acompanhar sua evolução de verdade.'
+                : 'Sua primeira correção é gratuita. Quando quiser continuar, escolha um plano abaixo.'
+              }
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-white mb-1.5">Escolha seu plano</h1>
+            <p className="text-sm text-gray-500">
+              Cada redação corrigida por uma especialista real. Sem IA, sem correção genérica.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Cancellation notice */}
@@ -178,7 +192,10 @@ export default async function UpgradePage({
                 {/* Price */}
                 <div className="mb-5">
                   {isFree ? (
-                    <p className="text-2xl font-black text-white">Grátis</p>
+                    <div>
+                      <p className="text-2xl font-black text-white">Grátis</p>
+                      <p className="text-[11px] text-green-400/80 mt-0.5 font-medium">1 correção incluída</p>
+                    </div>
                   ) : (
                     <div className="flex items-baseline gap-1">
                       <span className="text-xs text-gray-500 self-start mt-1">R$</span>

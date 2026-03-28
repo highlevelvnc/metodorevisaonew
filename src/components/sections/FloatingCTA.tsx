@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { trackEvent } from '@/components/Analytics'
 
 export default function FloatingCTA() {
@@ -29,15 +28,15 @@ export default function FloatingCTA() {
         style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.95) 0%, rgba(109,40,217,0.98) 100%)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 30px rgba(0,0,0,0.5), 0 0 40px rgba(124,58,237,0.25)' }}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-white font-bold text-sm leading-tight">Começar minha evolução</p>
-          <p className="text-purple-200 text-xs mt-0.5">Devolutiva em até 24h · Sem fidelidade</p>
+          <p className="text-white font-bold text-sm leading-tight">Correção ENEM grátis</p>
+          <p className="text-purple-200 text-xs mt-0.5">Sem cartão · Especialista humana · 24h</p>
         </div>
         <a
-          href="#planos"
+          href="/cadastro"
           className="bg-white text-purple-700 font-bold text-sm px-5 py-2.5 rounded-xl flex-shrink-0 active:scale-95 transition-transform"
           onClick={() => trackEvent('cta_click', { source: 'floating_mobile' })}
         >
-          Ver planos
+          Enviar grátis
         </a>
         <button
           onClick={() => { setDismissed(true); setVisible(false) }}

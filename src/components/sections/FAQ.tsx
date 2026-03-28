@@ -36,8 +36,12 @@ const faqs = [
     a: 'Evolução acontece em ritmos diferentes, mas é sempre visível. Se nas primeiras 4 correções você não sentir progresso, conversamos diretamente para entender o que ajustar no processo. Nosso compromisso é com o seu resultado — não apenas com a entrega.',
   },
   {
+    q: 'Posso experimentar antes de assinar um plano?',
+    a: 'Sim. Ao criar sua conta, você recebe 1 correção gratuita. Envie uma redação, receba a devolutiva completa C1–C5 em até 24h e veja exatamente como funciona. Sem cartão, sem compromisso. Depois, você escolhe um plano para continuar.',
+  },
+  {
     q: 'Quando começo a escrever após assinar?',
-    a: 'Imediatamente. Assim que você assinar, recebe as instruções de envio e já pode mandar sua primeira redação no mesmo dia. Não existe período de espera.',
+    a: 'Imediatamente. Assim que você criar sua conta (gratuita) ou assinar um plano, já pode enviar sua primeira redação no mesmo dia. Não existe período de espera.',
   },
   {
     q: 'Posso parcelar o pagamento?',

@@ -49,30 +49,24 @@ export default function CTAFinal() {
         {/* Headline + CTAs */}
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-5">
-            O ENEM não espera.{' '}
-            <span className="gradient-text">Sua evolução começa agora.</span>
+            Sua próxima redação pode ser{' '}
+            <span className="gradient-text">a primeira com direção de verdade.</span>
           </h2>
           <p className="text-base sm:text-lg text-gray-400 mb-8 leading-relaxed">
-            Cada semana sem acompanhamento estratégico é uma semana repetindo os mesmos erros. Quanto antes você começar, mais redações corrigidas você terá antes da prova. Sua próxima redação pode ser a primeira com direção de verdade.
+            Envie uma redação e receba uma devolutiva completa: nota por competência, anotações no texto e orientação para a próxima. Tudo por uma especialista real, em até 24h. A primeira correção é gratuita.
           </p>
 
-          {/* Soft urgency */}
-          <div className="inline-flex items-center gap-2 text-xs text-amber-400/80 bg-amber-500/[0.07] border border-amber-500/15 rounded-full px-4 py-2 mb-6">
-            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
-            Vagas limitadas este mês — novas correções abertas toda segunda-feira
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <a
-              href="#planos"
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
+            <Link
+              href="/cadastro"
               className="btn-primary-lg"
-              onClick={() => { trackEvent('landing_cta_clicked', { source: 'cta_final', target: 'planos' }); trackEvent('cta_click', { source: 'cta_final' }) }}
+              onClick={() => { trackEvent('landing_cta_clicked', { source: 'cta_final', target: 'cadastro' }); trackEvent('cta_click', { source: 'cta_final' }) }}
             >
-              Quero começar minha evolução
+              Enviar redação e receber correção grátis
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
             <a
               href={`${WHATSAPP_URL}?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20ainda%20tenho%20d%C3%BAvidas%20sobre%20o%20M%C3%A9todo%20Revis%C3%A3o.`}
               target="_blank"
@@ -80,9 +74,13 @@ export default function CTAFinal() {
               className="btn-secondary-lg sm:whitespace-nowrap"
               onClick={() => trackEvent('cta_click', { source: 'cta_final_whatsapp' })}
             >
-              Ainda tem dúvidas? Fale no WhatsApp
+              Tem dúvidas? Fale no WhatsApp
             </a>
           </div>
+
+          <p className="text-xs text-gray-600 mb-6">
+            Sem cartão &nbsp;·&nbsp; Sem compromisso &nbsp;·&nbsp; Depois, escolha um plano para continuar
+          </p>
 
           {/* Micro trust */}
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-700">

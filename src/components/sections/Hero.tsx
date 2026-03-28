@@ -213,28 +213,29 @@ export default function Hero() {
             </p>
 
             {/* CTA group */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mb-5">
-              <a
-                href="#planos"
-                onClick={() => { trackEvent('landing_cta_clicked', { source: 'hero', target: 'planos' }); trackEvent('cta_click', { source: 'hero' }) }}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mb-3">
+              <Link
+                href="/cadastro"
+                onClick={() => { trackEvent('landing_cta_clicked', { source: 'hero', target: 'cadastro' }); trackEvent('cta_click', { source: 'hero' }) }}
                 className="btn-primary-lg animate-glow-pulse sm:whitespace-nowrap"
               >
-                Quero começar minha evolução
+                Enviar redação e receber correção grátis
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
-              </a>
+              </Link>
               <a
                 href="#como-funciona"
                 className="btn-secondary-lg sm:whitespace-nowrap"
+                onClick={() => trackEvent('cta_click', { source: 'hero_como_funciona' })}
               >
-                Ver como funciona ↓
+                Como funciona ↓
               </a>
             </div>
 
-            {/* Micro-trust inline */}
-            <p className="text-xs text-gray-600 mb-4 leading-relaxed">
-              10.000+ redações corrigidas &nbsp;·&nbsp; Evolução média de +180 pts &nbsp;·&nbsp; Devolutiva em até 24h &nbsp;·&nbsp; 4.9/5
+            {/* Trust microcopy */}
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              Sem cartão &nbsp;·&nbsp; Correção por especialista humana &nbsp;·&nbsp; Devolutiva C1–C5 em até 24h
             </p>
 
             {/* Returning user link */}

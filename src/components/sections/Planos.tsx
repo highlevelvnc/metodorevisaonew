@@ -1,4 +1,6 @@
 'use client'
+import Link from 'next/link'
+import { trackEvent } from '@/components/Analytics'
 import { LandingCheckoutButton } from '@/components/LandingCheckoutButton'
 import { GlowCard } from '@/components/ui/spotlight-card'
 
@@ -91,13 +93,47 @@ export default function Planos() {
           </p>
         </div>
 
-        {/* Anchoring line */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 text-xs text-gray-500">
+        {/* Trial banner */}
+        <div className="max-w-2xl mx-auto mb-10">
+          <div className="rounded-2xl border border-green-500/20 bg-green-500/[0.04] p-5 sm:p-6 text-center">
+            <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-500/25 text-green-400 text-xs font-bold px-3 py-1.5 rounded-full mb-3">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 13l4 4L19 7" />
+              </svg>
+              Comece grátis
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+              Envie uma redação e receba sua correção ENEM — grátis
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-4 max-w-md mx-auto">
+              Crie sua conta, envie sua redação e receba uma devolutiva completa com nota C1–C5, anotações no texto e orientação para a próxima. Em até 24h. Sem cartão.
+            </p>
+            <Link
+              href="/cadastro"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold text-sm transition-all shadow-[0_0_20px_rgba(34,197,94,0.2)] hover:shadow-[0_0_30px_rgba(34,197,94,0.35)]"
+              onClick={() => { trackEvent('landing_cta_clicked', { source: 'planos_trial', target: 'cadastro' }); trackEvent('cta_click', { source: 'planos_trial' }) }}
+            >
+              Enviar redação e receber correção grátis
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        {/* Transition to paid plans */}
+        <div className="text-center mb-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-gray-600 mb-2">
+            Depois da sua correção gratuita, continue com um plano
+          </p>
+          <p className="text-sm text-gray-500">
+            Quanto mais redações corrigidas por ciclo, mais rápido seus padrões ficam claros e sua nota sobe.
+          </p>
+          <div className="inline-flex items-center gap-2 text-xs text-gray-600 mt-3">
             <svg className="w-3.5 h-3.5 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Uma aula particular de redação custa entre R$80–150 por hora. Aqui você tem acompanhamento o mês todo.
+            Uma aula particular de redação custa R$80–150. Aqui você tem acompanhamento o mês todo.
           </div>
         </div>
 
