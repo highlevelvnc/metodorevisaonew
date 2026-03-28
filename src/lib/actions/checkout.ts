@@ -16,6 +16,7 @@ import { redirect }              from 'next/navigation'
 import { isRedirectError }       from 'next/dist/client/components/redirect'
 import { buildStripeSession }    from '@/lib/stripe-session'
 import { getSiteUrl }            from '@/lib/get-site-url'
+import { trackProductEvent }     from '@/lib/analytics'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -161,6 +162,10 @@ export async function signUpAndCheckout(
     const msg = err instanceof Error ? err.message : 'Erro desconhecido'
     return { error: `Erro ao iniciar pagamento: ${msg}` }
   }
+
+  // Track checkout started (account creation + Stripe redirect)
+  trackProductEvent('checkout_started', user.id, { plan_slug: planSlug })
+  trackProductEvent('account_created', user.id, { plan_slug: planSlug })
 
   // ✅ Outside try/catch — safe for NEXT_REDIRECT
   console.log(`${tag} redirecting to Stripe`)

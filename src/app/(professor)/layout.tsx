@@ -21,6 +21,7 @@ import {
   X,
   ChevronRight,
   ShieldCheck,
+  Activity,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -45,6 +46,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Desempenho',        href: '/professor/desempenho', icon: BarChart3  },
       { label: 'Ganhos',            href: '/professor/ganhos',     icon: Banknote   },
       { label: 'Fechamento Mensal', href: '/professor/fechamento', icon: FileCheck2 },
+      { label: 'Analytics',         href: '/professor/analytics',  icon: Activity   },
     ],
   },
   {

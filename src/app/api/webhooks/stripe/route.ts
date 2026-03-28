@@ -1,6 +1,7 @@
 import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { trackProductEvent } from '@/lib/analytics'
 
 /**
  * POST /api/webhooks/stripe
@@ -192,6 +193,14 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
       .update({ stripe_customer_id: session.customer as string })
       .eq('id', userId)
   }
+
+  // Track purchase event
+  trackProductEvent('purchase_completed', userId, {
+    plan_slug: planSlug,
+    plan_name: plan.name,
+    essay_limit: plan.essay_count,
+    stripe_session_id: session.id,
+  })
 
   console.log(
     `[webhook] Subscription activated — user: ${userId} | plan: ${planSlug} | stripe_sub: ${stripeSubscriptionId} | session: ${session.id} | total: ${Date.now() - t0}ms`

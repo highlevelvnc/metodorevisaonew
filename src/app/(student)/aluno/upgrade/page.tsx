@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { CheckoutButton } from './CheckoutButton'
+import { TrackPageView } from '@/components/TrackPageView'
 
 export const metadata = { title: 'Upgrade de Plano | Método Revisão' }
 
@@ -91,6 +92,7 @@ export default async function UpgradePage({
 
   return (
     <div className="max-w-4xl">
+      <TrackPageView event="upgrade_page_viewed" userId={user.id} metadata={{ current_plan: currentSlug }} />
       {/* Masthead */}
       <div className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-purple-400/70 mb-1.5">

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { trackProductEvent } from '@/lib/analytics'
 
 /**
  * Submit feedback for a correction.
@@ -39,6 +40,12 @@ export async function submitCorrectionFeedback(params: {
     console.error('[feedback] Submit failed:', error.message)
     return false
   }
+
+  trackProductEvent('feedback_submitted', user.id, {
+    correction_id: correctionId,
+    rating,
+    allow_public: allowPublic ?? false,
+  })
 
   return true
 }

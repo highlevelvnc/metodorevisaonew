@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { touchActivity } from '@/lib/actions/activity'
+import { trackProductEvent } from '@/lib/analytics'
 
 export const runtime = 'nodejs'
 
@@ -141,6 +142,11 @@ export async function POST(req: Request) {
     }
 
     console.log(`[biia] Response generated in ${Date.now() - t0}ms for user=${user.id}`)
+
+    // Track biia usage event
+    trackProductEvent('biia_used', user.id, {
+      message_count: trimmedMessages.length,
+    })
 
     // Update last_activity_at (R3 — non-blocking, non-fatal)
     touchActivity().catch(() => {})

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { Annotation } from '@/lib/annotations'
 import { notifyCorrectionReady } from '@/lib/notifications'
+import { trackProductEvent } from '@/lib/analytics'
 
 export type ScoreKey = 'c1' | 'c2' | 'c3' | 'c4' | 'c5'
 export type Scores = Record<ScoreKey, number>
@@ -154,6 +155,13 @@ export async function saveCorrection(
       .select('theme_title')
       .eq('id', essayId)
       .single()
+
+    // Track correction_ready event
+    trackProductEvent('correction_ready', essayData.student_id, {
+      essay_id: essayId,
+      total_score: total,
+      reviewer_name: profileData.full_name,
+    })
 
     if (studentData?.email) {
       // Fire-and-forget — never block the correction save

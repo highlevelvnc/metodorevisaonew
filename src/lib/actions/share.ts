@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { randomBytes } from 'crypto'
+import { trackProductEvent } from '@/lib/analytics'
 
 /**
  * Generate a share token for an essay.
@@ -43,6 +44,8 @@ export async function generateShareToken(essayId: string): Promise<string | null
     console.error('[share] Failed to generate token:', error.message)
     return null
   }
+
+  trackProductEvent('share_link_generated', user.id, { essay_id: essayId })
 
   return token
 }

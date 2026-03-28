@@ -20,6 +20,7 @@ import { ClubeLivroSection }  from './_components/ClubeLivroSection'
 import { CorrectorSelection }  from './_components/CorrectorSelection'
 import { OnboardingDashboard } from './_components/OnboardingDashboard'
 import { InviteCard }          from './_components/InviteCard'
+import { TrackPageView }       from '@/components/TrackPageView'
 
 export const dynamic = 'force-dynamic'
 
@@ -382,11 +383,14 @@ export default async function AlunoDashboardPage() {
   // First-time student: show premium onboarding experience instead of empty shell
   if (essays.length === 0) {
     return (
-      <OnboardingDashboard
-        firstName={firstName}
-        planName={planName}
-        creditsLeft={creditsLeft}
-      />
+      <>
+        <TrackPageView event="first_dashboard_view" userId={user.id} metadata={{ plan: planName }} />
+        <OnboardingDashboard
+          firstName={firstName}
+          planName={planName}
+          creditsLeft={creditsLeft}
+        />
+      </>
     )
   }
 
