@@ -38,13 +38,18 @@ export async function POST(req: Request) {
     return new Response('Missing stripe-signature header', { status: 400 })
   }
 
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('[webhook] Missing STRIPE_WEBHOOK_SECRET environment variable')
+    return new Response('Server configuration error', { status: 500 })
+  }
+
   /* ── Verify webhook signature ──────────────────────────────────────────── */
   let event: Stripe.Event
   try {
     event = stripe.webhooks.constructEvent(
       body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET
     )
   } catch (err) {
     console.error('[webhook] Signature verification failed:', err)

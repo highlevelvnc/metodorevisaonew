@@ -340,6 +340,14 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
             {essay.status === 'in_review' ? 'A corretora está revisando sua redação' : 'Redação na fila de correção'}
           </h3>
           <p className="text-gray-600 text-sm">Sua devolutiva estará pronta em até 24h a partir do envio.</p>
+          {isTrial && (
+            <div className="mt-4 inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium px-3 py-1.5 rounded-full">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 13l4 4L19 7" />
+              </svg>
+              Sua primeira correção gratuita está a caminho
+            </div>
+          )}
         </div>
 
         {essay.content_text && (() => {
