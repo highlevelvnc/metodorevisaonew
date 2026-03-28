@@ -24,20 +24,32 @@ export default function RegisterForm() {
     setPending(true)
     setError(null)
 
-    const formData = new FormData(e.currentTarget)
-    const result   = await signUp(null, formData)
+    try {
+      const formData = new FormData(e.currentTarget)
+      const result   = await signUp(null, formData)
 
-    if (result?.confirm) {
-      setConfirm(true)
-      setPending(false)
-      return
-    }
+      if (result?.confirm) {
+        setConfirm(true)
+        setPending(false)
+        return
+      }
 
-    if (result?.error) {
-      setError(result.error)
+      if (result?.error) {
+        setError(result.error)
+        setPending(false)
+        return
+      }
+      // Sem error e sem confirm → servidor fez redirect para /aluno
+    } catch (err) {
+      // Server action threw — Next.js wraps these in opaque errors.
+      // Log the raw error; show it in the UI so it's diagnosable.
+      const rawMsg = err instanceof Error ? err.message : String(err)
+      console.error('[RegisterForm] Server action threw:', rawMsg, err)
+      // Next.js server action errors often show as "An error occurred in the Server Component"
+      // Surface whatever we got so the developer can see it
+      setError(`Erro inesperado: ${rawMsg}`)
       setPending(false)
     }
-    // Sem error e sem confirm → servidor fez redirect para /aluno
   }
 
   // ── Estado: aguardando confirmação de e-mail ────────────────────────────────
