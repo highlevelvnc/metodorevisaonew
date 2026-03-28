@@ -216,7 +216,7 @@ export default function Hero() {
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mb-5">
               <a
                 href="#planos"
-                onClick={() => trackEvent('cta_click', { source: 'hero' })}
+                onClick={() => { trackEvent('landing_cta_clicked', { source: 'hero', target: 'planos' }); trackEvent('cta_click', { source: 'hero' }) }}
                 className="btn-primary-lg animate-glow-pulse sm:whitespace-nowrap"
               >
                 Quero começar minha evolução

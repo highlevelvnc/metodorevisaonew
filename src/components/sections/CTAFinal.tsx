@@ -66,7 +66,7 @@ export default function CTAFinal() {
             <a
               href="#planos"
               className="btn-primary-lg"
-              onClick={() => trackEvent('cta_click', { source: 'cta_final' })}
+              onClick={() => { trackEvent('landing_cta_clicked', { source: 'cta_final', target: 'planos' }); trackEvent('cta_click', { source: 'cta_final' }) }}
             >
               Quero começar minha evolução
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

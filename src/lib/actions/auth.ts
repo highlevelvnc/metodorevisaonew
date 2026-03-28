@@ -3,6 +3,7 @@
 import { createActionClient } from '@/lib/supabase/server-action'
 import { redirect }           from 'next/navigation'
 import { getSiteUrl }         from '@/lib/get-site-url'
+import { trackOncePerUser }   from '@/lib/analytics'
 
 export type AuthState = {
   error?: string
@@ -107,6 +108,10 @@ export async function signUp(
 
   // Sessão ativa: o trigger DB (handle_new_user) cria o perfil automaticamente.
   // Se precisar de fallback manual, rode o schema.sql no Supabase para garantir o trigger.
+  if (data.user) {
+    trackOncePerUser('account_created', data.user.id, { source: 'cadastro' })
+  }
+
   redirect(safeNext)
 }
 

@@ -16,10 +16,28 @@ declare global {
   }
 }
 
+// Events that should be persisted server-side via /api/track
+const PERSIST_EVENTS = new Set([
+  'landing_cta_clicked',
+  'plans_cta_clicked',
+  'checkout_started_public',
+])
+
 export function trackEvent(event: string, data?: Record<string, unknown>) {
   // Log no console apenas em desenvolvimento
   if (process.env.NODE_ENV !== 'production') {
     console.log(`[Método Revisão Tracking] Event: ${event}`, data || '')
+  }
+
+  // Persist meaningful public funnel events to product_events via API
+  if (PERSIST_EVENTS.has(event)) {
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event, metadata: data }),
+    }).catch(() => {
+      // Silent failure — never block UI for analytics
+    })
   }
 
   // GA4 — descomente e insira seu ID quando tiver

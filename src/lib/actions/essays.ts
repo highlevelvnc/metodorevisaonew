@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { touchActivity } from '@/lib/actions/activity'
-import { trackProductEvent } from '@/lib/analytics'
+import { trackProductEvent, trackOncePerUser } from '@/lib/analytics'
 
 export type EssayState = { error: string; code?: string } | null
 
@@ -156,20 +156,11 @@ export async function submitEssay(
     essay_id: essayIdStr,
     input_mode: uploadType,
     theme_title: themeTitle,
+    has_theme_id: !!themeId,
   })
 
-  // Check if this is the user's first essay (for first_essay_submitted event)
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const countDb = supabase as any
-    const { count } = await countDb
-      .from('essays')
-      .select('id', { count: 'exact', head: true })
-      .eq('student_id', user.id)
-    if (count === 1) {
-      trackProductEvent('first_essay_submitted', user.id, { essay_id: essayIdStr })
-    }
-  } catch { /* non-fatal */ }
+  // Track first essay (deduped — safe on re-submission after the first)
+  trackOncePerUser('first_essay_submitted', user.id, { essay_id: essayIdStr })
 
   // ── Write upload metadata to essay row (non-fatal if it fails) ───────────
   // Uses the admin client (service-role key) because:

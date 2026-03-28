@@ -384,7 +384,7 @@ export default async function AlunoDashboardPage() {
   if (essays.length === 0) {
     return (
       <>
-        <TrackPageView event="first_dashboard_view" userId={user.id} metadata={{ plan: planName }} />
+        <TrackPageView event="first_dashboard_view" userId={user.id} metadata={{ plan: planName }} once />
         <OnboardingDashboard
           firstName={firstName}
           planName={planName}

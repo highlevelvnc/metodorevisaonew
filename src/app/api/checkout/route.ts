@@ -13,6 +13,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse }  from 'next/server'
 import { createServerClient }         from '@supabase/ssr'
 import { buildStripeSession, getSiteUrl } from '@/lib/stripe-session'
+import { trackProductEvent }          from '@/lib/analytics'
 
 // ─── Supabase client scoped to the incoming request (read-only cookies OK) ───
 // Route handlers can read cookies but not set them via next/headers.
@@ -173,6 +174,9 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: `Erro ao iniciar pagamento: ${raw}` }, { status: 500 })
   }
+
+  // Track checkout_started for authenticated upgrade flow
+  trackProductEvent('checkout_started', user.id, { plan_slug: planSlug, source: 'upgrade_page' })
 
   console.log(`${tag} ✓ Stripe URL ready`)
   return NextResponse.json({ url: stripeUrl })

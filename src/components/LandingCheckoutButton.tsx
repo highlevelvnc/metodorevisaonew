@@ -22,7 +22,7 @@ export function LandingCheckoutButton({ planSlug, label, variant = 'secondary' }
           ? 'bg-purple-600 text-white hover:bg-purple-500 shadow-btn-primary hover:shadow-btn-primary-lg'
           : 'bg-white/[0.05] border border-white/[0.09] text-gray-400 hover:bg-white/[0.08] hover:text-white hover:border-white/[0.15]'
       }`}
-      onClick={() => trackEvent('checkout_started', { plan: planSlug })}
+      onClick={() => { trackEvent('plans_cta_clicked', { plan: planSlug, source: 'landing_plans' }); trackEvent('checkout_started', { plan: planSlug }) }}
     >
       {label}
     </Link>
