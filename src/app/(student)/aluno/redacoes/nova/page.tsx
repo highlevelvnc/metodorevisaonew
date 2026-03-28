@@ -29,7 +29,7 @@ export default async function NovaRedacaoPage({
       .eq('active', true)
       .order('title', { ascending: true }),
     db.from('subscriptions')
-      .select('essays_used, essays_limit')
+      .select('essays_used, essays_limit, plans(slug)')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -38,9 +38,10 @@ export default async function NovaRedacaoPage({
   ])
 
   const themes = (themesRaw as { id: string; title: string }[]) ?? []
-  const sub    = subRaw as { essays_used: number; essays_limit: number } | null
+  const sub    = subRaw as { essays_used: number; essays_limit: number; plans: { slug: string } | null } | null
   // Clamp to 0 — essays_used can exceed essays_limit in edge cases (concurrent submits, admin overrides)
   const creditsLeft = sub ? Math.max(0, sub.essays_limit - sub.essays_used) : 0
+  const isTrial     = sub?.plans?.slug === 'trial'
 
-  return <NovaRedacaoForm themes={themes} creditsLeft={creditsLeft} prefilledTheme={prefilledTheme} />
+  return <NovaRedacaoForm themes={themes} creditsLeft={creditsLeft} prefilledTheme={prefilledTheme} isTrial={isTrial} />
 }

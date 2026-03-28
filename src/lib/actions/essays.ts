@@ -162,6 +162,20 @@ export async function submitEssay(
   // Track first essay (deduped — safe on re-submission after the first)
   trackOncePerUser('first_essay_submitted', user.id, { essay_id: essayIdStr })
 
+  // Track trial usage (T5) — check if user is on Trial plan
+  db.from('subscriptions')
+    .select('plans(slug)')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle()
+    .then(({ data: subCheck }: { data: { plans: { slug: string } | null } | null }) => {
+      if (subCheck?.plans?.slug === 'trial') {
+        trackOncePerUser('trial_correction_used', user.id, { essay_id: essayIdStr })
+      }
+    })
+    .catch(() => { /* non-blocking */ })
+
   // ── Write upload metadata to essay row (non-fatal if it fails) ───────────
   // Uses the admin client (service-role key) because:
   //   1. The student's anon-key client has no essays UPDATE RLS policy.

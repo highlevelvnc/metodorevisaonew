@@ -380,11 +380,16 @@ export default async function AlunoDashboardPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const isTrial = planName === 'Trial'
+
   // First-time student: show premium onboarding experience instead of empty shell
   if (essays.length === 0) {
     return (
       <>
         <TrackPageView event="first_dashboard_view" userId={user.id} metadata={{ plan: planName }} once />
+        {isTrial && (
+          <TrackPageView event="trial_started" userId={user.id} once />
+        )}
         <OnboardingDashboard
           firstName={firstName}
           planName={planName}

@@ -34,6 +34,10 @@ export type ProductEventName =
   | 'credits_exhausted'
   | 'share_link_generated'
   | 'feedback_submitted'
+  // Trial funnel events (T5)
+  | 'trial_started'
+  | 'trial_correction_used'
+  | 'trial_to_paid_conversion'
   // Public funnel events (H3)
   | 'landing_cta_clicked'
   | 'plans_cta_clicked'

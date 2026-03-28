@@ -201,6 +201,23 @@ export default async function AnalyticsPage({
         </div>
       </div>
 
+      {/* ── Trial Funnel (T5) ───────────────────────────────────────────────── */}
+      <SectionTitle>Funil Trial (Gratuito → Pago)</SectionTitle>
+      <div className="card-dark rounded-2xl p-5 mb-6">
+        <div className="flex flex-col gap-0.5">
+          <FunnelStep label="Trial iniciado" count={ec['trial_started']} badge="único" />
+          <FunnelArrow dropOff={dropOff(ec['trial_started'], ec['trial_correction_used'])} />
+          <FunnelStep label="Correção gratuita usada" count={ec['trial_correction_used']} badge="único" />
+          <FunnelArrow dropOff={dropOff(ec['trial_correction_used'], ec['trial_to_paid_conversion'])} />
+          <FunnelStep label="Converteu para pago" count={ec['trial_to_paid_conversion']} badge="evento" color="text-emerald-400" />
+        </div>
+        <div className="mt-3 pt-3 border-t border-white/[0.04] flex gap-6">
+          <MiniRate label="Trial → usou" rate={pct(ec['trial_correction_used'], ec['trial_started'])} />
+          <MiniRate label="Usou → pagou" rate={pct(ec['trial_to_paid_conversion'], ec['trial_correction_used'])} />
+          <MiniRate label="Trial → pago (total)" rate={pct(ec['trial_to_paid_conversion'], ec['trial_started'])} />
+        </div>
+      </div>
+
       {/* ── Subscription Health ─────────────────────────────────────────────── */}
       <SectionTitle>Saúde das Assinaturas</SectionTitle>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -219,6 +236,8 @@ export default async function AnalyticsPage({
           { label: '1ª redação → 1ª correção vista', from: dedupedFirstEssay, to: dedupedFirstCorrection },
           { label: 'Upgrade page → Checkout', from: ec['upgrade_page_viewed'] ?? 0, to: ec['checkout_started'] ?? 0 },
           { label: 'Checkout → Compra', from: ec['checkout_started'] ?? 0, to: ec['purchase_completed'] ?? 0 },
+          { label: 'Trial → Usou correção', from: ec['trial_started'] ?? 0, to: ec['trial_correction_used'] ?? 0 },
+          { label: 'Trial usou → Pagou', from: ec['trial_correction_used'] ?? 0, to: ec['trial_to_paid_conversion'] ?? 0 },
         ]} />
       </div>
 
@@ -239,7 +258,7 @@ export default async function AnalyticsPage({
       <SectionTitle>Precisão das Métricas</SectionTitle>
       <div className="card-dark rounded-2xl p-5 mb-6 text-[11px] text-gray-500 leading-relaxed space-y-2">
         <p><span className="text-emerald-400 font-bold">● Exato</span> — Novos usuários, redações enviadas, correções prontas, feedbacks, pagantes ativos, esgotados, correções não vistas. Estes vêm diretamente das tabelas do banco (users, essays, corrections, subscriptions, correction_feedback) e refletem o estado real.</p>
-        <p><span className="text-purple-400 font-bold">● Deduplicado</span> — account_created, first_dashboard_view, first_essay_submitted, first_correction_viewed. Estes usam <code className="text-gray-400">trackOncePerUser</code> que verifica existência antes de inserir. Confiáveis a partir da data de deploy da instrumentação.</p>
+        <p><span className="text-purple-400 font-bold">● Deduplicado</span> — account_created, first_dashboard_view, first_essay_submitted, first_correction_viewed, trial_started, trial_correction_used. Estes usam <code className="text-gray-400">trackOncePerUser</code> que verifica existência antes de inserir. Confiáveis a partir da data de deploy da instrumentação.</p>
         <p><span className="text-amber-400 font-bold">● Direcional</span> — landing_cta_clicked, plans_cta_clicked, checkout_started. Eventos de funil público dependem de JavaScript do cliente. Usuários com bloqueadores de anúncio ou JS desabilitado não serão contados. checkout_started pode incluir tanto fluxos públicos quanto de upgrade.</p>
         <p><span className="text-gray-600 font-bold">● Sem histórico</span> — Todos os eventos de product_events só existem a partir do deploy da instrumentação. Eventos anteriores a essa data não aparecem. As métricas &quot;do banco&quot; (users, essays, etc.) incluem dados históricos completos.</p>
       </div>

@@ -150,6 +150,24 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
     throw new Error(`Plan not found: ${planSlug}`)
   }
 
+  /* ── Check for trial-to-paid conversion (T5) before deactivating ──────── */
+  const { data: oldSub } = await db
+    .from('subscriptions')
+    .select('id, plans(slug)')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle()
+
+  if (oldSub?.plans?.slug === 'trial') {
+    trackProductEvent('trial_to_paid_conversion', userId, {
+      from_plan: 'trial',
+      to_plan: planSlug,
+      to_plan_name: plan.name,
+    })
+    console.log(`[webhook] Trial-to-paid conversion — user=${userId} plan=${planSlug}`)
+  }
+
   /* ── Deactivate all previous active subscriptions ──────────────────────── */
   const { error: expireErr } = await db
     .from('subscriptions')

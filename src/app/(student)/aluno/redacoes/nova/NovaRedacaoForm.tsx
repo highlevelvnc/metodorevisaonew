@@ -25,10 +25,12 @@ export default function NovaRedacaoForm({
   themes,
   creditsLeft,
   prefilledTheme,
+  isTrial = false,
 }: {
   themes: Theme[]
   creditsLeft: number
   prefilledTheme?: string | null
+  isTrial?: boolean
 }) {
   const router = useRouter()
 
@@ -166,8 +168,8 @@ export default function NovaRedacaoForm({
           <p className="text-gray-500 text-sm mt-0.5">
             Devolutiva em até 24h
             {creditsLeft > 0 ? (
-              <> · <span className={creditsLeft <= 1 ? 'text-amber-400' : 'text-gray-400'}>
-                {creditsLeft} correç{creditsLeft !== 1 ? 'ões' : 'ão'} restante{creditsLeft !== 1 ? 's' : ''}
+              <> · <span className={isTrial ? 'text-green-400' : creditsLeft <= 1 ? 'text-amber-400' : 'text-gray-400'}>
+                {isTrial ? 'Correção gratuita' : `${creditsLeft} correç${creditsLeft !== 1 ? 'ões' : 'ão'} restante${creditsLeft !== 1 ? 's' : ''}`}
               </span></>
             ) : (
               <> · <span className="text-red-400">Sem correções</span></>
@@ -178,32 +180,59 @@ export default function NovaRedacaoForm({
 
       {/* Sem créditos */}
       {creditsLeft === 0 && (
-        <div className="mb-6 rounded-2xl border border-red-500/25 bg-red-500/[0.06] p-5 flex gap-4">
-          <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-red-400">
+        <div className={`mb-6 rounded-2xl border p-5 flex gap-4 ${
+          isTrial
+            ? 'border-purple-500/25 bg-purple-500/[0.06]'
+            : 'border-red-500/25 bg-red-500/[0.06]'
+        }`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
+            isTrial ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-red-500/10 border border-red-500/20'
+          }`}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={isTrial ? 'text-purple-400' : 'text-red-400'}>
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-red-300 mb-0.5">Correções esgotadas neste ciclo</p>
-            <p className="text-xs text-red-400/70 mb-3">
-              Você usou todas as correções disponíveis no seu plano atual.
-              Suas correções serão renovadas no próximo ciclo, ou faça upgrade para continuar agora.
+            <p className={`text-sm font-semibold mb-0.5 ${isTrial ? 'text-purple-300' : 'text-red-300'}`}>
+              {isTrial ? 'Sua correção gratuita já foi utilizada' : 'Correções esgotadas neste ciclo'}
             </p>
-            <Link href="/aluno/upgrade" className="text-xs font-semibold text-red-300 border border-red-400/30 bg-red-500/10 rounded-lg px-3 py-1.5 hover:bg-red-500/20 transition-colors">
-              Ver planos e continuar →
+            <p className={`text-xs mb-3 ${isTrial ? 'text-purple-400/70' : 'text-red-400/70'}`}>
+              {isTrial
+                ? 'Agora que você já experimentou o Método Revisão, escolha um plano para continuar evoluindo com correções ilimitadas por ciclo.'
+                : 'Você usou todas as correções disponíveis no seu plano atual. Suas correções serão renovadas no próximo ciclo, ou faça upgrade para continuar agora.'
+              }
+            </p>
+            <Link href="/aluno/upgrade" className={`text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors ${
+              isTrial
+                ? 'text-purple-300 border border-purple-400/30 bg-purple-500/10 hover:bg-purple-500/20'
+                : 'text-red-300 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20'
+            }`}>
+              {isTrial ? 'Escolher meu plano →' : 'Ver planos e continuar →'}
             </Link>
           </div>
         </div>
       )}
 
-      {/* Último crédito */}
+      {/* Último crédito / trial credit */}
       {creditsLeft === 1 && (
-        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] px-4 py-3 flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-          <p className="text-xs text-amber-300/90">
-            <span className="font-semibold">Última correção deste ciclo.</span>{' '}
-            Foque na competência que mais precisa de atenção.
+        <div className={`mb-6 rounded-2xl border px-4 py-3 flex items-center gap-3 ${
+          isTrial
+            ? 'border-green-500/20 bg-green-500/[0.04]'
+            : 'border-amber-500/20 bg-amber-500/[0.04]'
+        }`}>
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isTrial ? 'bg-green-400' : 'bg-amber-400'}`} />
+          <p className={`text-xs ${isTrial ? 'text-green-300/90' : 'text-amber-300/90'}`}>
+            {isTrial ? (
+              <>
+                <span className="font-semibold">Sua correção gratuita.</span>{' '}
+                Envie sua redação e receba uma devolutiva completa C1–C5 em até 24h.
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">Última correção deste ciclo.</span>{' '}
+                Foque na competência que mais precisa de atenção.
+              </>
+            )}
           </p>
         </div>
       )}

@@ -21,12 +21,18 @@ export function PlanCreditsCard({ planName, creditsLeft, creditsTotal, nextPlanN
   const barColor = creditsPct > 50 ? 'bg-purple-500' : creditsPct > 20 ? 'bg-amber-500' : 'bg-red-500'
   const planColor = PLAN_COLORS[planName] ?? PLAN_COLORS['Evolução']
 
-  // What happens when credits end
-  const creditsExplanation = creditsLeft === 0
-    ? 'Suas correções serão renovadas automaticamente no próximo ciclo de faturamento.'
-    : creditsLeft === 1
-      ? 'Essa é sua última correção deste ciclo. Use com estratégia.'
-      : 'Cada correção = 1 redação corrigida com devolutiva C1–C5.'
+  const isTrial = planName === 'Trial'
+
+  // What happens when credits end — trial-aware messaging
+  const creditsExplanation = isTrial
+    ? creditsLeft === 0
+      ? 'Sua correção gratuita foi usada. Escolha um plano para continuar evoluindo.'
+      : 'Você tem 1 correção gratuita. Depois disso, escolha um plano para continuar.'
+    : creditsLeft === 0
+      ? 'Suas correções serão renovadas automaticamente no próximo ciclo de faturamento.'
+      : creditsLeft === 1
+        ? 'Essa é sua última correção deste ciclo. Use com estratégia.'
+        : 'Cada correção = 1 redação corrigida com devolutiva C1–C5.'
 
   return (
     <div className="card-dark rounded-2xl p-5 mb-6">
@@ -41,10 +47,10 @@ export function PlanCreditsCard({ planName, creditsLeft, creditsTotal, nextPlanN
             </p>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full border ${planColor}`}>
-                {planName}
+                {isTrial ? 'Gratuito' : planName}
               </span>
               <span className="text-xs text-gray-600">
-                · {creditsTotal} correções/mês
+                · {isTrial ? '1 correção gratuita' : `${creditsTotal} correções/mês`}
               </span>
             </div>
           </div>
@@ -56,7 +62,7 @@ export function PlanCreditsCard({ planName, creditsLeft, creditsTotal, nextPlanN
             href="/aluno/upgrade"
             className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
           >
-            {creditsLeft === 0 ? 'Fazer upgrade' : 'Ver planos'}
+            {isTrial ? 'Escolher plano' : creditsLeft === 0 ? 'Fazer upgrade' : 'Ver planos'}
             <ArrowRight size={11} />
           </Link>
         ) : (

@@ -40,12 +40,17 @@ export function OnboardingDashboard({ firstName, planName, creditsLeft }: Onboar
             detalhada com nota C1–C5 em até 24h.
           </p>
 
-          {/* Credits available */}
+          {/* Trial credit — prominent and clear */}
           {creditsLeft > 0 && (
-            <div className="inline-flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/[0.06] px-4 py-2 mb-8">
-              <CheckCircle2 size={13} className="text-green-400" />
-              <span className="text-sm text-green-300 font-medium">
-                {creditsLeft} correção{creditsLeft !== 1 ? 'ões' : ''} disponível{creditsLeft !== 1 ? 'is' : ''}
+            <div className="inline-flex flex-col items-center gap-1.5 rounded-xl border border-green-500/20 bg-green-500/[0.06] px-5 py-3 mb-8">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={13} className="text-green-400" />
+                <span className="text-sm text-green-300 font-semibold">
+                  Você tem 1 correção gratuita
+                </span>
+              </div>
+              <span className="text-[11px] text-green-400/60">
+                Depois disso, escolha um plano para continuar evoluindo
               </span>
             </div>
           )}

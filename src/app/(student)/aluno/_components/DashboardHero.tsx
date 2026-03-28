@@ -68,14 +68,19 @@ export function DashboardHero({
   upgradeSignal,
   planTierNextPlan,
 }: DashboardHeroProps) {
+  const isTrial    = planName === 'Trial'
   const plan       = PLAN_CONFIG[planName] ?? PLAN_CONFIG['Evolução']
   const greeting   = getGreeting()
   const motivation = getMotivationalLine(avgScore, overallDelta, pendingCount)
   const creditsPct = creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0
   const barColor   = creditsPct > 50 ? 'bg-purple-500' : creditsPct > 20 ? 'bg-amber-500' : 'bg-red-500'
-  const creditText = creditsLeft === 0
-    ? 'Correções esgotadas'
-    : `${creditsLeft} correç${creditsLeft === 1 ? 'ão' : 'ões'} restante${creditsLeft !== 1 ? 's' : ''}`
+  const creditText = isTrial
+    ? creditsLeft === 0
+      ? 'Correção gratuita utilizada'
+      : '1 correção gratuita disponível'
+    : creditsLeft === 0
+      ? 'Correções esgotadas'
+      : `${creditsLeft} correç${creditsLeft === 1 ? 'ão' : 'ões'} restante${creditsLeft !== 1 ? 's' : ''}`
 
   return (
     <div className="relative mb-6 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b1121]">
@@ -187,7 +192,12 @@ export function DashboardHero({
                 />
               </div>
               <p className="mt-1.5 text-[10px] text-gray-600">
-                {creditsLeft} de {creditsTotal} neste ciclo
+                {isTrial
+                  ? creditsLeft > 0
+                    ? 'Gratuita — sem compromisso'
+                    : 'Escolha um plano para continuar'
+                  : `${creditsLeft} de ${creditsTotal} neste ciclo`
+                }
               </p>
             </div>
 

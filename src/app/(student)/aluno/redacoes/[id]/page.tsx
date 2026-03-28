@@ -297,9 +297,9 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
       .order('submitted_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    // Fetch active subscription for credit-aware CTAs (M4)
+    // Fetch active subscription for credit-aware CTAs (M4) + trial detection (T3)
     db.from('subscriptions')
-      .select('essays_limit, essays_used, plans(name)')
+      .select('essays_limit, essays_used, plans(name, slug)')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -308,8 +308,9 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
   ])
 
   // Credit state for post-correction CTAs
-  const sub = subRaw as { essays_limit: number; essays_used: number; plans: { name: string } | null } | null
+  const sub = subRaw as { essays_limit: number; essays_used: number; plans: { name: string; slug: string } | null } | null
   const creditsLeft = sub ? Math.max(0, sub.essays_limit - sub.essays_used) : 0
+  const isTrial = sub?.plans?.slug === 'trial'
 
   const essay = essayRaw as Essay | null
   if (!essay || essay.student_id !== user.id) notFound()
@@ -621,6 +622,40 @@ export default async function DevolutivaPage({ params }: { params: { id: string 
 
       {/* ── Feedback widget (G2) ───────────────────────────────── */}
       <FeedbackWidget correctionId={correction.id} alreadyGiven={feedbackAlreadyGiven} />
+
+      {/* ── Post-trial moment (T3) ────────────────────────────── */}
+      {isTrial && creditsLeft === 0 && (
+        <div className="relative rounded-2xl overflow-hidden border border-purple-500/20 bg-gradient-to-br from-purple-950/40 via-[#0b1121] to-blue-950/20 p-6 mb-6">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(139,92,246,0.08),transparent_60%)]" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+          <div className="relative">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-purple-400/70 mb-2">
+              Sua primeira devolutiva
+            </p>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Agora que você viu sua devolutiva, imagine o que acontece com acompanhamento contínuo.
+            </h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-5">
+              Esta correção mostrou onde você está. Com um plano, cada redação seguinte traz uma devolutiva nova — e seus padrões de erro ficam cada vez mais claros. É assim que a nota sobe de verdade.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/aluno/upgrade"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all shadow-[0_0_20px_rgba(139,92,246,0.25)] hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]"
+              >
+                <Sparkles size={14} />
+                Continuar minha evolução
+              </Link>
+              <Link
+                href="/aluno"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-all"
+              >
+                Voltar ao painel
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 5. Plano para a próxima ─────────────────────────────── */}
       <div className="card-dark rounded-2xl p-5 mb-6">
