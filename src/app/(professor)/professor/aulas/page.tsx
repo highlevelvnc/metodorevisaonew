@@ -51,6 +51,11 @@ function LessonStatusBadge({ status }: { status: LessonStatus }) {
       <Clock size={9} /> Agendada
     </span>
   )
+  if (status === 'requested') return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full whitespace-nowrap">
+      <Clock size={9} /> Solicitada
+    </span>
+  )
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-500 bg-white/[0.05] border border-white/[0.10] px-2 py-0.5 rounded-full whitespace-nowrap">
       <XCircle size={9} /> Cancelada
@@ -93,7 +98,7 @@ export default async function ProfessorAulasPage() {
     db.from('lesson_sessions')
       .select(selectFields)
       .eq('professor_id', user.id)
-      .eq('status', 'scheduled')
+      .in('status', ['scheduled', 'requested'])
       .gte('session_date', todayStr)
       .lte('session_date', thirtyAhead)
       .order('session_date', { ascending: true })
@@ -121,7 +126,7 @@ export default async function ProfessorAulasPage() {
     db.from('lesson_sessions')
       .select('*', { count: 'exact', head: true })
       .eq('professor_id', user.id)
-      .eq('status', 'scheduled')
+      .in('status', ['scheduled', 'requested'])
       .gte('session_date', todayStr),
   ])
 

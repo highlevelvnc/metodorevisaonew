@@ -56,6 +56,7 @@ type UpcomingLesson = {
   meet_link: string | null
   topic: string | null
   student_name: string | null
+  status: string
 }
 
 const compKeys: CompKey[] = ['c1_score', 'c2_score', 'c3_score', 'c4_score', 'c5_score']
@@ -182,7 +183,12 @@ function UpcomingLessonsCard({ lessons }: { lessons: UpcomingLesson[] }) {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {next.meet_link ? (
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {(next as any).status === 'requested' ? (
+            <span className="text-xs text-amber-400 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              Aguardando confirmação
+            </span>
+          ) : next.meet_link ? (
             <a
               href={next.meet_link}
               target="_blank"
@@ -335,9 +341,9 @@ export default async function AlunoDashboardPage() {
         .order('submitted_at', { ascending: false })
         .limit(200),
       db.from('lesson_sessions')
-        .select('id, session_date, session_time, subject, meet_link, topic, student_name')
+        .select('id, session_date, session_time, subject, meet_link, topic, student_name, status')
         .eq('student_id', user.id)
-        .eq('status', 'scheduled')
+        .in('status', ['scheduled', 'requested'])
         .gte('session_date', todayStr)
         .order('session_date', { ascending: true })
         .limit(3),

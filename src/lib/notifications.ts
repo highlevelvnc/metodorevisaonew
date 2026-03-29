@@ -118,6 +118,129 @@ export async function notifyCorrectionReady(params: {
   await sendEmail({ to: studentEmail, subject, html })
 }
 
+// ─── Lesson scheduled (professor → student) ──────────────────────────────────
+
+export async function notifyLessonScheduled(params: {
+  studentEmail: string
+  studentName: string | null
+  subject: string | null
+  sessionDate: string   // 'YYYY-MM-DD'
+  sessionTime: string | null
+  durationMin: number
+  topic: string | null
+  meetLink: string | null
+}): Promise<void> {
+  const { studentEmail, studentName, subject, sessionDate, sessionTime, durationMin, topic, meetLink } = params
+  const siteUrl   = getSiteUrl()
+  const firstName = studentName ? studentName.split(' ')[0] : 'Aluno'
+
+  // Format date nicely: "sex., 4 de abr."
+  const dateLabel = (() => {
+    const d = new Date(sessionDate + 'T12:00:00')
+    return d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })
+  })()
+
+  const subject_ = `Aula agendada${subject ? ` de ${subject}` : ''} — ${dateLabel}`
+
+  const meetRow = meetLink
+    ? `<tr><td style="padding:6px 0;color:#6b7280;">Link da aula</td><td style="padding:6px 0;text-align:right;"><a href="${meetLink}" style="color:#a78bfa;font-weight:600;">Acessar Google Meet →</a></td></tr>`
+    : `<tr><td style="padding:6px 0;color:#6b7280;">Link da aula</td><td style="padding:6px 0;text-align:right;color:#9ca3af;">Será enviado em breve</td></tr>`
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.02em;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 8px;">Olá, ${firstName}!</p>
+      <h1 style="font-size:22px;color:#fff;margin:0 0 6px;font-weight:700;">Sua aula foi agendada 📅</h1>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;">Confira os detalhes abaixo e salve na sua agenda.</p>
+      <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:20px;margin-bottom:24px;">
+        <table style="width:100%;font-size:13px;" cellpadding="0" cellspacing="0">
+          ${subject ? `<tr><td style="padding:6px 0;color:#6b7280;">Matéria</td><td style="padding:6px 0;text-align:right;color:#e5e7eb;font-weight:600;">${subject}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:#6b7280;">Data</td><td style="padding:6px 0;text-align:right;color:#e5e7eb;font-weight:600;">${dateLabel}${sessionTime ? ` às ${sessionTime}` : ''}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280;">Duração</td><td style="padding:6px 0;text-align:right;color:#e5e7eb;">${durationMin} min</td></tr>
+          ${topic ? `<tr><td style="padding:6px 0;color:#6b7280;">Tópico</td><td style="padding:6px 0;text-align:right;color:#e5e7eb;">${topic}</td></tr>` : ''}
+          ${meetRow}
+        </table>
+      </div>
+      <div style="text-align:center;">
+        <a href="${siteUrl}/aluno/reforco-escolar" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Ver no meu painel →
+        </a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Reforço escolar online<br/>Dúvidas? ${SUPPORT_EMAIL}
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject: subject_, html })
+}
+
+// ─── Lesson requested (student → professor) ───────────────────────────────────
+
+export async function notifyLessonRequested(params: {
+  professorEmail: string
+  studentEmail: string
+  studentName: string | null
+  subject: string | null
+  sessionDate: string
+  sessionTime: string | null
+  notes: string | null
+}): Promise<void> {
+  const { professorEmail, studentEmail, studentName, subject, sessionDate, sessionTime, notes } = params
+
+  const dateLabel = (() => {
+    const d = new Date(sessionDate + 'T12:00:00')
+    return d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'long' })
+  })()
+
+  const subjectLine = `Nova solicitação de aula${subject ? ` de ${subject}` : ''} — ${studentName ?? studentEmail}`
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.02em;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <h1 style="font-size:22px;color:#fff;margin:0 0 6px;font-weight:700;">Nova solicitação de aula 📬</h1>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;">Um aluno pediu para agendar uma aula no painel. Confirme no seu painel de aulas.</p>
+      <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:20px;margin-bottom:24px;">
+        <table style="width:100%;font-size:13px;" cellpadding="0" cellspacing="0">
+          <tr><td style="padding:6px 0;color:#6b7280;">Aluno</td><td style="padding:6px 0;text-align:right;color:#e5e7eb;font-weight:600;">${studentName ?? '—'}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280;">Email</td><td style="padding:6px 0;text-align:right;color:#a78bfa;">${studentEmail}</td></tr>
+          ${subject ? `<tr><td style="padding:6px 0;color:#6b7280;">Matéria</td><td style="padding:6px 0;text-align:right;color:#e5e7eb;font-weight:600;">${subject}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:#6b7280;">Data preferida</td><td style="padding:6px 0;text-align:right;color:#e5e7eb;">${dateLabel}${sessionTime ? ` às ${sessionTime}` : ''}</td></tr>
+          ${notes ? `<tr><td style="padding:6px 0;color:#6b7280;vertical-align:top;">Observações</td><td style="padding:6px 0;text-align:right;color:#9ca3af;">${notes}</td></tr>` : ''}
+        </table>
+      </div>
+      <div style="text-align:center;">
+        <a href="https://metodorevisao.com/professor/aulas" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Ver no painel de aulas →
+        </a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Painel do professor
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: professorEmail, subject: subjectLine, html })
+}
+
 // ─── Inactivity nudge (24h) ───────────────────────────────────────────────────
 
 export async function notifyInactivity24h(params: {

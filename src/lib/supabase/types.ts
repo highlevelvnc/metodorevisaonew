@@ -3,7 +3,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type UserRole          = 'student' | 'reviewer' | 'admin'
 export type EssayStatus       = 'pending' | 'in_review' | 'corrected'
 export type SubscriptionStatus = 'active' | 'cancelled' | 'expired'
-export type LessonStatus      = 'scheduled' | 'completed' | 'cancelled'
+export type LessonStatus      = 'scheduled' | 'completed' | 'cancelled' | 'requested'
 export type PayoutStatus      = 'open' | 'closed' | 'paid'
 export type PixKeyType        = 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'
 

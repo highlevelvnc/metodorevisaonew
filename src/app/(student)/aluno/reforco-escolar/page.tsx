@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Video, CheckCircle2, Clock, XCircle, ExternalLink, BookOpen } from 'lucide-react'
+import { Video, CheckCircle2, Clock, XCircle, ExternalLink, BookOpen, Hourglass } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import type { LessonStatus } from '@/lib/supabase/types'
+import BookLessonForm from './BookLessonForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +59,11 @@ function StatusBadge({ status }: { status: LessonStatus }) {
       <Clock size={9} /> Confirmado
     </span>
   )
+  if (status === 'requested') return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full whitespace-nowrap">
+      <Hourglass size={9} /> Aguardando confirmação
+    </span>
+  )
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-500 bg-white/[0.05] border border-white/[0.10] px-2 py-0.5 rounded-full whitespace-nowrap">
       <XCircle size={9} /> Cancelada
@@ -104,7 +109,7 @@ export default async function ReforcoEscolarPage() {
     db.from('lesson_sessions')
       .select('id, session_date, session_time, duration_min, subject, topic, meet_link, price_brl, status, notes, professor_id, users!lesson_sessions_professor_id_fkey(full_name)')
       .eq('student_id', user.id)
-      .in('status', ['scheduled'])
+      .in('status', ['scheduled', 'requested'])
       .gte('session_date', todayStr)
       .order('session_date', { ascending: true })
       .limit(20),
@@ -126,11 +131,14 @@ export default async function ReforcoEscolarPage() {
     <div className="max-w-4xl space-y-6">
 
       {/* ── Header ────────────────────────────────────────────── */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Reforço Escolar</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          Aulas individuais de Português, Inglês, Redação e Literatura via Google Meet
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Reforço Escolar</h1>
+          <p className="text-gray-500 text-sm mt-0.5">
+            Aulas individuais de Português, Inglês, Redação e Literatura via Google Meet
+          </p>
+        </div>
+        <BookLessonForm />
       </div>
 
       {/* ── Next lesson hero card ─────────────────────────────── */}
@@ -215,12 +223,13 @@ export default async function ReforcoEscolarPage() {
           </div>
         </div>
       ) : (
-        <div className="card-dark rounded-2xl p-10 text-center">
+        <div className="card-dark rounded-2xl p-8 text-center">
           <Video size={24} className="text-gray-700 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-gray-400">Nenhuma aula agendada</p>
-          <p className="text-xs text-gray-600 mt-1 max-w-sm mx-auto leading-relaxed">
-            Suas aulas de reforço aparecerão aqui assim que forem agendadas. Entre em contato para agendar sua próxima aula.
+          <p className="text-sm font-semibold text-gray-400 mb-1">Nenhuma aula agendada</p>
+          <p className="text-xs text-gray-600 mb-5 max-w-sm mx-auto leading-relaxed">
+            Solicite uma aula agora — a professora confirma o horário e você recebe um e-mail de confirmação com o link do Google Meet.
           </p>
+          <BookLessonForm />
         </div>
       )}
 
@@ -360,16 +369,13 @@ export default async function ReforcoEscolarPage() {
         })}
       </div>
 
-      {/* ── CTA ──────────────────────────────────────────────── */}
-      <div className="card-dark rounded-2xl p-6 text-center">
-        <p className="text-sm font-semibold text-gray-300 mb-1">Quer agendar uma aula?</p>
-        <p className="text-xs text-gray-600 mb-4">Entre em contato para marcar sua próxima aula de reforço escolar.</p>
-        <Link
-          href="/reforco-escolar"
-          className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white transition-colors"
-        >
-          Saiba mais sobre reforço escolar
-        </Link>
+      {/* ── Book lesson CTA ──────────────────────────────────── */}
+      <div className="card-dark rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-gray-300 mb-1">Pronto para a próxima aula?</p>
+          <p className="text-xs text-gray-600">Solicite uma aula de reforço diretamente aqui. A professora confirmará o horário por e-mail.</p>
+        </div>
+        <BookLessonForm />
       </div>
     </div>
   )

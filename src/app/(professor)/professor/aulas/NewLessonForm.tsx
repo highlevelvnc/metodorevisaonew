@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, X, Search, UserCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { scheduleLessonAction } from '@/lib/actions/lessons'
 
 const SUBJECTS = ['Português', 'Inglês', 'Redação', 'Literatura'] as const
 
@@ -131,7 +132,7 @@ function StudentPicker({
   )
 }
 
-export default function NewLessonForm({ professorId }: { professorId: string }) {
+export default function NewLessonForm({ professorId: _ }: { professorId: string }) {
   const router = useRouter()
   const [open, setOpen]         = useState(false)
   const [saving, setSaving]     = useState(false)
@@ -159,27 +160,20 @@ export default function NewLessonForm({ professorId }: { professorId: string }) 
       return
     }
 
-    const supabase = createClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertErr } = await (supabase as any)
-      .from('lesson_sessions')
-      .insert({
-        professor_id: professorId,
-        session_date: sessionDate,
-        session_time: sessionTime,
-        subject,
-        student_id:   student?.id   ?? null,
-        student_name: student?.full_name ?? null,
-        meet_link: meetLink,
-        topic,
-        duration_min: durationMin,
-        price_brl: priceBrl,
-        status: 'scheduled',
-      })
+    const result = await scheduleLessonAction({
+      sessionDate,
+      sessionTime,
+      subject,
+      studentId:   student?.id   ?? null,
+      studentName: student?.full_name ?? null,
+      meetLink,
+      topic,
+      durationMin,
+      priceBrl,
+    })
 
-    if (insertErr) {
-      console.error('[NewLessonForm] Insert error:', insertErr)
-      setError(insertErr.message ?? 'Erro ao criar aula')
+    if (result.error) {
+      setError(result.error)
       setSaving(false)
       return
     }
