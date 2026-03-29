@@ -21,6 +21,7 @@ import {
   Sparkles,
   Library,
   Award,
+  GraduationCap,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -124,10 +125,11 @@ const navSections: NavSection[] = [
   {
     label: 'Estudo',
     items: [
-      { label: 'Temas',        href: '/aluno/temas',     icon: BookOpen },
-      { label: 'Videoaulas',   href: '/aluno/aulas',     icon: PlayCircle },
-      { label: 'Simulados',    href: '/aluno/simulados', icon: ClipboardList },
-      { label: 'Mentorias',    href: '/aluno/mentoria',  icon: Users },
+      { label: 'Temas',            href: '/aluno/temas',             icon: BookOpen },
+      { label: 'Videoaulas',       href: '/aluno/aulas',             icon: PlayCircle },
+      { label: 'Simulados',        href: '/aluno/simulados',         icon: ClipboardList },
+      { label: 'Reforço Escolar',  href: '/aluno/reforco-escolar',   icon: GraduationCap },
+      { label: 'Mentorias',        href: '/aluno/mentoria',          icon: Users },
     ],
   },
   {

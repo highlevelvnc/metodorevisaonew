@@ -8,30 +8,30 @@ const WA_LINK =
 const cursos = [
   {
     emoji: '📘',
-    title: '6º ao 9º Ano',
-    desc: 'Reforço escolar personalizado para o ensino fundamental. Gramática, interpretação e inglês básico com foco em notas e confiança.',
-    tags: ['Gramática', 'Interpretação', 'Inglês'],
+    title: 'Português',
+    desc: 'Gramática, interpretação de texto e produção textual. Aulas individuais de reforço escolar do 6º ano ao Ensino Médio.',
+    tags: ['Gramática', 'Interpretação', 'Reforço'],
     badge: 'Mais procurado',
   },
   {
-    emoji: '🏫',
-    title: 'Ensino Médio',
-    desc: 'Preparação completa para o Ensino Médio: Português aprofundado, produção textual e inglês intermediário.',
-    tags: ['Produção textual', 'Literatura', 'Inglês'],
+    emoji: '🌍',
+    title: 'Inglês',
+    desc: 'Conversação, gramática e vocabulário. Do básico ao intermediário, com aulas práticas e material adaptado ao nível do aluno.',
+    tags: ['Conversação', 'Gramática', 'Vocabulário'],
     badge: null,
   },
   {
     emoji: '✏️',
-    title: 'Redação ENEM',
-    desc: 'Metodologia focada em criar tese forte, tópicos frasais coerentes e proposta de intervenção. Do rascunho à nota máxima.',
-    tags: ['ENEM', 'Redação', 'Nota 1000'],
+    title: 'Redação',
+    desc: 'Correção ENEM com devolutiva C1–C5, além de aulas ao vivo de redação escolar e vestibular. Do rascunho à nota máxima.',
+    tags: ['ENEM', 'Vestibular', 'Nota 1000'],
     badge: 'Alta demanda',
   },
   {
     emoji: '📖',
-    title: 'Interpretação',
-    desc: 'Técnicas para ler com atenção, identificar a ideia central e responder questões com precisão. Funciona para todas as disciplinas.',
-    tags: ['Leitura', 'Análise', 'Estratégia'],
+    title: 'Literatura',
+    desc: 'Análise de obras obrigatórias, movimentos literários e interpretação. Preparação para ENEM, vestibular e provas escolares.',
+    tags: ['Obras', 'Análise', 'Vestibular'],
     badge: null,
   },
 ]
@@ -42,11 +42,11 @@ export default function Cursos() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-block bg-purple-50 text-purple-700 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
-            Cursos
+            Aulas e Reforço Escolar
           </div>
-          <h2 className="section-title mb-4">O que você vai aprender</h2>
+          <h2 className="section-title mb-4">Português, Inglês, Redação e Literatura</h2>
           <p className="section-subtitle max-w-xl mx-auto">
-            Conteúdos desenhados para o nível certo, com plano personalizado para cada aluno.
+            Aulas individuais de reforço escolar online via Google Meet. Plano personalizado para cada aluno, do 6º ano ao vestibular.
           </p>
         </div>
 

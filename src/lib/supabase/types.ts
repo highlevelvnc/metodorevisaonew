@@ -227,8 +227,13 @@ export interface Database {
           professor_id:  string
           student_id:    string | null
           session_date:  string        // date "YYYY-MM-DD"
+          session_time:  string | null // time "HH:MM"
           duration_min:  number
           topic:         string | null
+          subject:       string | null // 'Português' | 'Inglês' | 'Redação' | 'Literatura'
+          meet_link:     string | null // Google Meet / Zoom URL
+          price_brl:     number | null
+          student_name:  string | null
           status:        LessonStatus
           notes:         string | null
           created_at:    string
@@ -239,8 +244,13 @@ export interface Database {
           professor_id:  string
           student_id?:   string | null
           session_date:  string
+          session_time?: string | null
           duration_min?: number
           topic?:        string | null
+          subject?:      string | null
+          meet_link?:    string | null
+          price_brl?:    number | null
+          student_name?: string | null
           status?:       LessonStatus
           notes?:        string | null
           created_at?:   string
@@ -248,8 +258,13 @@ export interface Database {
         }
         Update: {
           session_date?: string
+          session_time?: string | null
           duration_min?: number
           topic?:        string | null
+          subject?:      string | null
+          meet_link?:    string | null
+          price_brl?:    number | null
+          student_name?: string | null
           status?:       LessonStatus
           notes?:        string | null
           updated_at?:   string

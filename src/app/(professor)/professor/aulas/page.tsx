@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { Video, CheckCircle2, Clock, XCircle, CalendarDays } from 'lucide-react'
+import { Video, CheckCircle2, Clock, XCircle, CalendarDays, ExternalLink, BookOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { RATE_LESSON, formatBRL } from '@/lib/professor/rates'
 import type { LessonStatus } from '@/lib/supabase/types'
+import NewLessonForm from './NewLessonForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,8 +18,13 @@ export const metadata: Metadata = {
 interface LessonRow {
   id: string
   session_date: string
+  session_time: string | null
   duration_min: number
+  subject: string | null
   topic: string | null
+  meet_link: string | null
+  price_brl: number | null
+  student_name: string | null
   status: LessonStatus
   notes: string | null
 }
@@ -75,6 +81,8 @@ export default async function ProfessorAulasPage() {
   // Upcoming scheduled (next 30 days)
   const thirtyAhead = toDateStr(new Date(now.getTime() + 30 * 86_400_000))
 
+  const selectFields = 'id, session_date, session_time, duration_min, subject, topic, meet_link, price_brl, student_name, status, notes'
+
   const [
     { data: upcomingRaw },
     { data: recentRaw },
@@ -83,7 +91,7 @@ export default async function ProfessorAulasPage() {
     { count: scheduledCount },
   ] = await Promise.all([
     db.from('lesson_sessions')
-      .select('id, session_date, duration_min, topic, status, notes')
+      .select(selectFields)
       .eq('professor_id', user.id)
       .eq('status', 'scheduled')
       .gte('session_date', todayStr)
@@ -92,7 +100,7 @@ export default async function ProfessorAulasPage() {
       .limit(20),
 
     db.from('lesson_sessions')
-      .select('id, session_date, duration_min, topic, status, notes')
+      .select(selectFields)
       .eq('professor_id', user.id)
       .gte('session_date', sixMonthsAgo)
       .order('session_date', { ascending: false })
@@ -147,10 +155,15 @@ export default async function ProfessorAulasPage() {
     <div className="max-w-4xl space-y-6">
 
       {/* ── Header ────────────────────────────────────────────── */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Aulas</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Gestão de sessões · {formatBRL(RATE_LESSON)} por sessão de 30 min</p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Aulas</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Gestão de sessões · {formatBRL(RATE_LESSON)} por sessão de 30 min</p>
+        </div>
       </div>
+
+      {/* ── New lesson form ───────────────────────────────────── */}
+      <NewLessonForm professorId={user.id} />
 
       {/* ── Summary cards ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -187,8 +200,9 @@ export default async function ProfessorAulasPage() {
             <thead>
               <tr className="border-b border-white/[0.05]">
                 <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Tópico</th>
+                <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Matéria / Aluno</th>
                 <th className="text-center px-4 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-20">Duração</th>
+                <th className="text-center px-4 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-16">Meet</th>
                 <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-28">Status</th>
               </tr>
             </thead>
@@ -197,12 +211,27 @@ export default async function ProfessorAulasPage() {
                 <tr key={l.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-5 py-3.5">
                     <p className="text-xs font-semibold text-gray-200">{formatSessionDate(l.session_date)}</p>
+                    {l.session_time && <p className="text-[10px] text-gray-600">{l.session_time}</p>}
                   </td>
                   <td className="px-5 py-3.5">
-                    <p className="text-xs text-gray-400">{l.topic ?? '—'}</p>
+                    <div className="flex items-center gap-2">
+                      {l.subject && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">{l.subject}</span>
+                      )}
+                      <p className="text-xs text-gray-400">{l.student_name ?? l.topic ?? '—'}</p>
+                    </div>
                     {l.notes && <p className="text-[10px] text-gray-700 mt-0.5 truncate max-w-[240px]">{l.notes}</p>}
                   </td>
                   <td className="px-4 py-3.5 text-xs text-gray-500 text-center tabular-nums">{l.duration_min} min</td>
+                  <td className="px-4 py-3.5 text-center">
+                    {l.meet_link ? (
+                      <a href={l.meet_link} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300">
+                        <ExternalLink size={14} />
+                      </a>
+                    ) : (
+                      <span className="text-gray-700">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5 text-right">
                     <LessonStatusBadge status={l.status} />
                   </td>
