@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { trackEvent } from './Analytics'
+import { ThemeToggle } from './ThemeToggle'
 
 const navLinks: { label: string; href: string; highlight?: boolean }[] = [
   { label: 'Como funciona', href: '/#como-funciona' },
@@ -29,9 +30,13 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-[#070c14]/92 backdrop-blur-xl border-b border-white/[0.07] shadow-[0_1px_0_rgba(124,58,237,0.10),0_4px_24px_rgba(0,0,0,0.30)]'
-          : 'bg-[#070c14]/20 backdrop-blur-sm'
+          ? 'backdrop-blur-xl border-b shadow-[0_1px_0_rgba(124,58,237,0.10),0_4px_24px_rgba(0,0,0,0.15)]'
+          : 'backdrop-blur-sm'
       }`}
+      style={{
+        backgroundColor: scrolled ? 'color-mix(in srgb, var(--bg-body) 92%, transparent)' : 'color-mix(in srgb, var(--bg-body) 20%, transparent)',
+        borderColor: 'var(--border)',
+      }}
     >
       <nav
         className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between"
@@ -101,6 +106,9 @@ export default function Navbar() {
           >
             Login Professor
           </Link>
+
+          {/* Theme toggle */}
+          <ThemeToggle />
 
           {/* Começar agora — primary CTA */}
           <Link

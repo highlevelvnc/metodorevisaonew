@@ -22,7 +22,7 @@ export default function RootError({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-[#070c14] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[var(--bg-body)] flex items-center justify-center px-4">
       <div className="max-w-sm w-full text-center">
         {/* Icon */}
         <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">

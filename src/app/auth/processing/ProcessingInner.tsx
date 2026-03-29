@@ -62,7 +62,7 @@ export default function ProcessingInner() {
   if (timedOut) return null
 
   return (
-    <div className="min-h-screen bg-[#070c14] flex flex-col items-center justify-center gap-3">
+    <div className="min-h-screen bg-[var(--bg-body)] flex flex-col items-center justify-center gap-3">
       <span
         className="w-5 h-5 border-2 border-t-purple-400 rounded-full animate-spin"
         style={{ borderColor: 'rgba(168,85,247,.25)', borderTopColor: '#a855f7' }}

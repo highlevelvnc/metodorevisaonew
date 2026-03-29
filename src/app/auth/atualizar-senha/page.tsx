@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function AtualizarSenhaPage() {
   return (
-    <div className="min-h-screen bg-[#070c14] flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-body)] flex flex-col">
       <header className="py-5 px-6 flex justify-center border-b border-white/[0.04]">
         <Link href="/" className="transition-opacity hover:opacity-80">
           <div style={{ position: 'relative', width: '140px', height: '44px', overflow: 'hidden' }}>

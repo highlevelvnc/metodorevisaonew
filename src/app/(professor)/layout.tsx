@@ -103,7 +103,7 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-[#070c14] flex">
+    <div className="min-h-screen bg-[var(--bg-body)] flex">
 
       {/* Mobile overlay */}
       {open && (

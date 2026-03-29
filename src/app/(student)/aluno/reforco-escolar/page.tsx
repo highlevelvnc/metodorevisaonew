@@ -101,10 +101,11 @@ export default async function ReforcoEscolarPage() {
   const now = new Date()
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
-  // Fetch upcoming + recent lessons for this student
+  // Fetch upcoming + recent lessons + active lesson subscription in parallel
   const [
     { data: upcomingRaw },
     { data: historyRaw },
+    { data: lessonSubRaw },
   ] = await Promise.all([
     db.from('lesson_sessions')
       .select('id, session_date, session_time, duration_min, subject, topic, meet_link, price_brl, status, notes, professor_id, users!lesson_sessions_professor_id_fkey(full_name)')
@@ -119,12 +120,26 @@ export default async function ReforcoEscolarPage() {
       .in('status', ['completed', 'cancelled'])
       .order('session_date', { ascending: false })
       .limit(30),
+    db.from('subscriptions')
+      .select('id, lessons_used, lessons_limit, plans!inner(name, slug, plan_type)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .eq('plans.plan_type', 'lesson')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const upcoming: LessonRow[] = upcomingRaw ?? []
   const history: LessonRow[]  = historyRaw ?? []
   const nextLesson = upcoming[0] ?? null
 
+  const lessonSub = lessonSubRaw as {
+    lessons_used: number; lessons_limit: number
+    plans: { name: string; slug: string } | null
+  } | null
+  const hasCredits    = lessonSub ? (lessonSub.lessons_used < lessonSub.lessons_limit) : false
+  const creditsLeft   = lessonSub ? Math.max(0, lessonSub.lessons_limit - lessonSub.lessons_used) : 0
   const completedCount = history.filter(l => l.status === 'completed').length
 
   return (
@@ -138,8 +153,39 @@ export default async function ReforcoEscolarPage() {
             Aulas individuais de Português, Inglês, Redação e Literatura via Google Meet
           </p>
         </div>
-        <BookLessonForm />
+        <BookLessonForm hasCredits={hasCredits} />
       </div>
+
+      {/* ── Credits / Plan card ────────────────────────────────── */}
+      {lessonSub ? (
+        <div className="rounded-xl border border-purple-500/20 bg-purple-500/[0.04] px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="text-sm font-semibold text-white">
+              {lessonSub.plans?.name ?? 'Plano de aulas'}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {creditsLeft} de {lessonSub.lessons_limit} aulas disponíveis neste ciclo
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-1.5 w-24 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-purple-500 transition-all"
+                style={{ width: `${Math.round((creditsLeft / Math.max(1, lessonSub.lessons_limit)) * 100)}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-purple-400 tabular-nums">{creditsLeft}/{lessonSub.lessons_limit}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.04] px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="text-sm font-semibold text-white">Sem plano de aulas ativo</p>
+            <p className="text-xs text-gray-500 mt-0.5">Adquira um plano para solicitar aulas de reforço escolar.</p>
+          </div>
+          <BookLessonForm hasCredits={false} />
+        </div>
+      )}
 
       {/* ── Next lesson hero card ─────────────────────────────── */}
       {nextLesson ? (
@@ -227,9 +273,11 @@ export default async function ReforcoEscolarPage() {
           <Video size={24} className="text-gray-700 mx-auto mb-3" />
           <p className="text-sm font-semibold text-gray-400 mb-1">Nenhuma aula agendada</p>
           <p className="text-xs text-gray-600 mb-5 max-w-sm mx-auto leading-relaxed">
-            Solicite uma aula agora — a professora confirma o horário e você recebe um e-mail de confirmação com o link do Google Meet.
+            {hasCredits
+              ? 'Solicite uma aula agora — a professora confirma o horário e você recebe um e-mail de confirmação com o link do Google Meet.'
+              : 'Adquira um plano de aulas para começar a agendar suas aulas de reforço escolar.'}
           </p>
-          <BookLessonForm />
+          <BookLessonForm hasCredits={hasCredits} />
         </div>
       )}
 
@@ -372,10 +420,16 @@ export default async function ReforcoEscolarPage() {
       {/* ── Book lesson CTA ──────────────────────────────────── */}
       <div className="card-dark rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
         <div className="flex-1">
-          <p className="text-sm font-semibold text-gray-300 mb-1">Pronto para a próxima aula?</p>
-          <p className="text-xs text-gray-600">Solicite uma aula de reforço diretamente aqui. A professora confirmará o horário por e-mail.</p>
+          <p className="text-sm font-semibold text-gray-300 mb-1">
+            {hasCredits ? 'Pronto para a próxima aula?' : 'Quer agendar uma aula?'}
+          </p>
+          <p className="text-xs text-gray-600">
+            {hasCredits
+              ? 'Solicite uma aula de reforço diretamente aqui. A professora confirmará o horário por e-mail.'
+              : 'Adquira um plano de aulas para começar a agendar suas aulas de reforço escolar.'}
+          </p>
         </div>
-        <BookLessonForm />
+        <BookLessonForm hasCredits={hasCredits} />
       </div>
     </div>
   )

@@ -3,6 +3,21 @@
 import { createActionClient } from '@/lib/supabase/server-action'
 import { notifyLessonScheduled, notifyLessonRequested } from '@/lib/notifications'
 
+// ── Helpers: role check ──────────────────────────────────────────────────────
+
+async function requireProfessor() {
+  const supabase = await createActionClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Não autenticado' as const, db: null as ReturnType<typeof Object>, userId: '' }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any
+  const { data: profile } = await db.from('users').select('role').eq('id', user.id).single()
+  if (!profile || !['admin', 'reviewer'].includes(profile.role)) {
+    return { error: 'Sem permissão' as const, db: null as ReturnType<typeof Object>, userId: '' }
+  }
+  return { error: null, db, userId: user.id }
+}
+
 // ── Professor schedules a lesson for a student ────────────────────────────────
 
 export async function scheduleLessonAction(params: {
@@ -18,7 +33,6 @@ export async function scheduleLessonAction(params: {
 }): Promise<{ error?: string }> {
   const supabase = await createActionClient()
 
-  // Verify caller is professor/admin
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado' }
 
@@ -29,7 +43,7 @@ export async function scheduleLessonAction(params: {
     return { error: 'Sem permissão' }
   }
 
-  const { data: inserted, error: insertErr } = await db
+  const { error: insertErr } = await db
     .from('lesson_sessions')
     .insert({
       professor_id:  user.id,
@@ -81,7 +95,7 @@ export async function scheduleLessonAction(params: {
   return {}
 }
 
-// ── Student requests a lesson ─────────────────────────────────────────────────
+// ── Student requests a lesson (validates credit, does NOT debit) ──────────────
 
 export async function requestLessonAction(params: {
   sessionDate: string
@@ -97,60 +111,208 @@ export async function requestLessonAction(params: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
-  // Fetch student profile for the email
-  const { data: studentData } = await db
-    .from('users')
-    .select('email, full_name')
-    .eq('id', user.id)
+  // Call RPC: validates credit availability + inserts lesson (NO debit — debit happens on confirm)
+  const { data: lessonId, error: rpcErr } = await db.rpc('request_lesson_atomic', {
+    p_user_id:      user.id,
+    p_session_date: params.sessionDate,
+    p_session_time: params.sessionTime ?? null,
+    p_subject:      params.subject ?? null,
+    p_notes:        params.notes ?? null,
+  })
+
+  if (rpcErr) {
+    const msg = rpcErr.message ?? ''
+    console.error('[requestLessonAction] RPC error:', msg)
+
+    if (msg.includes('NO_LESSON_PLAN')) {
+      return { error: 'Você precisa de um plano de aulas ativo para solicitar aulas.' }
+    }
+    if (msg.includes('LESSON_CREDIT_LIMIT_REACHED')) {
+      return { error: 'Seus créditos de aula acabaram. Faça upgrade do seu plano para continuar.' }
+    }
+    if (msg.includes('AUTH_MISMATCH')) {
+      return { error: 'Erro de autenticação.' }
+    }
+    return { error: 'Erro ao solicitar aula. Tente novamente.' }
+  }
+
+  // Notify ALL professors about new request (non-fatal)
+  try {
+    const { data: studentData } = await db.from('users').select('email, full_name').eq('id', user.id).single()
+
+    const { data: professors } = await db
+      .from('users')
+      .select('email, full_name')
+      .in('role', ['admin', 'reviewer'])
+
+    for (const prof of (professors ?? [])) {
+      if (!prof?.email) continue
+      try {
+        await notifyLessonRequested({
+          professorEmail: prof.email,
+          studentEmail:   studentData?.email ?? user.email ?? '',
+          studentName:    studentData?.full_name ?? null,
+          subject:        params.subject,
+          sessionDate:    params.sessionDate,
+          sessionTime:    params.sessionTime,
+          notes:          params.notes,
+        })
+      } catch { /* individual email failure is non-fatal */ }
+    }
+  } catch (emailErr) {
+    console.error('[requestLessonAction] Email notification failed:', emailErr)
+  }
+
+  return {}
+}
+
+// ── Professor confirms a student-requested lesson ────────────────────────────
+
+export async function confirmLessonAction(params: {
+  lessonId: string
+  meetLink?: string | null
+}): Promise<{ error?: string }> {
+  const { error: authErr, db, userId } = await requireProfessor()
+  if (authErr) return { error: authErr }
+
+  // Fetch lesson — match own lessons OR unassigned (professor_id IS NULL)
+  const { data: lesson, error: fetchErr } = await db
+    .from('lesson_sessions')
+    .select('id, status, professor_id, student_id, student_name, session_date, session_time, subject, topic, duration_min, meet_link')
+    .eq('id', params.lessonId)
+    .or(`professor_id.eq.${userId},professor_id.is.null`)
     .single()
 
-  // Find first professor (admin or reviewer)
-  const { data: professorData } = await db
-    .from('users')
-    .select('id, email, full_name')
-    .in('role', ['admin', 'reviewer'])
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
+  if (fetchErr || !lesson) return { error: 'Aula não encontrada' }
+  if (lesson.status !== 'requested') return { error: 'Apenas aulas solicitadas podem ser confirmadas' }
 
-  if (!professorData?.id) {
-    return { error: 'Nenhum professor encontrado. Contate o suporte.' }
-  }
-
-  const { error: insertErr } = await db
-    .from('lesson_sessions')
-    .insert({
-      professor_id: professorData.id,
-      student_id:   user.id,
-      student_name: studentData?.full_name ?? null,
-      session_date: params.sessionDate,
-      session_time: params.sessionTime,
-      subject:      params.subject,
-      notes:        params.notes,
-      duration_min: 60,
-      status:       'requested',
-    })
-
-  if (insertErr) {
-    console.error('[requestLessonAction] Insert error:', insertErr)
-    return { error: insertErr.message ?? 'Erro ao solicitar aula' }
-  }
-
-  // Notify professor (non-fatal)
-  if (professorData?.email) {
+  // Debit lesson credit from student (atomic, non-fatal — confirm proceeds even if debit fails)
+  if (lesson.student_id) {
     try {
-      await notifyLessonRequested({
-        professorEmail: professorData.email,
-        studentEmail:   studentData?.email ?? user.email ?? '',
-        studentName:    studentData?.full_name ?? null,
-        subject:        params.subject,
-        sessionDate:    params.sessionDate,
-        sessionTime:    params.sessionTime,
-        notes:          params.notes,
+      const { error: debitErr } = await db.rpc('confirm_lesson_debit', {
+        p_lesson_id: params.lessonId,
+        p_professor_id: userId,
       })
-    } catch (emailErr) {
-      console.error('[requestLessonAction] Professor email failed:', emailErr)
+      if (debitErr) {
+        console.warn('[confirmLessonAction] Credit debit warning (non-fatal):', debitErr.message)
+      }
+    } catch (e) {
+      console.warn('[confirmLessonAction] Credit debit threw (non-fatal):', e)
     }
+  }
+
+  // Claim the lesson: set professor_id + status + optional meet link
+  const updates: Record<string, unknown> = {
+    status: 'scheduled',
+    professor_id: userId,
+  }
+  if (params.meetLink) updates.meet_link = params.meetLink
+
+  const { error: updateErr } = await db
+    .from('lesson_sessions')
+    .update(updates)
+    .eq('id', params.lessonId)
+
+  if (updateErr) {
+    console.error('[confirmLessonAction] Update error:', updateErr)
+    return { error: updateErr.message ?? 'Erro ao confirmar aula' }
+  }
+
+  // Notify student (non-fatal)
+  if (lesson.student_id) {
+    try {
+      const { data: student } = await db.from('users').select('email, full_name').eq('id', lesson.student_id).single()
+      if (student?.email) {
+        await notifyLessonScheduled({
+          studentEmail: student.email,
+          studentName:  student.full_name ?? lesson.student_name,
+          subject:      lesson.subject,
+          sessionDate:  lesson.session_date,
+          sessionTime:  lesson.session_time,
+          durationMin:  lesson.duration_min ?? 60,
+          topic:        lesson.topic,
+          meetLink:     params.meetLink ?? lesson.meet_link,
+        })
+      }
+    } catch (e) {
+      console.error('[confirmLessonAction] Email failed:', e)
+    }
+  }
+
+  return {}
+}
+
+// ── Professor marks a lesson as completed ─────────────────────────────────────
+
+export async function completeLessonAction(lessonId: string): Promise<{ error?: string }> {
+  const { error: authErr, db, userId } = await requireProfessor()
+  if (authErr) return { error: authErr }
+
+  const { data: lesson } = await db
+    .from('lesson_sessions')
+    .select('id, status')
+    .eq('id', lessonId)
+    .eq('professor_id', userId)
+    .single()
+
+  if (!lesson) return { error: 'Aula não encontrada' }
+  if (lesson.status !== 'scheduled') return { error: 'Apenas aulas agendadas podem ser concluídas' }
+
+  const { error: updateErr } = await db
+    .from('lesson_sessions')
+    .update({ status: 'completed' })
+    .eq('id', lessonId)
+
+  if (updateErr) {
+    console.error('[completeLessonAction] Update error:', updateErr)
+    return { error: updateErr.message ?? 'Erro ao concluir aula' }
+  }
+
+  return {}
+}
+
+// ── Professor cancels a lesson (refunds credit only if status was 'scheduled') ──
+
+export async function cancelLessonAction(lessonId: string): Promise<{ error?: string }> {
+  const { error: authErr, db, userId } = await requireProfessor()
+  if (authErr) return { error: authErr }
+
+  // Match own lessons OR unassigned (professor_id IS NULL)
+  const { data: lesson } = await db
+    .from('lesson_sessions')
+    .select('id, status, student_id')
+    .eq('id', lessonId)
+    .or(`professor_id.eq.${userId},professor_id.is.null`)
+    .single()
+
+  if (!lesson) return { error: 'Aula não encontrada' }
+  if (lesson.status === 'completed') return { error: 'Aulas concluídas não podem ser canceladas' }
+  if (lesson.status === 'cancelled') return { error: 'Aula já cancelada' }
+
+  // Refund lesson credit ONLY if lesson was 'scheduled' (credit was consumed on confirm).
+  // 'requested' lessons never consumed credit, so no refund needed.
+  // The RPC itself also checks status, but we guard here for clarity.
+  if (lesson.student_id && lesson.status === 'scheduled') {
+    try {
+      const { error: refundErr } = await db.rpc('refund_lesson_credit', {
+        p_lesson_id: lessonId,
+      })
+      if (refundErr) {
+        console.error('[cancelLessonAction] Credit refund failed (non-fatal):', refundErr.message)
+      }
+    } catch (e) {
+      console.error('[cancelLessonAction] Refund RPC threw (non-fatal):', e)
+    }
+  }
+
+  const { error: updateErr } = await db
+    .from('lesson_sessions')
+    .update({ status: 'cancelled' })
+    .eq('id', lessonId)
+
+  if (updateErr) {
+    console.error('[cancelLessonAction] Update error:', updateErr)
+    return { error: updateErr.message ?? 'Erro ao cancelar aula' }
   }
 
   return {}

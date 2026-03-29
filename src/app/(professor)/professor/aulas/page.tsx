@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { RATE_LESSON, formatBRL } from '@/lib/professor/rates'
 import type { LessonStatus } from '@/lib/supabase/types'
 import NewLessonForm from './NewLessonForm'
+import LessonActions from './LessonActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,6 +91,7 @@ export default async function ProfessorAulasPage() {
 
   const [
     { data: upcomingRaw },
+    { data: queueRaw },
     { data: recentRaw },
     { count: completedMonthCount },
     { count: cancelledMonthCount },
@@ -101,6 +103,15 @@ export default async function ProfessorAulasPage() {
       .in('status', ['scheduled', 'requested'])
       .gte('session_date', todayStr)
       .lte('session_date', thirtyAhead)
+      .order('session_date', { ascending: true })
+      .limit(20),
+
+    // Unassigned lesson requests from students (visible to all professors)
+    db.from('lesson_sessions')
+      .select('id, session_date, session_time, duration_min, subject, topic, student_name, status, notes')
+      .is('professor_id', null)
+      .eq('status', 'requested')
+      .gte('session_date', todayStr)
       .order('session_date', { ascending: true })
       .limit(20),
 
@@ -131,6 +142,7 @@ export default async function ProfessorAulasPage() {
   ])
 
   const upcomingLessons: LessonRow[] = upcomingRaw ?? []
+  const queueLessons:    LessonRow[] = queueRaw    ?? []
   const recentLessons:   LessonRow[] = recentRaw   ?? []
 
   const completedMonth = completedMonthCount ?? 0
@@ -194,6 +206,41 @@ export default async function ProfessorAulasPage() {
         </div>
       </div>
 
+      {/* ── Queue: unassigned student requests ─────────────────── */}
+      {queueLessons.length > 0 && (
+        <div className="card-dark rounded-2xl overflow-hidden border border-amber-500/20">
+          <div className="px-5 py-4 border-b border-amber-500/10 bg-amber-500/[0.04]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <h2 className="text-sm font-semibold text-white">Fila de Solicitações</h2>
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">{queueLessons.length}</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-0.5">Aulas solicitadas por alunos aguardando confirmação</p>
+          </div>
+          <div className="divide-y divide-white/[0.04]">
+            {queueLessons.map(l => (
+              <div key={l.id} className="px-5 py-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors">
+                <div className="shrink-0 text-center w-16">
+                  <p className="text-xs font-semibold text-gray-300">{formatSessionDate(l.session_date)}</p>
+                  {l.session_time && <p className="text-[10px] text-gray-600">{l.session_time}</p>}
+                </div>
+                <div className="w-px h-8 bg-white/[0.06] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <p className="text-sm font-semibold text-white">{l.student_name ?? 'Aluno'}</p>
+                    {l.subject && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">{l.subject}</span>
+                    )}
+                  </div>
+                  {l.notes && <p className="text-[11px] text-gray-600 truncate max-w-[300px]">{l.notes}</p>}
+                </div>
+                <LessonActions lessonId={l.id} status={l.status} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Upcoming sessions ─────────────────────────────────── */}
       {upcomingLessons.length > 0 && (
         <div className="card-dark rounded-2xl overflow-hidden">
@@ -209,11 +256,12 @@ export default async function ProfessorAulasPage() {
                 <th className="text-center px-4 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-20">Duração</th>
                 <th className="text-center px-4 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-16">Meet</th>
                 <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-28">Status</th>
+                <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-36">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
               {upcomingLessons.map(l => (
-                <tr key={l.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={l.id} className={`hover:bg-white/[0.02] transition-colors ${l.status === 'requested' ? 'bg-amber-500/[0.03]' : ''}`}>
                   <td className="px-5 py-3.5">
                     <p className="text-xs font-semibold text-gray-200">{formatSessionDate(l.session_date)}</p>
                     {l.session_time && <p className="text-[10px] text-gray-600">{l.session_time}</p>}
@@ -239,6 +287,9 @@ export default async function ProfessorAulasPage() {
                   </td>
                   <td className="px-5 py-3.5 text-right">
                     <LessonStatusBadge status={l.status} />
+                  </td>
+                  <td className="px-5 py-3.5 text-right">
+                    <LessonActions lessonId={l.id} status={l.status} />
                   </td>
                 </tr>
               ))}

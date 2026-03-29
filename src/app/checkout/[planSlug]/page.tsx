@@ -63,7 +63,7 @@ export default async function CheckoutPage({
   const cancelado = searchParams.cancelado === '1'
 
   return (
-    <div className="min-h-screen bg-[#070c14] flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-body)] flex flex-col">
 
       {/* ── Minimal header ──────────────────────────────────────────────────── */}
       <header className="py-4 px-5 sm:px-8 flex items-center justify-between border-b border-white/[0.04]">

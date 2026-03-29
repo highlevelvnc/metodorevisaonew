@@ -67,14 +67,16 @@ export default async function UpgradePage({
   const [{ data: plansRaw }, { data: subRaw }] = await Promise.all([
     db
       .from('plans')
-      .select('id, name, slug, price_brl, essay_count, features')
+      .select('id, name, slug, price_brl, essay_count, features, plan_type')
       .eq('active', true)
+      .eq('plan_type', 'essay')
       .order('essay_count'),
     db
       .from('subscriptions')
-      .select('plan_id, status, essays_used, essays_limit, plans(name, slug)')
+      .select('plan_id, status, essays_used, essays_limit, plans!inner(name, slug, plan_type)')
       .eq('user_id', user.id)
       .eq('status', 'active')
+      .eq('plans.plan_type', 'essay')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),

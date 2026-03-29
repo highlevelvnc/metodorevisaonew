@@ -146,7 +146,7 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
   /* ── Resolve plan from DB ──────────────────────────────────────────────── */
   const { data: plan, error: planErr } = await db
     .from('plans')
-    .select('id, essay_count, name')
+    .select('id, essay_count, lesson_count, name, plan_type')
     .eq('slug', planSlug)
     .single()
 
@@ -155,12 +155,15 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
     throw new Error(`Plan not found: ${planSlug}`)
   }
 
+  const planType: string = plan.plan_type ?? 'essay'
+
   /* ── Check for trial-to-paid conversion (T5) before deactivating ──────── */
   const { data: oldSub } = await db
     .from('subscriptions')
-    .select('id, plans(slug)')
+    .select('id, plans!inner(slug, plan_type)')
     .eq('user_id', userId)
     .eq('status', 'active')
+    .eq('plans.plan_type', planType)
     .limit(1)
     .maybeSingle()
 
@@ -173,16 +176,29 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
     console.log(`[webhook] Trial-to-paid conversion — user=${userId} plan=${planSlug}`)
   }
 
-  /* ── Deactivate all previous active subscriptions ──────────────────────── */
-  const { error: expireErr } = await db
+  /* ── Deactivate previous active subscriptions OF THE SAME PRODUCT ──────── */
+  // Only expire subscriptions of the same plan_type (essay OR lesson).
+  // This allows a student to have both an essay sub and a lesson sub simultaneously.
+  const { data: subsToExpire } = await db
     .from('subscriptions')
-    .update({ status: 'expired' })
+    .select('id, plans!inner(plan_type)')
     .eq('user_id', userId)
     .eq('status', 'active')
+    .eq('plans.plan_type', planType)
 
-  if (expireErr) {
-    console.error('[webhook] Failed to expire old subscriptions:', expireErr)
-    throw expireErr
+  const expireIds: string[] = (subsToExpire ?? []).map((s: { id: string }) => s.id)
+
+  if (expireIds.length > 0) {
+    const { error: expireErr } = await db
+      .from('subscriptions')
+      .update({ status: 'expired' })
+      .in('id', expireIds)
+
+    if (expireErr) {
+      console.error('[webhook] Failed to expire old subscriptions:', expireErr)
+      throw expireErr
+    }
+    console.log(`[webhook] Expired ${expireIds.length} old ${planType} subscription(s)`)
   }
 
   /* ── Extract Stripe subscription ID ────────────────────────────────────── */
@@ -199,6 +215,8 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
       status:                     'active',
       essays_used:                0,
       essays_limit:               plan.essay_count,
+      lessons_used:               0,
+      lessons_limit:              planType === 'lesson' ? plan.lesson_count : 0,
       stripe_checkout_session_id: session.id,
       stripe_customer_id:         (session.customer as string | null) ?? null,
       stripe_subscription_id:     stripeSubscriptionId,
@@ -271,10 +289,10 @@ async function handleRenewal(invoice: Stripe.Invoice) {
     return
   }
 
-  // Reset essay credits for the new billing cycle
+  // Reset credits for the new billing cycle (both fields — unused one is already 0)
   const { error: updateErr } = await db
     .from('subscriptions')
-    .update({ essays_used: 0 })
+    .update({ essays_used: 0, lessons_used: 0 })
     .eq('id', sub.id)
 
   if (updateErr) {

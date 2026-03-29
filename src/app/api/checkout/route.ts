@@ -139,7 +139,23 @@ export async function POST(request: NextRequest) {
     console.warn(`${tag} profile fetch threw (non-fatal):`, err)
   }
 
-  // ── 4. Build Stripe session ──────────────────────────────────────────────
+  // ── 4. Determine plan type for correct cancel URL ──────────────────────
+  // Quick plan lookup to route cancel URL correctly (lesson vs essay)
+  let cancelUrl = `${getSiteUrl()}/aluno/upgrade?cancelado=1`
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: planCheck } = await (supabase as any)
+      .from('plans')
+      .select('plan_type')
+      .eq('slug', planSlug)
+      .eq('active', true)
+      .maybeSingle()
+    if (planCheck?.plan_type === 'lesson') {
+      cancelUrl = `${getSiteUrl()}/aluno/reforco-escolar/planos?cancelado=1`
+    }
+  } catch { /* non-fatal — default cancel URL is fine */ }
+
+  // ── 5. Build Stripe session ──────────────────────────────────────────────
   console.log(`${tag} calling buildStripeSession`)
 
   let stripeUrl: string
@@ -149,8 +165,7 @@ export async function POST(request: NextRequest) {
       email,
       name:      fullName,
       planSlug,
-      // Logged-in upgrade users should return to their upgrade page, not the public checkout
-      cancelUrl: `${getSiteUrl()}/aluno/upgrade?cancelado=1`,
+      cancelUrl,
     })
   } catch (err) {
     const raw      = err instanceof Error ? err.message : String(err)

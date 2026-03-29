@@ -22,8 +22,10 @@ import {
   Library,
   Award,
   GraduationCap,
+  CreditCard,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 type NavItem = { label: string; href: string; icon: React.ElementType; badge?: string }
 type NavSection = { label?: string; items: NavItem[] }
@@ -128,8 +130,14 @@ const navSections: NavSection[] = [
       { label: 'Temas',            href: '/aluno/temas',             icon: BookOpen },
       { label: 'Videoaulas',       href: '/aluno/aulas',             icon: PlayCircle },
       { label: 'Simulados',        href: '/aluno/simulados',         icon: ClipboardList },
-      { label: 'Reforço Escolar',  href: '/aluno/reforco-escolar',   icon: GraduationCap },
       { label: 'Mentorias',        href: '/aluno/mentoria',          icon: Users },
+    ],
+  },
+  {
+    label: 'Reforço Escolar',
+    items: [
+      { label: 'Minhas Aulas',     href: '/aluno/reforco-escolar',          icon: GraduationCap },
+      { label: 'Planos de Aula',   href: '/aluno/reforco-escolar/planos',   icon: CreditCard },
     ],
   },
   {
@@ -151,7 +159,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-[#070c14] flex">
+    <div className="min-h-screen bg-[var(--bg-body)] flex">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -163,7 +171,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-64 bg-[#080d18] border-r border-white/[0.06] z-40
+          fixed top-0 left-0 h-full w-64 bg-[var(--bg-elevated,#080d18)] border-r border-white/[0.06] z-40
           flex flex-col transition-transform duration-300 print:hidden
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
@@ -244,22 +252,25 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         {/* Account footer */}
         <div className="px-3 pb-5 shrink-0 border-t border-white/[0.05] pt-3 space-y-0.5">
           <UserInfoStrip />
-          <form action="/api/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-red-400 hover:bg-red-500/[0.06] transition-all border border-transparent"
-            >
-              <LogOut size={16} className="flex-shrink-0" />
-              Sair da conta
-            </button>
-          </form>
+          <div className="flex items-center gap-1">
+            <ThemeToggle className="flex-shrink-0" />
+            <form action="/api/auth/signout" method="POST" className="flex-1">
+              <button
+                type="submit"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-red-400 hover:bg-red-500/[0.06] transition-all border border-transparent"
+              >
+                <LogOut size={16} className="flex-shrink-0" />
+                Sair da conta
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
 
       {/* ── Main content ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile topbar */}
-        <header className="lg:hidden h-14 bg-[#080d18] border-b border-white/[0.05] flex items-center px-4 gap-3 print:hidden shrink-0">
+        <header className="lg:hidden h-14 bg-[var(--bg-elevated,#080d18)] border-b border-white/[0.05] flex items-center px-4 gap-3 print:hidden shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-gray-500 hover:text-white transition-colors"

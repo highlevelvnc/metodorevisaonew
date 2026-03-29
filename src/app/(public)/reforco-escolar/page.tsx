@@ -86,7 +86,7 @@ const faqs = [
 
 export default function ReforcoEscolarPage() {
   return (
-    <div className="pt-16 min-h-screen bg-[#070c14] text-white">
+    <div className="pt-16 min-h-screen bg-[var(--bg-body)] text-white">
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">

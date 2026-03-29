@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CalendarPlus, X, CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
+import { CalendarPlus, X, CheckCircle2, CreditCard } from 'lucide-react'
 import { requestLessonAction } from '@/lib/actions/lessons'
 
 const SUBJECTS = ['Português', 'Inglês', 'Redação', 'Literatura'] as const
 
-export default function BookLessonForm() {
+export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boolean }) {
   const router   = useRouter()
   const [open, setOpen]     = useState(false)
   const [saving, setSaving] = useState(false)
@@ -36,6 +37,18 @@ export default function BookLessonForm() {
       setDone(false)
       router.refresh()
     }, 2500)
+  }
+
+  if (!hasCredits) {
+    return (
+      <Link
+        href="/aluno/reforco-escolar/planos"
+        className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white transition-colors"
+      >
+        <CreditCard size={16} />
+        Adquirir plano de aulas
+      </Link>
+    )
   }
 
   if (!open) {

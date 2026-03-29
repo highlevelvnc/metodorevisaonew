@@ -90,7 +90,7 @@ export async function buildStripeSession({
   console.log(`${tag} fetching plan`)
   const { data: plan, error: planErr } = await admin
     .from('plans')
-    .select('id, name, slug, price_brl, essay_count')
+    .select('id, name, slug, price_brl, essay_count, lesson_count, plan_type')
     .eq('slug', planSlug)
     .eq('active', true)
     .single()
@@ -99,7 +99,8 @@ export async function buildStripeSession({
     console.error(`${tag} plan not found — error=${planErr?.message ?? 'no row'}`)
     throw new Error(`Plano "${planSlug}" não encontrado ou inativo.`)
   }
-  console.log(`${tag} plan OK — "${plan.name}" R$${plan.price_brl} × ${plan.essay_count} redações`)
+  const planType: string = plan.plan_type ?? 'essay'
+  console.log(`${tag} plan OK — "${plan.name}" R$${plan.price_brl} type=${planType} essays=${plan.essay_count} lessons=${plan.lesson_count ?? 0}`)
 
   // ── Stripe customer: reuse or create ─────────────────────────────────────
   const { data: userRow, error: userRowErr } = await admin
@@ -154,17 +155,21 @@ export async function buildStripeSession({
             recurring:    { interval: 'month' },
             product_data: {
               name:        `Método Revisão — Plano ${plan.name}`,
-              description: `${plan.essay_count} correções estratégicas de redação ENEM por mês`,
+              description: planType === 'lesson'
+                ? `${plan.lesson_count} aulas de reforço escolar por mês`
+                : `${plan.essay_count} correções estratégicas de redação ENEM por mês`,
             },
           },
           quantity: 1,
         },
       ],
       mode:                 'subscription',
-      subscription_data:    { metadata: { userId, planSlug: plan.slug } },
-      success_url: `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      subscription_data:    { metadata: { userId, planSlug: plan.slug, planType } },
+      success_url: planType === 'lesson'
+        ? `${siteUrl}/aluno/reforco-escolar/planos/sucesso?session_id={CHECKOUT_SESSION_ID}`
+        : `${siteUrl}/aluno/upgrade/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  cancelUrl ?? `${siteUrl}/checkout/${planSlug}?cancelado=1`,
-      metadata:    { userId, planSlug: plan.slug },
+      metadata:    { userId, planSlug: plan.slug, planType },
       client_reference_id: userId,
       locale:      'pt-BR',
     })

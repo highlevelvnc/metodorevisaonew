@@ -5,6 +5,7 @@ export type EssayStatus       = 'pending' | 'in_review' | 'corrected'
 export type SubscriptionStatus = 'active' | 'cancelled' | 'expired'
 export type LessonStatus      = 'scheduled' | 'completed' | 'cancelled' | 'requested'
 export type PayoutStatus      = 'open' | 'closed' | 'paid'
+export type PlanType          = 'essay' | 'lesson'
 export type PixKeyType        = 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'
 
 export interface Database {
@@ -50,6 +51,8 @@ export interface Database {
           slug: string
           price_brl: number
           essay_count: number
+          lesson_count: number
+          plan_type: PlanType
           features: Json
           active: boolean
           created_at: string
@@ -60,11 +63,13 @@ export interface Database {
           slug: string
           price_brl: number
           essay_count: number
+          lesson_count?: number
+          plan_type?: PlanType
           features?: Json
           active?: boolean
           created_at?: string
         }
-        Update: { name?: string; price_brl?: number; essay_count?: number; features?: Json; active?: boolean }
+        Update: { name?: string; price_brl?: number; essay_count?: number; lesson_count?: number; plan_type?: PlanType; features?: Json; active?: boolean }
       }
       subscriptions: {
         Row: {
@@ -74,6 +79,8 @@ export interface Database {
           status: SubscriptionStatus
           essays_used: number
           essays_limit: number
+          lessons_used: number
+          lessons_limit: number
           started_at: string
           expires_at: string | null
           stripe_checkout_session_id: string | null
@@ -89,6 +96,8 @@ export interface Database {
           status?: SubscriptionStatus
           essays_used?: number
           essays_limit: number
+          lessons_used?: number
+          lessons_limit?: number
           started_at?: string
           expires_at?: string | null
           stripe_checkout_session_id?: string | null
@@ -100,6 +109,8 @@ export interface Database {
         Update: {
           status?: SubscriptionStatus
           essays_used?: number
+          lessons_used?: number
+          lessons_limit?: number
           expires_at?: string | null
           stripe_checkout_session_id?: string | null
           stripe_customer_id?: string | null
@@ -224,7 +235,7 @@ export interface Database {
       lesson_sessions: {
         Row: {
           id:            string
-          professor_id:  string
+          professor_id:  string | null
           student_id:    string | null
           session_date:  string        // date "YYYY-MM-DD"
           session_time:  string | null // time "HH:MM"
@@ -241,7 +252,7 @@ export interface Database {
         }
         Insert: {
           id?:           string
-          professor_id:  string
+          professor_id?: string | null
           student_id?:   string | null
           session_date:  string
           session_time?: string | null
@@ -398,5 +409,5 @@ export type EssayWithStudent = EssayRow & {
 
 /** Subscription enriched with plan name */
 export type SubscriptionWithPlan = SubscriptionRow & {
-  plans: Pick<PlanRow, 'name' | 'slug' | 'essay_count'> | null
+  plans: Pick<PlanRow, 'name' | 'slug' | 'essay_count' | 'lesson_count' | 'plan_type'> | null
 }
