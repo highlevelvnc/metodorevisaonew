@@ -1,17 +1,142 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, Search, UserCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const SUBJECTS = ['Português', 'Inglês', 'Redação', 'Literatura'] as const
 
+type StudentResult = { id: string; full_name: string | null; email: string }
+
+function StudentPicker({
+  onSelect,
+}: {
+  onSelect: (s: StudentResult | null) => void
+}) {
+  const [query, setQuery]         = useState('')
+  const [results, setResults]     = useState<StudentResult[]>([])
+  const [loading, setLoading]     = useState(false)
+  const [selected, setSelected]   = useState<StudentResult | null>(null)
+  const [open, setOpen]           = useState(false)
+  const debounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const containerRef              = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  function handleInput(value: string) {
+    setQuery(value)
+    setOpen(true)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (value.length < 2) { setResults([]); return }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      const supabase = createClient()
+      const { data } = await (supabase as any)
+        .from('users')
+        .select('id, full_name, email')
+        .ilike('email', `${value}%`)
+        .limit(6)
+      setResults((data as StudentResult[]) ?? [])
+      setLoading(false)
+    }, 300)
+  }
+
+  function pick(s: StudentResult) {
+    setSelected(s)
+    setQuery(s.email)
+    setResults([])
+    setOpen(false)
+    onSelect(s)
+  }
+
+  function clear() {
+    setSelected(null)
+    setQuery('')
+    setResults([])
+    onSelect(null)
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
+        Aluno(a) — buscar por email
+      </label>
+      <div className="relative flex items-center">
+        {selected ? (
+          <UserCheck size={13} className="absolute left-3 text-green-400 pointer-events-none" />
+        ) : (
+          <Search size={13} className="absolute left-3 text-gray-600 pointer-events-none" />
+        )}
+        <input
+          type="email"
+          value={query}
+          onChange={e => { if (selected) clear(); handleInput(e.target.value) }}
+          onFocus={() => query.length >= 2 && setOpen(true)}
+          placeholder="email@exemplo.com"
+          autoComplete="off"
+          className={`w-full bg-white/[0.04] border rounded-lg pl-8 pr-8 py-2 text-sm placeholder-gray-700 focus:outline-none focus:border-purple-500/50 transition-colors ${
+            selected ? 'border-green-500/40 text-green-300' : 'border-white/[0.10] text-white'
+          }`}
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={clear}
+            className="absolute right-2.5 text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
+
+      {selected && (
+        <p className="text-[11px] text-green-400 mt-1 truncate">
+          {selected.full_name ? `${selected.full_name} · ${selected.email}` : selected.email}
+        </p>
+      )}
+
+      {open && (results.length > 0 || loading) && (
+        <ul className="absolute z-50 top-full mt-1 w-full bg-[#0f1623] border border-white/[0.12] rounded-xl shadow-xl overflow-hidden">
+          {loading && (
+            <li className="px-3 py-2.5 text-xs text-gray-600">Buscando…</li>
+          )}
+          {!loading && results.map(s => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onMouseDown={() => pick(s)}
+                className="w-full text-left px-3 py-2.5 hover:bg-white/[0.06] transition-colors"
+              >
+                <p className="text-xs font-medium text-gray-200 truncate">{s.full_name ?? '—'}</p>
+                <p className="text-[11px] text-gray-500 truncate">{s.email}</p>
+              </button>
+            </li>
+          ))}
+          {!loading && results.length === 0 && query.length >= 2 && (
+            <li className="px-3 py-2.5 text-xs text-gray-600">Nenhum aluno encontrado</li>
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function NewLessonForm({ professorId }: { professorId: string }) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen]         = useState(false)
+  const [saving, setSaving]     = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+  const [student, setStudent]   = useState<StudentResult | null>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -23,7 +148,6 @@ export default function NewLessonForm({ professorId }: { professorId: string }) 
     const sessionDate = fd.get('session_date') as string
     const sessionTime = (fd.get('session_time') as string) || null
     const subject     = (fd.get('subject') as string) || null
-    const studentName = (fd.get('student_name') as string)?.trim() || null
     const meetLink    = (fd.get('meet_link') as string)?.trim() || null
     const topic       = (fd.get('topic') as string)?.trim() || null
     const durationMin = parseInt(fd.get('duration_min') as string) || 60
@@ -44,7 +168,8 @@ export default function NewLessonForm({ professorId }: { professorId: string }) 
         session_date: sessionDate,
         session_time: sessionTime,
         subject,
-        student_name: studentName,
+        student_id:   student?.id   ?? null,
+        student_name: student?.full_name ?? null,
         meet_link: meetLink,
         topic,
         duration_min: durationMin,
@@ -61,6 +186,7 @@ export default function NewLessonForm({ professorId }: { professorId: string }) 
 
     setSaving(false)
     setOpen(false)
+    setStudent(null)
     router.refresh()
   }
 
@@ -119,15 +245,9 @@ export default function NewLessonForm({ professorId }: { professorId: string }) 
           </select>
         </div>
 
-        {/* Student name */}
-        <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Aluno(a)</label>
-          <input
-            type="text"
-            name="student_name"
-            placeholder="Nome do aluno"
-            className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50"
-          />
+        {/* Student picker — full width */}
+        <div className="col-span-2 sm:col-span-3">
+          <StudentPicker onSelect={setStudent} />
         </div>
 
         {/* Meet link */}

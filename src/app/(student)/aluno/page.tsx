@@ -2,7 +2,7 @@ import type { Metadata }   from 'next'
 import { redirect }        from 'next/navigation'
 import Link                from 'next/link'
 import { createClient }    from '@/lib/supabase/server'
-import { PenLine, FileText, Target, Clock, ArrowRight, Flame } from 'lucide-react'
+import { PenLine, FileText, Target, Clock, ArrowRight, Flame, Video, ExternalLink, GraduationCap } from 'lucide-react'
 
 import { DashboardHero }      from './_components/DashboardHero'
 import { StatsRow }           from './_components/StatsRow'
@@ -46,6 +46,16 @@ type EssayData = {
 type SubData = {
   essays_used: number; essays_limit: number
   plans: { name: string } | null
+}
+
+type UpcomingLesson = {
+  id: string
+  session_date: string
+  session_time: string | null
+  subject: string | null
+  meet_link: string | null
+  topic: string | null
+  student_name: string | null
 }
 
 const compKeys: CompKey[] = ['c1_score', 'c2_score', 'c3_score', 'c4_score', 'c5_score']
@@ -122,6 +132,81 @@ const ACTION_CFG: Record<DailyActionKind, { icon: React.ElementType; color: stri
   review:  { icon: FileText,  color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20',     card: 'border-blue-500/15 bg-blue-500/[0.03]'    },
   practice:{ icon: Target,    color: 'text-amber-400',  bg: 'bg-amber-500/10 border-amber-500/20',   card: 'border-amber-500/15 bg-amber-500/[0.03]'  },
   wait:    { icon: Clock,     color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20',   card: 'border-green-500/15 bg-green-500/[0.03]'  },
+}
+
+// ─── Upcoming lessons card ────────────────────────────────────────────────────
+
+function UpcomingLessonsCard({ lessons }: { lessons: UpcomingLesson[] }) {
+  if (lessons.length === 0) return null
+
+  function formatDate(iso: string, time: string | null) {
+    const d = new Date(iso + 'T12:00:00')
+    const date = d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
+    return time ? `${date} às ${time.slice(0, 5)}` : date
+  }
+
+  const next = lessons[0]
+
+  return (
+    <div className="mb-6 rounded-2xl border border-blue-500/20 bg-blue-500/[0.04] px-5 py-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <GraduationCap size={14} className="text-blue-400" />
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            Reforço escolar
+          </p>
+        </div>
+        <Link
+          href="/aluno/reforco-escolar"
+          className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors font-medium"
+        >
+          Ver todas →
+        </Link>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            {next.subject && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                {next.subject}
+              </span>
+            )}
+            <p className="text-sm font-semibold text-white">
+              {formatDate(next.session_date, next.session_time)}
+            </p>
+          </div>
+          {next.topic && (
+            <p className="text-xs text-gray-500 mt-0.5">{next.topic}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {next.meet_link ? (
+            <a
+              href={next.meet_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-500/15 border border-green-500/25 text-green-400 hover:bg-green-500/25 transition-colors"
+            >
+              <Video size={12} />
+              Acessar aula
+              <ExternalLink size={10} />
+            </a>
+          ) : (
+            <span className="text-xs text-gray-600 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+              Link em breve
+            </span>
+          )}
+          {lessons.length > 1 && (
+            <span className="text-[11px] text-gray-600">
+              +{lessons.length - 1} agendada{lessons.length - 1 !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Habit bar ─────────────────────────────────────────────────────────────────
@@ -227,12 +312,15 @@ export default async function AlunoDashboardPage() {
   const db = supabase as any
 
   // Wrap all data fetching in try/catch — a query failure must never crash the dashboard.
-  let profileRaw: { full_name: string } | null = null
-  let subRaw:     SubData | null                = null
-  let essaysRaw:  unknown[]                     = []
+  let profileRaw:       { full_name: string } | null = null
+  let subRaw:           SubData | null                = null
+  let essaysRaw:        unknown[]                     = []
+  let upcomingLessons:  UpcomingLesson[]              = []
+
+  const todayStr = new Date().toISOString().slice(0, 10)
 
   try {
-    const [profileRes, subRes, essaysRes] = await Promise.all([
+    const [profileRes, subRes, essaysRes, lessonsRes] = await Promise.all([
       supabase.from('users').select('full_name').eq('id', user.id).single(),
       db.from('subscriptions')
         .select('essays_used, essays_limit, plans(name)')
@@ -246,11 +334,19 @@ export default async function AlunoDashboardPage() {
         .eq('student_id', user.id)
         .order('submitted_at', { ascending: false })
         .limit(200),
+      db.from('lesson_sessions')
+        .select('id, session_date, session_time, subject, meet_link, topic, student_name')
+        .eq('student_id', user.id)
+        .eq('status', 'scheduled')
+        .gte('session_date', todayStr)
+        .order('session_date', { ascending: true })
+        .limit(3),
     ])
 
-    profileRaw = (profileRes.data as { full_name: string } | null) ?? null
-    subRaw     = (subRes.data     as SubData | null)                ?? null
-    essaysRaw  = (essaysRes.data  as unknown[])                    ?? []
+    profileRaw      = (profileRes.data as { full_name: string } | null) ?? null
+    subRaw          = (subRes.data     as SubData | null)                ?? null
+    essaysRaw       = (essaysRes.data  as unknown[])                    ?? []
+    upcomingLessons = (lessonsRes.data as UpcomingLesson[])             ?? []
 
     if (essaysRes.error) console.error('[dashboard] essays query error:', essaysRes.error.message)
     if (profileRes.error) console.error('[dashboard] profile query error:', profileRes.error.message)
@@ -442,6 +538,9 @@ export default async function AlunoDashboardPage() {
         creditsTotal={creditsTotal}
         nextPlanName={planTier.nextPlan}
       />
+
+      {/* ── Upcoming tutoring lessons ──────────────────────────────────────── */}
+      <UpcomingLessonsCard lessons={upcomingLessons} />
 
       {/* ── Invite card — shown after 2+ corrected essays (G5) ─────────────── */}
       {correctedEssays.length >= 2 && (
