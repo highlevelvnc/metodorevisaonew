@@ -42,10 +42,12 @@ function StudentPicker({
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
       const supabase = createClient()
+      const search = value.trim()
       const { data } = await (supabase as any)
         .from('users')
         .select('id, full_name, email')
-        .ilike('email', `${value}%`)
+        .or(`email.ilike.${search}%,full_name.ilike.%${search}%`)
+        .eq('role', 'student')
         .limit(6)
       setResults((data as StudentResult[]) ?? [])
       setLoading(false)
@@ -70,7 +72,7 @@ function StudentPicker({
   return (
     <div ref={containerRef} className="relative">
       <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">
-        Aluno(a) — buscar por email
+        Aluno(a) — buscar por nome ou email
       </label>
       <div className="relative flex items-center">
         {selected ? (
@@ -83,7 +85,7 @@ function StudentPicker({
           value={query}
           onChange={e => { if (selected) clear(); handleInput(e.target.value) }}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          placeholder="email@exemplo.com"
+          placeholder="Nome ou email do aluno"
           autoComplete="off"
           className={`w-full bg-white/[0.04] border rounded-lg pl-8 pr-8 py-2 text-sm placeholder-gray-700 focus:outline-none focus:border-purple-500/50 transition-colors ${
             selected ? 'border-green-500/40 text-green-300' : 'border-white/[0.10] text-white'
@@ -213,6 +215,7 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
             type="date"
             name="session_date"
             required
+            min={new Date().toISOString().slice(0, 10)}
             className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50"
           />
         </div>

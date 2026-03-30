@@ -72,14 +72,26 @@ export default async function SucessoAulasPage({
 
         {/* Headline */}
         <h1 className="text-xl font-bold text-white mb-2">
-          {isActive ? 'Suas aulas foram ativadas!' : 'Pagamento confirmado'}
+          {isActive ? 'Suas aulas foram ativadas!' : 'Pagamento confirmado!'}
         </h1>
-        <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-          {isActive
-            ? `Seu plano ${sub?.plans?.name ?? planName} está ativo com ${creditsTotal} aulas disponíveis.`
-            : 'Estamos ativando seu plano. Isso leva poucos segundos…'
-          }
-        </p>
+        {isActive ? (
+          <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+            Seu plano {sub?.plans?.name ?? planName} está ativo com {creditsTotal} aulas disponíveis.
+          </p>
+        ) : (
+          <div className="mb-6 space-y-2">
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Seu pagamento foi processado com sucesso. Estamos ativando seu plano agora.
+            </p>
+            <div className="rounded-lg bg-blue-500/[0.06] border border-blue-500/20 px-4 py-3 text-left">
+              <p className="text-xs text-blue-300 font-medium mb-1">Isso costuma levar menos de 30 segundos</p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Se os créditos não aparecerem em 1 minuto, recarregue esta página.
+                Caso o problema persista, entre em contato pelo suporte.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Credits card */}
         {isActive && (

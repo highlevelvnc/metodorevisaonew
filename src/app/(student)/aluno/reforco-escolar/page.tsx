@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { Video, CheckCircle2, Clock, XCircle, ExternalLink, BookOpen, Hourglass } from 'lucide-react'
+import { Video, CheckCircle2, Clock, XCircle, ExternalLink, BookOpen, Hourglass, GraduationCap, CalendarPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import type { LessonStatus } from '@/lib/supabase/types'
 import BookLessonForm from './BookLessonForm'
@@ -55,13 +55,13 @@ function StatusBadge({ status }: { status: LessonStatus }) {
     </span>
   )
   if (status === 'scheduled') return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 rounded-full whitespace-nowrap">
-      <Clock size={9} /> Confirmado
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full whitespace-nowrap">
+      <CheckCircle2 size={9} /> Confirmada pela professora
     </span>
   )
   if (status === 'requested') return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 rounded-full whitespace-nowrap">
-      <Hourglass size={9} /> Aguardando confirmação
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-full whitespace-nowrap animate-pulse">
+      <Hourglass size={9} /> Aguardando professora confirmar
     </span>
   )
   return (
@@ -265,25 +265,65 @@ export default async function ReforcoEscolarPage() {
                   Acessar Aula
                   <ExternalLink size={12} />
                 </a>
+              ) : nextLesson.status === 'requested' ? (
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/[0.06] border border-amber-500/15">
+                  <Hourglass size={11} className="text-amber-400 animate-pulse" />
+                  <div>
+                    <p className="text-xs font-semibold text-amber-300">Solicitação enviada</p>
+                    <p className="text-[10px] text-gray-500">A professora vai confirmar e enviar o link do Google Meet por e-mail.</p>
+                  </div>
+                </div>
               ) : (
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl border border-white/[0.08] text-gray-600 cursor-default">
-                  <Clock size={11} />
-                  Link será disponibilizado em breve
-                </span>
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/[0.08]">
+                  <Clock size={11} className="text-blue-400" />
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400">Link do Meet em breve</p>
+                    <p className="text-[10px] text-gray-600">Você receberá o link por e-mail antes da aula.</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </div>
       ) : (
         <div className="card-dark rounded-2xl p-8 text-center">
-          <Video size={24} className="text-gray-700 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-gray-400 mb-1">Nenhuma aula agendada</p>
-          <p className="text-xs text-gray-600 mb-5 max-w-sm mx-auto leading-relaxed">
-            {hasCredits
-              ? 'Solicite uma aula agora — a professora confirma o horário e você recebe um e-mail de confirmação com o link do Google Meet.'
-              : 'Adquira um plano de aulas para começar a agendar suas aulas de reforço escolar.'}
-          </p>
-          <BookLessonForm hasCredits={hasCredits} />
+          {!lessonSub ? (
+            <>
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-4">
+                <GraduationCap size={20} className="text-purple-400" />
+              </div>
+              <p className="text-sm font-semibold text-white mb-1">Comece suas aulas de reforço</p>
+              <p className="text-xs text-gray-500 mb-5 max-w-sm mx-auto leading-relaxed">
+                Escolha um plano de aulas para ter acesso a aulas individuais de Português, Inglês, Redação e Literatura via Google Meet.
+              </p>
+              <BookLessonForm hasCredits={false} />
+            </>
+          ) : hasCredits ? (
+            <>
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-4">
+                <CalendarPlus size={20} className="text-blue-400" />
+              </div>
+              <p className="text-sm font-semibold text-white mb-1">Nenhuma aula agendada</p>
+              <p className="text-xs text-gray-500 mb-1 max-w-sm mx-auto leading-relaxed">
+                Você tem {availableSlots} aula{availableSlots !== 1 ? 's' : ''} disponíve{availableSlots !== 1 ? 'is' : 'l'} no seu plano.
+              </p>
+              <p className="text-[11px] text-gray-600 mb-5 max-w-xs mx-auto">
+                Solicite uma aula escolhendo data e matéria. A professora confirma em até 24h e envia o link do Meet.
+              </p>
+              <BookLessonForm hasCredits={true} />
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                <Clock size={20} className="text-amber-400" />
+              </div>
+              <p className="text-sm font-semibold text-white mb-1">Créditos de aula esgotados</p>
+              <p className="text-xs text-gray-500 mb-5 max-w-sm mx-auto leading-relaxed">
+                Todas as suas aulas deste ciclo já foram usadas ou estão em andamento. Faça upgrade do plano para mais aulas.
+              </p>
+              <BookLessonForm hasCredits={false} />
+            </>
+          )}
         </div>
       )}
 
@@ -293,7 +333,7 @@ export default async function ReforcoEscolarPage() {
           <h2 className="text-sm font-bold text-white mb-3">Agenda de aulas</h2>
           <div className="space-y-2">
             {upcoming.slice(1).map((lesson) => (
-              <div key={lesson.id} className="card-dark rounded-2xl px-5 py-4 flex items-center gap-4">
+              <div key={lesson.id} className={`card-dark rounded-2xl px-5 py-4 flex items-center gap-4 ${lesson.status === 'requested' ? 'border-amber-500/20 bg-amber-500/[0.02]' : ''}`}>
                 <div className="shrink-0 text-center w-16">
                   <p className="text-xs font-semibold text-gray-300">{formatDate(lesson.session_date)}</p>
                   {lesson.session_time && (

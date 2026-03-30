@@ -138,24 +138,55 @@ const ACTION_CFG: Record<DailyActionKind, { icon: React.ElementType; color: stri
 // ─── Upcoming lessons card ────────────────────────────────────────────────────
 
 function UpcomingLessonsCard({ lessons }: { lessons: UpcomingLesson[] }) {
-  if (lessons.length === 0) return null
-
   function formatDate(iso: string, time: string | null) {
     const d = new Date(iso + 'T12:00:00')
     const date = d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
     return time ? `${date} às ${time.slice(0, 5)}` : date
   }
 
+  // No lessons: show a CTA to book
+  if (lessons.length === 0) {
+    return (
+      <div className="mb-6 rounded-2xl border border-blue-500/10 bg-blue-500/[0.02] px-5 py-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <GraduationCap size={14} className="text-blue-400" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-300">Reforço Escolar</p>
+              <p className="text-[11px] text-gray-600">Aulas de Português, Inglês, Redação e Literatura</p>
+            </div>
+          </div>
+          <Link
+            href="/aluno/reforco-escolar"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            Agendar aula →
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   const next = lessons[0]
+  const isRequested = next.status === 'requested'
 
   return (
-    <div className="mb-6 rounded-2xl border border-blue-500/20 bg-blue-500/[0.04] px-5 py-4">
+    <div className={`mb-6 rounded-2xl border px-5 py-4 ${
+      isRequested ? 'border-amber-500/20 bg-amber-500/[0.03]' : 'border-blue-500/20 bg-blue-500/[0.04]'
+    }`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <GraduationCap size={14} className="text-blue-400" />
+          <GraduationCap size={14} className={isRequested ? 'text-amber-400' : 'text-blue-400'} />
           <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
             Reforço escolar
           </p>
+          {isRequested && (
+            <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full animate-pulse">
+              Aguardando professora
+            </span>
+          )}
         </div>
         <Link
           href="/aluno/reforco-escolar"
@@ -183,10 +214,9 @@ function UpcomingLessonsCard({ lessons }: { lessons: UpcomingLesson[] }) {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(next as any).status === 'requested' ? (
-            <span className="text-xs text-amber-400 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              Aguardando confirmação
+          {isRequested ? (
+            <span className="text-[11px] text-amber-400/80 max-w-[180px]">
+              A professora confirma em até 24h
             </span>
           ) : next.meet_link ? (
             <a
@@ -200,8 +230,8 @@ function UpcomingLessonsCard({ lessons }: { lessons: UpcomingLesson[] }) {
               <ExternalLink size={10} />
             </a>
           ) : (
-            <span className="text-xs text-gray-600 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-              Link em breve
+            <span className="text-[11px] text-gray-500">
+              Link do Meet em breve
             </span>
           )}
           {lessons.length > 1 && (

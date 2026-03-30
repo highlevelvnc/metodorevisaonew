@@ -32,11 +32,7 @@ export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boo
     setSaving(false)
     if (result.error) { setError(result.error); return }
     setDone(true)
-    setTimeout(() => {
-      setOpen(false)
-      setDone(false)
-      router.refresh()
-    }, 2500)
+    router.refresh()
   }
 
   if (!hasCredits) {
@@ -65,11 +61,24 @@ export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boo
 
   if (done) {
     return (
-      <div className="card-dark rounded-2xl p-6 flex items-center gap-3">
-        <CheckCircle2 size={20} className="text-green-400 flex-shrink-0" />
-        <div>
-          <p className="text-sm font-bold text-white">Solicitação enviada!</p>
-          <p className="text-xs text-gray-500 mt-0.5">A professora receberá um aviso e confirmará em breve.</p>
+      <div className="card-dark rounded-2xl p-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 size={18} className="text-green-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-white">Solicitação enviada com sucesso!</p>
+            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+              A professora recebeu sua solicitação por e-mail e vai confirmar em até 24 horas.
+              Quando confirmada, você receberá um e-mail com o link do Google Meet.
+            </p>
+          </div>
+          <button
+            onClick={() => { setDone(false); setOpen(false) }}
+            className="text-gray-600 hover:text-gray-400 transition-colors flex-shrink-0"
+          >
+            <X size={14} />
+          </button>
         </div>
       </div>
     )
@@ -112,12 +121,14 @@ export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boo
 
         {/* Subject */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Matéria</label>
+          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Matéria *</label>
           <select
             name="subject"
+            required
+            defaultValue=""
             className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50"
           >
-            <option value="">Selecionar</option>
+            <option value="" disabled>Selecionar matéria</option>
             {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
