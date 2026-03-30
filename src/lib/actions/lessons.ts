@@ -1,8 +1,8 @@
 'use server'
 
 import { createActionClient } from '@/lib/supabase/server-action'
-import { notifyLessonScheduled, notifyLessonRequested } from '@/lib/notifications'
-import { trackProductEvent } from '@/lib/analytics'
+import { notifyLessonScheduled, notifyLessonRequested, notifyLastLessonCredit } from '@/lib/notifications'
+import { trackProductEvent, trackOncePerUser } from '@/lib/analytics'
 
 // ── Helpers: role check ──────────────────────────────────────────────────────
 
@@ -211,6 +211,53 @@ export async function confirmLessonAction(params: {
         return { error: 'Aula não encontrada ou já foi confirmada por outro professor.' }
       }
       return { error: 'Não foi possível debitar o crédito do aluno. A aula não foi confirmada. Tente novamente.' }
+    }
+  }
+
+  // Check if this debit left the student with exactly 1 credit → send alert
+  if (lesson.student_id) {
+    try {
+      const { data: subAfter } = await db
+        .from('subscriptions')
+        .select('id, lessons_used, lessons_limit, current_period_start, plans!inner(name, plan_type)')
+        .eq('user_id', lesson.student_id)
+        .eq('status', 'active')
+        .eq('plans.plan_type', 'lesson')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (subAfter) {
+        const remaining = subAfter.lessons_limit - subAfter.lessons_used
+        if (remaining === 1) {
+          // Deduplicate: one alert per billing cycle.
+          // Key uses sub ID + current_period_start (set by webhook on activation/renewal).
+          // When handleRenewal resets credits, it also updates current_period_start,
+          // so the key changes and the email can fire again in the new cycle.
+          const cycleKey = subAfter.current_period_start
+            ? new Date(subAfter.current_period_start).toISOString().slice(0, 10) // "2026-04-15"
+            : new Date().toISOString().slice(0, 7) // fallback to YYYY-MM
+          const dedupeKey = `last_credit_lesson_${subAfter.id}_${cycleKey}`
+          trackOncePerUser(dedupeKey as any, lesson.student_id) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+          const { data: studentInfo } = await db
+            .from('users')
+            .select('email, full_name')
+            .eq('id', lesson.student_id)
+            .single()
+
+          if (studentInfo?.email) {
+            await notifyLastLessonCredit({
+              studentEmail: studentInfo.email,
+              studentName: studentInfo.full_name,
+              planName: subAfter.plans?.name ?? 'Reforço',
+            })
+            console.log(`[confirmLessonAction] Last credit alert sent to ${studentInfo.email}`)
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[confirmLessonAction] Last credit check failed (non-fatal):', e)
     }
   }
 

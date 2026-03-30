@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Video, CheckCircle2, Clock, XCircle, ExternalLink, BookOpen, Hourglass, GraduationCap, CalendarPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import type { LessonStatus } from '@/lib/supabase/types'
 import BookLessonForm from './BookLessonForm'
+import { CrossSellRedacao } from '@/components/CrossSellCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,6 +108,7 @@ export default async function ReforcoEscolarPage() {
     { data: upcomingRaw },
     { data: historyRaw },
     { data: lessonSubRaw },
+    { data: essaySubRaw },
   ] = await Promise.all([
     db.from('lesson_sessions')
       .select('id, session_date, session_time, duration_min, subject, topic, meet_link, price_brl, status, notes, professor_id, users!lesson_sessions_professor_id_fkey(full_name)')
@@ -128,8 +131,16 @@ export default async function ReforcoEscolarPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    db.from('subscriptions')
+      .select('id, plans!inner(plan_type)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .eq('plans.plan_type', 'essay')
+      .limit(1)
+      .maybeSingle(),
   ])
 
+  const hasEssaySub = !!essaySubRaw
   const upcoming: LessonRow[] = upcomingRaw ?? []
   const history: LessonRow[]  = historyRaw ?? []
   const nextLesson = upcoming[0] ?? null
@@ -161,28 +172,78 @@ export default async function ReforcoEscolarPage() {
         <BookLessonForm hasCredits={hasCredits} creditsLeft={creditsLeft} creditsTotal={lessonSub?.lessons_limit} />
       </div>
 
-      {/* ── Credits / Plan card ────────────────────────────────── */}
+      {/* ── Credits / Plan card (with smart alerts) ──────────── */}
       {lessonSub ? (
-        <div className="rounded-xl border border-purple-500/20 bg-purple-500/[0.04] px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <p className="text-sm font-semibold text-white">
-              {lessonSub.plans?.name ?? 'Plano de aulas'}
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {creditsLeft} de {lessonSub.lessons_limit} aulas disponíveis
-              {openLessonsCount > 0 && ` · ${openLessonsCount} em andamento`}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-1.5 w-24 rounded-full bg-white/[0.06] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-purple-500 transition-all"
-                style={{ width: `${Math.round((creditsLeft / Math.max(1, lessonSub.lessons_limit)) * 100)}%` }}
-              />
+        <>
+          {/* Credit status card */}
+          <div className={`rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-3 ${
+            creditsLeft === 0
+              ? 'border border-red-500/20 bg-red-500/[0.04]'
+              : creditsLeft <= 2
+                ? 'border border-amber-500/20 bg-amber-500/[0.04]'
+                : 'border border-purple-500/20 bg-purple-500/[0.04]'
+          }`}>
+            <div>
+              <p className="text-sm font-semibold text-white">
+                {lessonSub.plans?.name ?? 'Plano de aulas'}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {creditsLeft === 0
+                  ? 'Todos os créditos usados neste ciclo'
+                  : `${creditsLeft} de ${lessonSub.lessons_limit} aulas disponíveis`}
+                {openLessonsCount > 0 && ` · ${openLessonsCount} em andamento`}
+              </p>
             </div>
-            <span className="text-[11px] font-bold text-purple-400 tabular-nums">{creditsLeft}/{lessonSub.lessons_limit}</span>
+            <div className="flex items-center gap-3">
+              {creditsLeft === 0 ? (
+                <Link
+                  href="/aluno/reforco-escolar/planos"
+                  className="text-xs font-semibold text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Fazer upgrade →
+                </Link>
+              ) : (
+                <>
+                  <div className="h-1.5 w-24 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${creditsLeft <= 2 ? 'bg-amber-500' : 'bg-purple-500'}`}
+                      style={{ width: `${Math.round((creditsLeft / Math.max(1, lessonSub.lessons_limit)) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={`text-[11px] font-bold tabular-nums ${creditsLeft <= 2 ? 'text-amber-400' : 'text-purple-400'}`}>
+                    {creditsLeft}/{lessonSub.lessons_limit}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+
+          {/* Low credits alert */}
+          {creditsLeft > 0 && creditsLeft <= 2 && (
+            <div className="rounded-lg bg-amber-500/[0.06] border border-amber-500/15 px-4 py-2.5 flex items-center gap-2">
+              <span className="text-amber-400">⚡</span>
+              <p className="text-xs text-amber-300">
+                {creditsLeft === 1 ? 'Última aula disponível neste ciclo.' : `Restam apenas ${creditsLeft} aulas.`}
+                {' '}Agende agora para não perder.
+              </p>
+            </div>
+          )}
+
+          {/* Exhausted credits alert */}
+          {creditsLeft === 0 && (
+            <div className="rounded-lg bg-red-500/[0.06] border border-red-500/15 px-4 py-2.5 flex items-center justify-between gap-3">
+              <p className="text-xs text-red-300">
+                Seus créditos acabaram. Faça upgrade para continuar evoluindo sem interrupção.
+              </p>
+              <Link
+                href="/aluno/reforco-escolar/planos"
+                className="text-xs font-semibold text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
+              >
+                Ver planos
+              </Link>
+            </div>
+          )}
+        </>
       ) : (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.04] px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -396,6 +457,11 @@ export default async function ReforcoEscolarPage() {
           </div>
         ))}
       </div>
+
+      {/* ── Cross-sell: redação for lesson-only students ────── */}
+      {!hasEssaySub && lessonSub && completedCount >= 1 && (
+        <CrossSellRedacao />
+      )}
 
       {/* ── History ───────────────────────────────────────────── */}
       {history.length > 0 && (

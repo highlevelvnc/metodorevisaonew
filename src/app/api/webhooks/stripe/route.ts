@@ -218,6 +218,7 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
       essays_limit:               plan.essay_count,
       lessons_used:               0,
       lessons_limit:              planType === 'lesson' ? plan.lesson_count : 0,
+      current_period_start:       new Date().toISOString(),
       stripe_checkout_session_id: session.id,
       stripe_customer_id:         (session.customer as string | null) ?? null,
       stripe_subscription_id:     stripeSubscriptionId,
@@ -254,6 +255,27 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
       lessons_limit: plan.lesson_count,
     })
   }
+
+  // Check if this purchase came from cross-sell (clicked within last 7 days)
+  try {
+    const target = planType === 'lesson' ? 'reforco' : 'redacao'
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600_000).toISOString()
+    const { count: crossSellClicks } = await db
+      .from('product_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_name', 'cross_sell_clicked')
+      .eq('user_id', userId)
+      .gte('created_at', sevenDaysAgo)
+
+    if ((crossSellClicks ?? 0) > 0) {
+      trackProductEvent('cross_sell_converted', userId, {
+        plan_slug: planSlug,
+        plan_type: planType,
+        target,
+      })
+      console.log(`[webhook] Cross-sell conversion attributed — user=${userId} target=${target}`)
+    }
+  } catch { /* non-fatal attribution */ }
 
   console.log(
     `[webhook] Subscription activated — user: ${userId} | plan: ${planSlug} | stripe_sub: ${stripeSubscriptionId} | session: ${session.id} | total: ${Date.now() - t0}ms`
@@ -304,7 +326,7 @@ async function handleRenewal(invoice: Stripe.Invoice) {
   // Reset credits for the new billing cycle (both fields — unused one is already 0)
   const { error: updateErr } = await db
     .from('subscriptions')
-    .update({ essays_used: 0, lessons_used: 0 })
+    .update({ essays_used: 0, lessons_used: 0, current_period_start: new Date().toISOString() })
     .eq('id', sub.id)
 
   if (updateErr) {

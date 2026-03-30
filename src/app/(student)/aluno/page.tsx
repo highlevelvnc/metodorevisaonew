@@ -21,6 +21,7 @@ import { CorrectorSelection }  from './_components/CorrectorSelection'
 import { OnboardingDashboard } from './_components/OnboardingDashboard'
 import { InviteCard }          from './_components/InviteCard'
 import { TrackPageView }       from '@/components/TrackPageView'
+import { CrossSellReforco }   from '@/components/CrossSellCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -352,11 +353,12 @@ export default async function AlunoDashboardPage() {
   let subRaw:           SubData | null                = null
   let essaysRaw:        unknown[]                     = []
   let upcomingLessons:  UpcomingLesson[]              = []
+  let hasLessonSub = false
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
   try {
-    const [profileRes, subRes, essaysRes, lessonsRes] = await Promise.all([
+    const [profileRes, subRes, essaysRes, lessonsRes, lessonSubRes] = await Promise.all([
       supabase.from('users').select('full_name').eq('id', user.id).single(),
       db.from('subscriptions')
         .select('essays_used, essays_limit, plans(name)')
@@ -377,11 +379,19 @@ export default async function AlunoDashboardPage() {
         .gte('session_date', todayStr)
         .order('session_date', { ascending: true })
         .limit(3),
+      db.from('subscriptions')
+        .select('id, plans!inner(plan_type)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .eq('plans.plan_type', 'lesson')
+        .limit(1)
+        .maybeSingle(),
     ])
 
     profileRaw      = (profileRes.data as { full_name: string } | null) ?? null
     subRaw          = (subRes.data     as SubData | null)                ?? null
     essaysRaw       = (essaysRes.data  as unknown[])                    ?? []
+    hasLessonSub    = !!lessonSubRes.data
     upcomingLessons = (lessonsRes.data as UpcomingLesson[])             ?? []
 
     if (essaysRes.error) console.error('[dashboard] essays query error:', essaysRes.error.message)
@@ -577,6 +587,13 @@ export default async function AlunoDashboardPage() {
 
       {/* ── Upcoming tutoring lessons ──────────────────────────────────────── */}
       <UpcomingLessonsCard lessons={upcomingLessons} />
+
+      {/* ── Cross-sell: reforço for essay-only students ───────────────────── */}
+      {!hasLessonSub && correctedEssays.length >= 1 && (
+        <div className="mb-6">
+          <CrossSellReforco />
+        </div>
+      )}
 
       {/* ── Invite card — shown after 2+ corrected essays (G5) ─────────────── */}
       {correctedEssays.length >= 2 && (

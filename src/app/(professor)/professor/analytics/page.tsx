@@ -425,6 +425,46 @@ export default async function AnalyticsPage({
       </div>
 
       {/* ── Engagement Events ──────────────────────────────────────────────── */}
+      {/* ── Cross-sell Performance ──────────────────────────────────────────── */}
+      <SectionTitle>Cross-sell (Redação ↔ Reforço)</SectionTitle>
+      <div className="card-dark rounded-2xl p-5 mb-6">
+        {(() => {
+          const views = ec['cross_sell_viewed'] ?? 0
+          const clicks = ec['cross_sell_clicked'] ?? 0
+          const conversions = ec['cross_sell_converted'] ?? 0
+          const ctr = views > 0 ? Math.round((clicks / views) * 100) : 0
+          const convRate = clicks > 0 ? Math.round((conversions / clicks) * 100) : 0
+          return (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Views</p>
+                  <p className="text-xl font-bold text-white tabular-nums">{views}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Cliques</p>
+                  <p className="text-xl font-bold text-white tabular-nums">{clicks}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">CTR</p>
+                  <p className={`text-xl font-bold tabular-nums ${ctr >= 5 ? 'text-emerald-400' : ctr > 0 ? 'text-amber-400' : 'text-gray-700'}`}>{ctr}%</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Conversões</p>
+                  <p className={`text-xl font-bold tabular-nums ${conversions > 0 ? 'text-emerald-400' : 'text-gray-700'}`}>{conversions}</p>
+                  {convRate > 0 && <p className="text-[9px] text-gray-600">{convRate}% dos cliques</p>}
+                </div>
+              </div>
+              <div className="pt-3 border-t border-white/[0.04] flex flex-wrap gap-6">
+                <MiniRate label="View → Click (CTR)" rate={ctr > 0 ? `${ctr}%` : '—'} />
+                <MiniRate label="Click → Compra" rate={convRate > 0 ? `${convRate}%` : '—'} />
+                <MiniRate label="View → Compra" rate={views > 0 && conversions > 0 ? `${Math.round((conversions / views) * 100)}%` : '—'} />
+              </div>
+            </>
+          )
+        })()}
+      </div>
+
       <SectionTitle>Engajamento</SectionTitle>
       <div className="card-dark rounded-2xl p-5 mb-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

@@ -96,6 +96,7 @@ export default async function ProfessorAulasPage() {
     { count: completedMonthCount },
     { count: cancelledMonthCount },
     { count: scheduledCount },
+    { data: feedbackRaw },
   ] = await Promise.all([
     db.from('lesson_sessions')
       .select(selectFields)
@@ -139,11 +140,22 @@ export default async function ProfessorAulasPage() {
       .eq('professor_id', user.id)
       .in('status', ['scheduled', 'requested'])
       .gte('session_date', todayStr),
+
+    // Feedback from students
+    db.from('lesson_feedback')
+      .select('id, rating, comment, subject, created_at, student:users!lesson_feedback_student_id_fkey(full_name)')
+      .eq('professor_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
   ])
 
   const upcomingLessons: LessonRow[] = upcomingRaw ?? []
   const queueLessons:    LessonRow[] = queueRaw    ?? []
   const recentLessons:   LessonRow[] = recentRaw   ?? []
+
+  type FeedbackRow = { id: string; rating: number; comment: string | null; subject: string | null; created_at: string; student: { full_name: string } | null }
+  const feedback: FeedbackRow[] = (feedbackRaw ?? []) as FeedbackRow[]
+  const avgRating = feedback.length > 0 ? (feedback.reduce((s, f) => s + f.rating, 0) / feedback.length).toFixed(1) : null
 
   const completedMonth = completedMonthCount ?? 0
   const cancelledMonth = cancelledMonthCount ?? 0
@@ -357,6 +369,52 @@ export default async function ProfessorAulasPage() {
           </div>
         )}
       </div>
+
+      {/* ── Feedback / Avaliações ─────────────────────────────── */}
+      {feedback.length > 0 && (
+        <div className="card-dark rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Avaliações dos alunos</h2>
+              <p className="text-xs text-gray-600 mt-0.5">Últimas {feedback.length} avaliações recebidas</p>
+            </div>
+            {avgRating && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-yellow-400">★</span>
+                <span className="text-sm font-bold text-white tabular-nums">{avgRating}</span>
+                <span className="text-[10px] text-gray-600">média</span>
+              </div>
+            )}
+          </div>
+          <div className="divide-y divide-white/[0.04]">
+            {feedback.map(f => (
+              <div key={f.id} className="px-5 py-3.5 flex items-start gap-3">
+                <div className="flex gap-0.5 mt-0.5 flex-shrink-0">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <svg key={s} width="11" height="11" viewBox="0 0 24 24" fill={s <= f.rating ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" className={s <= f.rating ? 'text-yellow-400' : 'text-gray-700'}>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-semibold text-gray-300">{f.student?.full_name ?? 'Aluno'}</span>
+                    {f.subject && (
+                      <span className="text-[10px] text-gray-600">{f.subject}</span>
+                    )}
+                  </div>
+                  {f.comment && (
+                    <p className="text-xs text-gray-500 leading-relaxed">{f.comment}</p>
+                  )}
+                </div>
+                <span className="text-[10px] text-gray-700 flex-shrink-0">
+                  {new Date(f.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -52,6 +52,10 @@ export type ProductEventName =
   | 'reforco_success_viewed'
   | 'lesson_requested'
   | 'lesson_confirmed'
+  | 'cross_sell_viewed'
+  | 'cross_sell_clicked'
+  | 'cross_sell_converted'
+  | 'lesson_reactivation_sent'
 
 /**
  * Record a product event to the database.

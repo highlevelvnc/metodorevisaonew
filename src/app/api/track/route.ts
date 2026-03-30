@@ -20,6 +20,8 @@ const ALLOWED_PUBLIC_EVENTS = new Set<ProductEventName>([
   'checkout_started_public',
   'reforco_cta_clicked',
   'reforco_plan_selected',
+  'cross_sell_viewed',
+  'cross_sell_clicked',
 ])
 
 export async function POST(req: Request) {

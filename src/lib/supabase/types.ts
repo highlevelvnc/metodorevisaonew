@@ -83,6 +83,7 @@ export interface Database {
           lessons_limit: number
           started_at: string
           expires_at: string | null
+          current_period_start: string
           stripe_checkout_session_id: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
@@ -362,6 +363,32 @@ export interface Database {
           cpf?:          string | null
           short_bio?:    string | null
           updated_at?:   string
+        }
+      }
+      lesson_feedback: {
+        Row: {
+          id:            string
+          lesson_id:     string
+          student_id:    string
+          professor_id:  string | null
+          subject:       string | null
+          rating:        number        // 1–5
+          comment:       string | null
+          created_at:    string
+        }
+        Insert: {
+          id?:           string
+          lesson_id:     string
+          student_id:    string
+          professor_id?: string | null
+          subject?:      string | null
+          rating:        number
+          comment?:      string | null
+          created_at?:   string
+        }
+        Update: {
+          rating?:       number
+          comment?:      string | null
         }
       }
     }

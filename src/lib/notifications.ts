@@ -556,3 +556,232 @@ export async function notifyLessonCreditsRenewed(params: {
 
   await sendEmail({ to: studentEmail, subject: emailSubject, html })
 }
+
+// ─── Activation nudge (24h after purchase, no lesson booked) ─────────────────
+
+export async function notifyNoLessonBooked(params: {
+  studentEmail: string
+  studentName: string | null
+  creditsTotal: number
+  planName: string
+}): Promise<void> {
+  const { studentEmail, studentName, creditsTotal, planName } = params
+  const siteUrl   = getSiteUrl()
+  const firstName = studentName ? studentName.split(' ')[0] : 'Aluno'
+
+  const emailSubject = `Você tem ${creditsTotal} aulas esperando por você`
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.02em;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 8px;">Olá, ${firstName}!</p>
+      <h1 style="font-size:22px;color:#fff;margin:0 0 6px;font-weight:700;">Suas aulas estão te esperando</h1>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;line-height:1.6;">
+        Você ativou o plano ${planName} mas ainda não agendou nenhuma aula.
+        85% dos alunos agendam no primeiro dia — e começam a ver resultado já na segunda aula.
+      </p>
+      <div style="text-align:center;padding:20px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;margin-bottom:24px;">
+        <p style="font-size:36px;font-weight:800;color:#fff;margin:0;">${creditsTotal}</p>
+        <p style="font-size:12px;color:#9ca3af;margin:4px 0 0;">aulas disponíveis agora</p>
+      </div>
+      <div style="text-align:center;">
+        <a href="${siteUrl}/aluno/reforco-escolar" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Agendar minha primeira aula →
+        </a>
+      </div>
+      <p style="font-size:11px;color:#6b7280;margin-top:16px;text-align:center;line-height:1.5;">
+        Escolha data, horário e matéria. A professora confirma em até 24h e envia o link do Google Meet.
+      </p>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Reforço escolar online<br/>Dúvidas? ${SUPPORT_EMAIL}
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject: emailSubject, html })
+}
+
+// ─── Post-lesson re-booking (sent after lesson completed) ────────────────────
+
+export async function notifyLessonCompleted(params: {
+  studentEmail: string
+  studentName: string | null
+  subject: string | null
+  creditsLeft: number
+  lessonId?: string
+}): Promise<void> {
+  const { studentEmail, studentName, subject: subj, creditsLeft, lessonId } = params
+  const siteUrl   = getSiteUrl()
+  const firstName = studentName ? studentName.split(' ')[0] : 'Aluno'
+
+  const emailSubject = subj
+    ? `Aula de ${subj} concluída — agende a próxima`
+    : 'Aula concluída — agende a próxima'
+
+  const creditsMsg = creditsLeft > 0
+    ? `Você ainda tem <strong style="color:#fff;">${creditsLeft} aula${creditsLeft !== 1 ? 's' : ''}</strong> disponíve${creditsLeft !== 1 ? 'is' : 'l'} neste ciclo.`
+    : 'Seus créditos deste ciclo acabaram. Renove para continuar evoluindo.'
+
+  const ctaHref = creditsLeft > 0
+    ? `${siteUrl}/aluno/reforco-escolar`
+    : `${siteUrl}/aluno/reforco-escolar/planos`
+  const ctaText = creditsLeft > 0
+    ? 'Agendar próxima aula →'
+    : 'Renovar plano →'
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.02em;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 8px;">Olá, ${firstName}!</p>
+      <h1 style="font-size:22px;color:#fff;margin:0 0 6px;font-weight:700;">Aula concluída! 🎉</h1>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 20px;line-height:1.6;">
+        ${subj ? `Sua aula de ${subj} foi registrada.` : 'Sua aula foi registrada.'}
+        Alunos que mantêm frequência semanal evoluem 3x mais rápido.
+      </p>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;line-height:1.6;">
+        ${creditsMsg}
+      </p>
+      <div style="text-align:center;margin-bottom:16px;">
+        <a href="${ctaHref}" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          ${ctaText}
+        </a>
+      </div>${lessonId ? `
+      <div style="text-align:center;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
+        <p style="font-size:12px;color:#6b7280;margin:0 0 8px;">Como foi sua aula?</p>
+        <a href="${siteUrl}/aluno/reforco-escolar/feedback/${lessonId}" style="font-size:12px;color:#a78bfa;text-decoration:none;">Avaliar com estrelas →</a>
+      </div>` : ''}
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Reforço escolar online<br/>Dúvidas? ${SUPPORT_EMAIL}
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject: emailSubject, html })
+}
+
+// ─── Last lesson credit alert ────────────────────────────────────────────────
+
+export async function notifyLastLessonCredit(params: {
+  studentEmail: string
+  studentName: string | null
+  planName: string
+}): Promise<void> {
+  const { studentEmail, studentName, planName } = params
+  const siteUrl   = getSiteUrl()
+  const firstName = studentName ? studentName.split(' ')[0] : 'Aluno'
+
+  const emailSubject = 'Você ainda tem 1 aula disponível'
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.02em;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 8px;">Olá, ${firstName}!</p>
+      <h1 style="font-size:22px;color:#fff;margin:0 0 6px;font-weight:700;">Última aula do ciclo ⚡</h1>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;line-height:1.6;">
+        Resta <strong style="color:#fff;">1 aula</strong> no seu plano ${planName}.
+        Agende agora para aproveitar antes da renovação do ciclo.
+      </p>
+      <div style="text-align:center;padding:16px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:12px;margin-bottom:24px;">
+        <p style="font-size:42px;font-weight:800;color:#fbbf24;margin:0;">1</p>
+        <p style="font-size:12px;color:#9ca3af;margin:4px 0 0;">aula restante</p>
+      </div>
+      <div style="text-align:center;">
+        <a href="${siteUrl}/aluno/reforco-escolar" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Agendar minha última aula →
+        </a>
+      </div>
+      <p style="font-size:11px;color:#6b7280;margin-top:16px;text-align:center;line-height:1.5;">
+        Seus créditos serão renovados automaticamente no próximo ciclo de faturamento.
+      </p>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Reforço escolar online<br/>Dúvidas? ${SUPPORT_EMAIL}
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject: emailSubject, html })
+}
+
+// ─── Lesson inactivity reactivation ──────────────────────────────────────────
+
+export async function notifyLessonInactive(params: {
+  studentEmail: string
+  studentName: string | null
+  creditsLeft: number
+  daysSinceLastLesson: number
+  lastSubject: string | null
+}): Promise<void> {
+  const { studentEmail, studentName, creditsLeft, daysSinceLastLesson, lastSubject } = params
+  const siteUrl   = getSiteUrl()
+  const firstName = studentName ? studentName.split(' ')[0] : 'Aluno'
+
+  const emailSubject = `Você ainda tem ${creditsLeft} aula${creditsLeft !== 1 ? 's' : ''} disponíve${creditsLeft !== 1 ? 'is' : 'l'}`
+
+  const contextLine = lastSubject
+    ? `Sua última aula foi de ${lastSubject}, há ${daysSinceLastLesson} dias. A professora está pronta para continuar de onde paramos.`
+    : `Faz ${daysSinceLastLesson} dias desde sua última aula. A professora está pronta para continuar seu progresso.`
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;color:#e5e7eb;">
+  <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.02em;">Método Revisão</span>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 24px;">
+      <p style="font-size:15px;color:#d1d5db;margin:0 0 8px;">Olá, ${firstName}!</p>
+      <h1 style="font-size:22px;color:#fff;margin:0 0 6px;font-weight:700;">Suas aulas estão paradas</h1>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 20px;line-height:1.6;">
+        ${contextLine}
+      </p>
+      <div style="text-align:center;padding:16px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;margin-bottom:20px;">
+        <p style="font-size:36px;font-weight:800;color:#fff;margin:0;">${creditsLeft}</p>
+        <p style="font-size:12px;color:#9ca3af;margin:4px 0 0;">aula${creditsLeft !== 1 ? 's' : ''} disponíve${creditsLeft !== 1 ? 'is' : 'l'} agora</p>
+      </div>
+      <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;line-height:1.6;text-align:center;">
+        Alunos que mantêm frequência semanal evoluem 3x mais rápido. Não deixe seu plano parado.
+      </p>
+      <div style="text-align:center;">
+        <a href="${siteUrl}/aluno/reforco-escolar" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Agendar aula agora →
+        </a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:24px;">
+      Método Revisão — Reforço escolar online<br/>Dúvidas? ${SUPPORT_EMAIL}
+    </p>
+  </div>
+</body>
+</html>`
+
+  await sendEmail({ to: studentEmail, subject: emailSubject, html })
+}

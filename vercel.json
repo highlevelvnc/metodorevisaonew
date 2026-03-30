@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/lesson-reminders",
       "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/lesson-activation",
+      "schedule": "37 */2 * * *"
     }
   ]
 }
