@@ -17,6 +17,12 @@ export async function generateMetadata({
     evolucao:   'Evolução',
     estrategia: 'Estratégia',
     intensivo:  'Intensivo',
+    'reforco-4':  'Reforço 4',
+    'reforco-8':  'Reforço 8',
+    'reforco-12': 'Reforço 12',
+    'reforco-16': 'Reforço 16',
+    'reforco-22': 'Reforço 22',
+    'reforco-34': 'Reforço 34',
   }
   const name = names[params.planSlug] ?? 'Plano'
   return {
@@ -39,7 +45,7 @@ export default async function CheckoutPage({
   const admin = createAdminClient() as any
   const { data: plan } = await admin
     .from('plans')
-    .select('id, name, slug, price_brl, essay_count')
+    .select('id, name, slug, price_brl, essay_count, lesson_count, plan_type')
     .eq('slug', planSlug)
     .eq('active', true)
     .maybeSingle()
@@ -89,7 +95,7 @@ export default async function CheckoutPage({
         </div>
 
         <Link
-          href="/#planos"
+          href={plan.plan_type === 'lesson' ? '/reforco-escolar/planos' : '/#planos'}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -158,6 +164,7 @@ export default async function CheckoutPage({
 // ─── Plan card ────────────────────────────────────────────────────────────────
 
 const PLAN_FEATURES: Record<string, string[]> = {
+  // Essay plans
   evolucao: [
     '4 redações corrigidas por ciclo',
     'Devolutiva estratégica completa (C1–C5)',
@@ -182,12 +189,20 @@ const PLAN_FEATURES: Record<string, string[]> = {
     'Simulados com temas inéditos e gabarito',
     'Canal direto para dúvidas entre sessões',
   ],
+  // Lesson plans
+  'reforco-4':  ['4 aulas individuais por mês', 'Google Meet ao vivo com professora', '4 matérias: Português, Inglês, Redação, Literatura', 'Plano adaptado às provas do aluno', 'Professora dedicada'],
+  'reforco-8':  ['8 aulas individuais por mês', 'Google Meet ao vivo com professora', '4 matérias: Português, Inglês, Redação, Literatura', 'Material personalizado por aula', 'Acompanhamento contínuo da evolução', 'Professora dedicada'],
+  'reforco-12': ['12 aulas individuais por mês', 'Google Meet ao vivo com professora', '4 matérias: Português, Inglês, Redação, Literatura', 'Material personalizado por aula', 'Acompanhamento contínuo da evolução', 'Prioridade no agendamento'],
+  'reforco-16': ['16 aulas individuais por mês', 'Google Meet ao vivo com professora', '4 matérias disponíveis', 'Material personalizado', 'Acompanhamento contínuo'],
+  'reforco-22': ['22 aulas individuais por mês', 'Google Meet ao vivo com professora', '4 matérias disponíveis', 'Acompanhamento diário', 'Material personalizado'],
+  'reforco-34': ['34 aulas individuais por mês', 'Google Meet ao vivo com professora', '4 matérias disponíveis', 'Acompanhamento diário', 'Prioridade total'],
 }
 
 const PLAN_POPULAR: Record<string, boolean> = {
   evolucao:   false,
   estrategia: true,
   intensivo:  false,
+  'reforco-8': true,
 }
 
 const TESTIMONIALS: Record<string, { text: string; author: string; result: string }> = {
@@ -206,32 +221,56 @@ const TESTIMONIALS: Record<string, { text: string; author: string; result: strin
     author: 'Felipe R.',
     result: 'Nota 820 no ENEM 2024',
   },
+  'reforco-4': {
+    text: 'Minha filha estava com 5 em Português. Em 2 meses de reforço, foi para 8. A professora é incrível.',
+    author: 'Carla M.',
+    result: 'Nota 5 → 8 em Português',
+  },
+  'reforco-8': {
+    text: 'O acompanhamento individual fez toda a diferença. Meu filho ganhou confiança para as provas.',
+    author: 'Roberto A.',
+    result: 'Aprovado no vestibular',
+  },
+  'reforco-12': {
+    text: 'Com 3 aulas por semana, minha filha recuperou todo o conteúdo atrasado antes da prova final.',
+    author: 'Ana P.',
+    result: 'Recuperação em 6 semanas',
+  },
 }
 
 interface PlanData {
-  id:          string
-  name:        string
-  slug:        string
-  price_brl:   number
-  essay_count: number
+  id:           string
+  name:         string
+  slug:         string
+  price_brl:    number
+  essay_count:  number
+  lesson_count: number
+  plan_type:    string
 }
 
 function PlanCard({ plan }: { plan: PlanData }) {
   const features      = PLAN_FEATURES[plan.slug] ?? []
   const popular       = PLAN_POPULAR[plan.slug] ?? false
   const testimonial   = TESTIMONIALS[plan.slug]
-  const perCorrection = (plan.price_brl / plan.essay_count).toFixed(2).replace('.', ',')
+  const isLesson      = plan.plan_type === 'lesson'
+  const unitCount     = isLesson ? plan.lesson_count : plan.essay_count
+  const perUnit       = unitCount > 0 ? (plan.price_brl / unitCount).toFixed(2).replace('.', ',') : '0'
+  const unitLabel     = isLesson ? 'aula' : 'redação'
 
   return (
     <div className="lg:sticky lg:top-6 space-y-4">
 
       {/* ── Social proof bar ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3 px-1">
-        {[
+        {(isLesson ? [
+          { value: '1:1', label: 'aula individual' },
+          { value: '4', label: 'matérias disponíveis' },
+          { value: '4.9/5', label: 'avaliação dos alunos' },
+        ] : [
           { value: '+10.000', label: 'redações corrigidas' },
           { value: '+180 pts', label: 'evolução média' },
           { value: '4.9/5', label: 'avaliação dos alunos' },
-        ].map((s) => (
+        ]).map((s) => (
           <div key={s.label} className="text-center">
             <p className="text-base font-extrabold text-white tabular-nums">{s.value}</p>
             <p className="text-[10px] text-gray-600 leading-snug">{s.label}</p>
@@ -283,10 +322,10 @@ function PlanCard({ plan }: { plan: PlanData }) {
               </div>
               <div>
                 <p className="text-xs font-bold text-emerald-400">
-                  R$ {perCorrection} por redação
+                  R$ {perUnit} por {unitLabel}
                 </p>
                 <p className="text-[10px] text-gray-600 leading-snug">
-                  Devolutiva completa C1–C5 inclusa
+                  {isLesson ? 'Aula individual via Google Meet' : 'Devolutiva completa C1–C5 inclusa'}
                 </p>
               </div>
             </div>

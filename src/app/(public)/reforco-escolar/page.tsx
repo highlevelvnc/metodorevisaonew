@@ -100,7 +100,7 @@ export default function ReforcoEscolarPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              href="/aluno/reforco-escolar/planos"
+              href="/reforco-escolar/planos"
               className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-7 py-3.5 rounded-xl transition-colors text-sm"
             >
               Ver planos e preços
@@ -216,7 +216,7 @@ export default function ReforcoEscolarPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              href="/aluno/reforco-escolar/planos"
+              href="/reforco-escolar/planos"
               className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-7 py-3.5 rounded-xl transition-colors text-sm"
             >
               Ver planos e preços

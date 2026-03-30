@@ -124,7 +124,7 @@ export default function ReforcoEscolarTeaser() {
         {/* CTA */}
         <div className="text-center">
           <Link
-            href="/aluno/reforco-escolar/planos"
+            href="/reforco-escolar/planos"
             className="btn-primary-lg"
             onClick={() => trackEvent('cta_click', { source: 'reforco_teaser' })}
           >
