@@ -9,7 +9,7 @@ import { ThemeToggle } from './ThemeToggle'
 const navLinks: { label: string; href: string; highlight?: boolean }[] = [
   { label: 'Como funciona',    href: '/#como-funciona' },
   { label: 'Planos',           href: '/#planos' },
-  { label: 'Reforço Escolar',  href: '/reforco-escolar' },
+  { label: 'Reforço',          href: '/reforco-escolar' },
   { label: 'Resultados',       href: '/#depoimentos' },
   { label: 'Blog',             href: '/blog' },
 ]

@@ -34,13 +34,15 @@ export default async function AnalyticsPage({
 
   const days = Math.min(90, Math.max(1, parseInt(searchParams.days ?? '30') || 30))
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+  const prevFrom = new Date(Date.now() - days * 2 * 24 * 60 * 60 * 1000).toISOString()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createAdminClient() as any
 
-  // ── Data fetching ─────────────────────────────────────────────────────────
+  // ── Data fetching (current + previous period for comparison) ──────────────
   const [
     eventsRes,
+    prevEventsRes,
     usersRes,
     essaysRes,
     correctionsRes,
@@ -49,6 +51,7 @@ export default async function AnalyticsPage({
     unviewedRes,
   ] = await Promise.all([
     db.from('product_events').select('event_name, user_id, metadata').gte('created_at', since),
+    db.from('product_events').select('event_name').gte('created_at', prevFrom).lt('created_at', since),
     db.from('users').select('id', { count: 'exact', head: true }).gte('created_at', since),
     db.from('essays').select('id', { count: 'exact', head: true }).gte('submitted_at', since),
     db.from('corrections').select('id', { count: 'exact', head: true }).gte('corrected_at', since),
@@ -69,6 +72,25 @@ export default async function AnalyticsPage({
     }
   }
   const uniqueCount = (name: string) => eu[name]?.size ?? 0
+
+  // Previous period event counts (for comparison)
+  const prevEvents = (prevEventsRes.data ?? []) as { event_name: string }[]
+  const pec: Record<string, number> = {}
+  for (const e of prevEvents) {
+    pec[e.event_name] = (pec[e.event_name] ?? 0) + 1
+  }
+
+  // Delta helper: returns "↑ 23%" or "↓ 15%" or "—" or "novo"
+  const delta = (current: number | undefined, prev: number | undefined): { text: string; color: string } => {
+    const c = current ?? 0
+    const p = prev ?? 0
+    if (c === 0 && p === 0) return { text: '—', color: 'text-gray-700' }
+    if (p === 0) return { text: 'novo', color: 'text-blue-400' }
+    const change = Math.round(((c - p) / p) * 100)
+    if (change === 0) return { text: '0%', color: 'text-gray-600' }
+    if (change > 0) return { text: `↑ ${change}%`, color: 'text-emerald-400' }
+    return { text: `↓ ${Math.abs(change)}%`, color: 'text-red-400' }
+  }
 
   // Reforço plan breakdown: count purchases per plan_slug
   const reforcoPlanCounts: Record<string, number> = {}
@@ -236,6 +258,73 @@ export default async function AnalyticsPage({
         </div>
       </div>
 
+      {/* ── Reforço Escolar: Summary Cards ──────────────────────────────────── */}
+      <SectionTitle>Reforço Escolar — Resumo</SectionTitle>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <MetricCardDelta label="Compras" value={ec['reforco_purchase_completed'] ?? 0} prev={pec['reforco_purchase_completed'] ?? 0} color="text-emerald-400" />
+        <MetricCardDelta label="Aulas solicitadas" value={ec['lesson_requested'] ?? 0} prev={pec['lesson_requested'] ?? 0} />
+        <MetricCardDelta label="Aulas confirmadas" value={ec['lesson_confirmed'] ?? 0} prev={pec['lesson_confirmed'] ?? 0} color="text-blue-400" />
+        <MetricCard
+          label="Taxa de ativação"
+          value={reforcoActivationRate}
+          color={reforcoActivationRate >= 50 ? 'text-emerald-400' : reforcoActivationRate >= 25 ? 'text-amber-400' : 'text-red-400'}
+          sub={`${reforcoPurchaseUsers.size} compradores → ${reforcoRequestUsers.size} usaram`}
+          suffix="%"
+        />
+      </div>
+
+      {/* Biggest bottleneck auto-detected + action recommendation */}
+      {(() => {
+        const ACTIONS: Record<string, string> = {
+          'Landing → CTA': 'Testar novo headline ou reposicionar o CTA. A proposta de valor pode não estar clara nos primeiros 5 segundos.',
+          'Planos → Checkout': 'Revisar apresentação dos planos: simplificar opções, destacar o mais popular, ou adicionar mais prova social.',
+          'Checkout → Compra': 'Reduzir fricção no checkout: revisar campos do formulário, testar copy do botão, ou verificar erros de pagamento no Stripe.',
+          'Compra → Solicitou aula': 'Melhorar onboarding pós-compra: e-mail de boas-vindas com link direto, ou CTA mais claro na página de sucesso.',
+          'Solicitou → Confirmada': 'Verificar tempo de resposta da professora. Considerar alerta quando solicitações ficam pendentes por mais de 24h.',
+        }
+        const steps = [
+          { label: 'Landing → CTA', from: ec['reforco_landing_viewed'] ?? 0, to: ec['reforco_cta_clicked'] ?? 0 },
+          { label: 'Planos → Checkout', from: ec['reforco_plans_viewed'] ?? 0, to: ec['reforco_checkout_started'] ?? 0 },
+          { label: 'Checkout → Compra', from: ec['reforco_checkout_started'] ?? 0, to: ec['reforco_purchase_completed'] ?? 0 },
+          { label: 'Compra → Solicitou aula', from: ec['reforco_purchase_completed'] ?? 0, to: ec['lesson_requested'] ?? 0 },
+          { label: 'Solicitou → Confirmada', from: ec['lesson_requested'] ?? 0, to: ec['lesson_confirmed'] ?? 0 },
+        ].filter(s => s.from > 0)
+        const worst = steps.length > 0
+          ? steps.reduce((a, b) => {
+              const aPct = a.from > 0 ? ((a.from - a.to) / a.from) : 0
+              const bPct = b.from > 0 ? ((b.from - b.to) / b.from) : 0
+              return bPct > aPct ? b : a
+            })
+          : null
+        if (!worst || worst.from === 0) return null
+        const worstPct = Math.round(((worst.from - worst.to) / worst.from) * 100)
+        if (worstPct < 10) return null
+        const action = ACTIONS[worst.label]
+        return (
+          <div className={`rounded-xl px-4 py-3.5 mb-6 ${
+            worstPct >= 50 ? 'bg-red-500/[0.06] border border-red-500/20' : 'bg-amber-500/[0.06] border border-amber-500/20'
+          }`}>
+            <div className="flex items-center gap-3 mb-2">
+              <span className={`text-lg ${worstPct >= 50 ? 'text-red-400' : 'text-amber-400'}`}>⚠</span>
+              <div>
+                <p className={`text-xs font-semibold ${worstPct >= 50 ? 'text-red-300' : 'text-amber-300'}`}>
+                  Maior gargalo: {worst.label}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  {worst.from} → {worst.to} (perda de {worstPct}% — {worst.from - worst.to} pessoa{worst.from - worst.to !== 1 ? 's' : ''})
+                </p>
+              </div>
+            </div>
+            {action && (
+              <div className="ml-9 rounded-lg bg-white/[0.03] border border-white/[0.05] px-3 py-2">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">Ação sugerida</p>
+                <p className="text-[11px] text-gray-400 leading-relaxed">{action}</p>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
       {/* ── Reforço Escolar: Conversion Funnel ──────────────────────────────── */}
       <SectionTitle>Funil Reforço Escolar — Conversão</SectionTitle>
       <div className="card-dark rounded-2xl p-5 mb-6">
@@ -273,7 +362,7 @@ export default async function AnalyticsPage({
         <div className="mt-3 pt-3 border-t border-white/[0.04] flex flex-wrap gap-6">
           <MiniRate label="Compra → Solicitou" rate={pct(ec['lesson_requested'], ec['reforco_purchase_completed'])} />
           <MiniRate label="Solicitou → Confirmada" rate={pct(ec['lesson_confirmed'], ec['lesson_requested'])} />
-          <MiniRate label="Taxa de ativação (compradores que solicitaram)" rate={`${reforcoActivationRate}%`} />
+          <MiniRate label="Ativação total" rate={`${reforcoActivationRate}%`} />
         </div>
       </div>
 
@@ -292,7 +381,7 @@ export default async function AnalyticsPage({
                     <div key={slug} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-gray-300 font-mono">{slug}</span>
-                        <div className="w-20 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div className="w-16 sm:w-24 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                           <div className="h-full rounded-full bg-purple-500" style={{ width: `${pctShare}%` }} />
                         </div>
                       </div>
@@ -378,17 +467,51 @@ function MetricCard({
   value,
   color = 'text-white',
   sub,
+  suffix,
 }: {
   label: string
   value: number
   color?: string
   sub?: string
+  suffix?: string
 }) {
   return (
     <div className="card-dark rounded-xl p-4">
       <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-extrabold tabular-nums ${color}`}>{value}</p>
+      <p className={`text-2xl font-extrabold tabular-nums ${color}`}>{value}{suffix && <span className="text-sm font-bold ml-0.5">{suffix}</span>}</p>
       {sub && <p className="text-[9px] text-gray-700 mt-0.5">{sub}</p>}
+    </div>
+  )
+}
+
+function MetricCardDelta({
+  label,
+  value,
+  prev,
+  color = 'text-white',
+}: {
+  label: string
+  value: number
+  prev: number
+  color?: string
+}) {
+  const d = (() => {
+    if (value === 0 && prev === 0) return { text: '—', color: 'text-gray-700' }
+    if (prev === 0) return { text: 'novo', color: 'text-blue-400' }
+    const change = Math.round(((value - prev) / prev) * 100)
+    if (change === 0) return { text: '=', color: 'text-gray-600' }
+    if (change > 0) return { text: `↑${change}%`, color: 'text-emerald-400' }
+    return { text: `↓${Math.abs(change)}%`, color: 'text-red-400' }
+  })()
+
+  return (
+    <div className="card-dark rounded-xl p-4">
+      <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">{label}</p>
+      <div className="flex items-baseline gap-2">
+        <p className={`text-2xl font-extrabold tabular-nums ${color}`}>{value}</p>
+        <span className={`text-[10px] font-bold tabular-nums ${d.color}`}>{d.text}</span>
+      </div>
+      <p className="text-[9px] text-gray-700 mt-0.5">anterior: {prev}</p>
     </div>
   )
 }
