@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { trackProductEvent } from '@/lib/analytics'
 
+// Revalidate every 60 seconds — fast iteration phase, increase later for production scale
+export const revalidate = 60
+
 export const metadata: Metadata = {
   title: 'Planos de Reforço Escolar | Método Revisão',
   description: 'Aulas particulares online de Português, Inglês, Redação e Literatura. Planos a partir de R$65/aula.',
