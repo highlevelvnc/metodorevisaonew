@@ -8,7 +8,7 @@ import { requestLessonAction } from '@/lib/actions/lessons'
 
 const SUBJECTS = ['Português', 'Inglês', 'Redação', 'Literatura'] as const
 
-export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boolean }) {
+export default function BookLessonForm({ hasCredits = true, creditsLeft, creditsTotal }: { hasCredits?: boolean; creditsLeft?: number; creditsTotal?: number }) {
   const router   = useRouter()
   const [open, setOpen]     = useState(false)
   const [saving, setSaving] = useState(false)
@@ -99,7 +99,12 @@ export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boo
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-bold text-white">Solicitar aula de reforço</h3>
-          <p className="text-[11px] text-gray-600 mt-0.5">Informe a data e matéria. A professora confirmará em breve.</p>
+          <p className="text-[11px] text-gray-600 mt-0.5">
+            Com Beatriz Dias (8+ anos, ★ 4.9)
+            {creditsLeft !== undefined && creditsTotal !== undefined && (
+              <span className="ml-2 text-purple-400 font-medium">· {creditsLeft}/{creditsTotal} aulas</span>
+            )}
+          </p>
         </div>
         <button onClick={() => setOpen(false)} className="text-gray-600 hover:text-gray-400 transition-colors flex-shrink-0 ml-3">
           <X size={16} />

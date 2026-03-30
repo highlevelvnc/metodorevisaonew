@@ -120,6 +120,7 @@ export default async function CheckoutPage({
                 <ProceedButton
                   planSlug={plan.slug}
                   planName={plan.name}
+                  planPrice={plan.price_brl}
                   userEmail={user.email ?? ''}
                   userName={userProfile?.full_name ?? user.email ?? ''}
                   cancelado={cancelado}

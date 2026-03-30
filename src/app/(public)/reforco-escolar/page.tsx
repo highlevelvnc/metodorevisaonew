@@ -192,6 +192,38 @@ export default function ReforcoEscolarPage() {
         </div>
       </section>
 
+      {/* ── Testimonials ────────────────────────────────────────────────── */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 mb-3">Resultados reais</p>
+            <h2 className="text-2xl font-bold">O que pais e alunos dizem</h2>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {[
+              { quote: 'Minha filha estava com 5 em Português. Em 2 meses, foi para 8. A professora entende exatamente onde está a dificuldade.', author: 'Carla M.', result: 'Nota 5 → 8', subject: 'Português' },
+              { quote: 'O acompanhamento individual fez toda a diferença. Meu filho ganhou confiança e parou de ter medo de prova.', author: 'Roberto A.', result: 'Aprovado no vestibular', subject: 'Redação' },
+              { quote: 'Com 3 aulas por semana, recuperou todo o conteúdo atrasado antes da prova final. Resultado visível.', author: 'Ana P.', result: 'Recuperação em 6 semanas', subject: 'Inglês' },
+            ].map(t => (
+              <div key={t.author} className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-5">
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-400">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-300 leading-relaxed italic mb-3">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600">— {t.author}</span>
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{t.result}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">

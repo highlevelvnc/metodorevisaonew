@@ -86,10 +86,9 @@ export default async function SucessoAulasPage({
               Seu pagamento foi processado com sucesso. Estamos ativando seu plano agora.
             </p>
             <div className="rounded-lg bg-blue-500/[0.06] border border-blue-500/20 px-4 py-3 text-left">
-              <p className="text-xs text-blue-300 font-medium mb-1">Isso costuma levar menos de 30 segundos</p>
+              <p className="text-xs text-blue-300 font-medium mb-1">Ativando automaticamente…</p>
               <p className="text-[11px] text-gray-500 leading-relaxed">
-                Se os créditos não aparecerem em 1 minuto, recarregue esta página.
-                Caso o problema persista, entre em contato pelo suporte.
+                Seus créditos aparecem aqui em até 30 segundos. Não precisa recarregar.
               </p>
             </div>
           </div>
@@ -128,7 +127,7 @@ export default async function SucessoAulasPage({
           Solicitar minha primeira aula →
         </Link>
 
-        {isActive && <AutoRedirect />}
+        <AutoRedirect isActive={isActive} />
       </div>
     </div>
   )

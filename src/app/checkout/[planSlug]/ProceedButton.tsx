@@ -6,6 +6,7 @@ import { trackEvent } from '@/components/Analytics'
 interface Props {
   planSlug:   string
   planName:   string
+  planPrice:  number
   userEmail:  string
   userName:   string
   cancelado?: boolean
@@ -14,6 +15,7 @@ interface Props {
 export function ProceedButton({
   planSlug,
   planName,
+  planPrice,
   userEmail,
   userName,
   cancelado = false,
@@ -101,6 +103,15 @@ export function ProceedButton({
         </span>
       </div>
 
+      {/* Billing summary */}
+      <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] px-4 py-3 mb-4 text-xs text-gray-500">
+        <div className="flex items-center justify-between mb-1">
+          <span>Plano {planName}</span>
+          <span className="text-white font-semibold">R$ {planPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</span>
+        </div>
+        <p className="text-[10px] text-gray-600">Renovação mensal automática · Cancele quando quiser, sem multa</p>
+      </div>
+
       {/* CTA */}
       <button
         onClick={handleCheckout}
@@ -114,7 +125,7 @@ export function ProceedButton({
           </>
         ) : (
           <>
-            Garantir meu plano {planName}
+            Pagar R$ {Math.round(planPrice)} e começar
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>

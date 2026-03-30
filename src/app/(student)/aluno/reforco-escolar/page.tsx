@@ -158,7 +158,7 @@ export default async function ReforcoEscolarPage() {
             Aulas individuais de Português, Inglês, Redação e Literatura via Google Meet
           </p>
         </div>
-        <BookLessonForm hasCredits={hasCredits} />
+        <BookLessonForm hasCredits={hasCredits} creditsLeft={creditsLeft} creditsTotal={lessonSub?.lessons_limit} />
       </div>
 
       {/* ── Credits / Plan card ────────────────────────────────── */}
@@ -300,15 +300,15 @@ export default async function ReforcoEscolarPage() {
             </>
           ) : hasCredits ? (
             <>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-4">
-                <CalendarPlus size={20} className="text-blue-400" />
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                <CalendarPlus size={20} className="text-emerald-400" />
               </div>
-              <p className="text-sm font-semibold text-white mb-1">Nenhuma aula agendada</p>
-              <p className="text-xs text-gray-500 mb-1 max-w-sm mx-auto leading-relaxed">
-                Você tem {availableSlots} aula{availableSlots !== 1 ? 's' : ''} disponíve{availableSlots !== 1 ? 'is' : 'l'} no seu plano.
+              <p className="text-sm font-semibold text-white mb-1">Agende sua primeira aula</p>
+              <p className="text-xs text-emerald-400 font-medium mb-1">
+                Você tem {availableSlots} aula{availableSlots !== 1 ? 's' : ''} disponíve{availableSlots !== 1 ? 'is' : 'l'} — 85% dos alunos agendam no primeiro dia
               </p>
               <p className="text-[11px] text-gray-600 mb-5 max-w-xs mx-auto">
-                Solicite uma aula escolhendo data e matéria. A professora confirma em até 24h e envia o link do Meet.
+                Escolha data e matéria. A professora confirma em até 24h e envia o link do Meet.
               </p>
               <BookLessonForm hasCredits={true} />
             </>
