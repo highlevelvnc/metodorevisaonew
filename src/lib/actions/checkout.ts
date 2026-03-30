@@ -164,8 +164,12 @@ export async function signUpAndCheckout(
   }
 
   // Track checkout started + account creation (deduped — safe if user retries)
-  trackProductEvent('checkout_started', user.id, { plan_slug: planSlug, source: 'signup_checkout' })
+  const isLessonPlan = planSlug.startsWith('reforco-')
+  trackProductEvent('checkout_started', user.id, { plan_slug: planSlug, source: 'signup_checkout', plan_type: isLessonPlan ? 'lesson' : 'essay' })
   trackOncePerUser('account_created', user.id, { plan_slug: planSlug, source: 'signup_checkout' })
+  if (isLessonPlan) {
+    trackProductEvent('reforco_checkout_started', user.id, { plan_slug: planSlug, source: 'signup_checkout' })
+  }
 
   // ✅ Outside try/catch — safe for NEXT_REDIRECT
   console.log(`${tag} redirecting to Stripe`)

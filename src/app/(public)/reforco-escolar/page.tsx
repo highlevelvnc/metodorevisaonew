@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { trackProductEvent } from '@/lib/analytics'
 
 export const metadata: Metadata = {
   title: 'Reforço Escolar de Português, Inglês, Redação e Literatura | Método Revisão',
@@ -81,6 +82,8 @@ const faqs = [
 ]
 
 export default function ReforcoEscolarPage() {
+  trackProductEvent('reforco_landing_viewed', null)
+
   return (
     <div className="pt-16 min-h-screen bg-[var(--bg-body)] text-white">
 

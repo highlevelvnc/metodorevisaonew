@@ -42,6 +42,16 @@ export type ProductEventName =
   | 'landing_cta_clicked'
   | 'plans_cta_clicked'
   | 'checkout_started_public'
+  // Reforço Escolar funnel
+  | 'reforco_landing_viewed'
+  | 'reforco_cta_clicked'
+  | 'reforco_plans_viewed'
+  | 'reforco_plan_selected'
+  | 'reforco_checkout_started'
+  | 'reforco_purchase_completed'
+  | 'reforco_success_viewed'
+  | 'lesson_requested'
+  | 'lesson_confirmed'
 
 /**
  * Record a product event to the database.

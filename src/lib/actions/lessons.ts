@@ -2,6 +2,7 @@
 
 import { createActionClient } from '@/lib/supabase/server-action'
 import { notifyLessonScheduled, notifyLessonRequested } from '@/lib/notifications'
+import { trackProductEvent } from '@/lib/analytics'
 
 // ── Helpers: role check ──────────────────────────────────────────────────────
 
@@ -140,6 +141,12 @@ export async function requestLessonAction(params: {
     return { error: 'Erro ao solicitar aula. Tente novamente.' }
   }
 
+  // Track lesson request
+  trackProductEvent('lesson_requested', user.id, {
+    subject: params.subject,
+    session_date: params.sessionDate,
+  })
+
   // Notify ALL professors about new request (non-fatal)
   try {
     const { data: studentData } = await db.from('users').select('email, full_name').eq('id', user.id).single()
@@ -223,6 +230,13 @@ export async function confirmLessonAction(params: {
     console.error('[confirmLessonAction] Update error:', updateErr)
     return { error: updateErr.message ?? 'Erro ao confirmar aula' }
   }
+
+  // Track lesson confirmation
+  trackProductEvent('lesson_confirmed', userId, {
+    lesson_id: params.lessonId,
+    subject: lesson.subject,
+    student_id: lesson.student_id,
+  })
 
   // Notify student (non-fatal)
   if (lesson.student_id) {

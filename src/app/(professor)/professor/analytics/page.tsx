@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type EventRow = { event_name: string; user_id: string | null }
+type EventRow = { event_name: string; user_id: string | null; metadata: Record<string, unknown> | null }
 type SubRow = { essays_used: number; essays_limit: number; user_id: string }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ export default async function AnalyticsPage({
     feedbackRes,
     unviewedRes,
   ] = await Promise.all([
-    db.from('product_events').select('event_name, user_id').gte('created_at', since),
+    db.from('product_events').select('event_name, user_id, metadata').gte('created_at', since),
     db.from('users').select('id', { count: 'exact', head: true }).gte('created_at', since),
     db.from('essays').select('id', { count: 'exact', head: true }).gte('submitted_at', since),
     db.from('corrections').select('id', { count: 'exact', head: true }).gte('corrected_at', since),
@@ -69,6 +69,24 @@ export default async function AnalyticsPage({
     }
   }
   const uniqueCount = (name: string) => eu[name]?.size ?? 0
+
+  // Reforço plan breakdown: count purchases per plan_slug
+  const reforcoPlanCounts: Record<string, number> = {}
+  const reforcoPurchaseUsers = new Set<string>()
+  const reforcoRequestUsers = new Set<string>()
+  for (const e of events) {
+    if (e.event_name === 'reforco_purchase_completed' && e.metadata) {
+      const slug = (e.metadata as Record<string, string>).plan_slug ?? 'unknown'
+      reforcoPlanCounts[slug] = (reforcoPlanCounts[slug] ?? 0) + 1
+      if (e.user_id) reforcoPurchaseUsers.add(e.user_id)
+    }
+    if (e.event_name === 'lesson_requested' && e.user_id) {
+      reforcoRequestUsers.add(e.user_id)
+    }
+  }
+  const reforcoActivationRate = reforcoPurchaseUsers.size > 0
+    ? Math.round((reforcoRequestUsers.size / reforcoPurchaseUsers.size) * 100)
+    : 0
 
   // Subscription analysis
   const subs = (subsRes.data ?? []) as SubRow[]
@@ -218,6 +236,78 @@ export default async function AnalyticsPage({
         </div>
       </div>
 
+      {/* ── Reforço Escolar: Conversion Funnel ──────────────────────────────── */}
+      <SectionTitle>Funil Reforço Escolar — Conversão</SectionTitle>
+      <div className="card-dark rounded-2xl p-5 mb-6">
+        <div className="flex flex-col gap-0.5">
+          <FunnelStep label="Landing de reforço visualizada" count={ec['reforco_landing_viewed']} badge="página" />
+          <FunnelArrow dropOff={dropOff(ec['reforco_landing_viewed'], ec['reforco_cta_clicked'])} />
+          <FunnelStep label="CTA de reforço clicado" count={ec['reforco_cta_clicked']} badge="clique" />
+          <FunnelArrow dropOff={dropOff(ec['reforco_cta_clicked'], ec['reforco_plans_viewed'])} />
+          <FunnelStep label="Página de planos visualizada" count={ec['reforco_plans_viewed']} badge="página" />
+          <FunnelArrow dropOff={dropOff(ec['reforco_plans_viewed'], ec['reforco_checkout_started'])} />
+          <FunnelStep label="Checkout iniciado" count={ec['reforco_checkout_started']} badge="evento" />
+          <FunnelArrow dropOff={dropOff(ec['reforco_checkout_started'], ec['reforco_purchase_completed'])} />
+          <FunnelStep label="Compra concluída" count={ec['reforco_purchase_completed']} badge="evento" color="text-emerald-400" />
+        </div>
+        <div className="mt-3 pt-3 border-t border-white/[0.04] flex flex-wrap gap-6">
+          <MiniRate label="Landing → CTA" rate={pct(ec['reforco_cta_clicked'], ec['reforco_landing_viewed'])} />
+          <MiniRate label="Planos → Checkout" rate={pct(ec['reforco_checkout_started'], ec['reforco_plans_viewed'])} />
+          <MiniRate label="Checkout → Compra" rate={pct(ec['reforco_purchase_completed'], ec['reforco_checkout_started'])} />
+          <MiniRate label="Landing → Compra (total)" rate={pct(ec['reforco_purchase_completed'], ec['reforco_landing_viewed'])} />
+        </div>
+      </div>
+
+      {/* ── Reforço Escolar: Activation Funnel ─────────────────────────────── */}
+      <SectionTitle>Funil Reforço Escolar — Ativação</SectionTitle>
+      <div className="card-dark rounded-2xl p-5 mb-6">
+        <div className="flex flex-col gap-0.5">
+          <FunnelStep label="Compra concluída" count={ec['reforco_purchase_completed']} badge="evento" />
+          <FunnelArrow dropOff={dropOff(ec['reforco_purchase_completed'], ec['reforco_success_viewed'])} />
+          <FunnelStep label="Página de sucesso vista" count={ec['reforco_success_viewed']} badge="página" />
+          <FunnelArrow dropOff={dropOff(ec['reforco_success_viewed'], ec['lesson_requested'])} />
+          <FunnelStep label="Aula solicitada" count={ec['lesson_requested']} badge="evento" />
+          <FunnelArrow dropOff={dropOff(ec['lesson_requested'], ec['lesson_confirmed'])} />
+          <FunnelStep label="Aula confirmada pelo professor" count={ec['lesson_confirmed']} badge="evento" color="text-emerald-400" />
+        </div>
+        <div className="mt-3 pt-3 border-t border-white/[0.04] flex flex-wrap gap-6">
+          <MiniRate label="Compra → Solicitou" rate={pct(ec['lesson_requested'], ec['reforco_purchase_completed'])} />
+          <MiniRate label="Solicitou → Confirmada" rate={pct(ec['lesson_confirmed'], ec['lesson_requested'])} />
+          <MiniRate label="Taxa de ativação (compradores que solicitaram)" rate={`${reforcoActivationRate}%`} />
+        </div>
+      </div>
+
+      {/* ── Reforço Escolar: Plan Breakdown ────────────────────────────────── */}
+      {Object.keys(reforcoPlanCounts).length > 0 && (
+        <>
+          <SectionTitle>Reforço — Plano Mais Comprado</SectionTitle>
+          <div className="card-dark rounded-2xl p-5 mb-6">
+            <div className="space-y-2">
+              {Object.entries(reforcoPlanCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([slug, count]) => {
+                  const total = Object.values(reforcoPlanCounts).reduce((s, c) => s + c, 0)
+                  const pctShare = total > 0 ? Math.round((count / total) * 100) : 0
+                  return (
+                    <div key={slug} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-300 font-mono">{slug}</span>
+                        <div className="w-20 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div className="h-full rounded-full bg-purple-500" style={{ width: `${pctShare}%` }} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white tabular-nums">{count}</span>
+                        <span className="text-[10px] text-gray-600 tabular-nums w-8 text-right">{pctShare}%</span>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ── Subscription Health ─────────────────────────────────────────────── */}
       <SectionTitle>Saúde das Assinaturas</SectionTitle>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -238,6 +328,10 @@ export default async function AnalyticsPage({
           { label: 'Checkout → Compra', from: ec['checkout_started'] ?? 0, to: ec['purchase_completed'] ?? 0 },
           { label: 'Trial → Usou correção', from: ec['trial_started'] ?? 0, to: ec['trial_correction_used'] ?? 0 },
           { label: 'Trial usou → Pagou', from: ec['trial_correction_used'] ?? 0, to: ec['trial_to_paid_conversion'] ?? 0 },
+          { label: 'Reforço: Planos → Checkout', from: ec['reforco_plans_viewed'] ?? 0, to: ec['reforco_checkout_started'] ?? 0 },
+          { label: 'Reforço: Checkout → Compra', from: ec['reforco_checkout_started'] ?? 0, to: ec['reforco_purchase_completed'] ?? 0 },
+          { label: 'Reforço: Compra → Solicitou aula', from: ec['reforco_purchase_completed'] ?? 0, to: ec['lesson_requested'] ?? 0 },
+          { label: 'Reforço: Solicitou → Confirmada', from: ec['lesson_requested'] ?? 0, to: ec['lesson_confirmed'] ?? 0 },
         ]} />
       </div>
 

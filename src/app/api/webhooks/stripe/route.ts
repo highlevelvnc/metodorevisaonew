@@ -240,9 +240,20 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
   trackProductEvent('purchase_completed', userId, {
     plan_slug: planSlug,
     plan_name: plan.name,
+    plan_type: planType,
     essay_limit: plan.essay_count,
+    lesson_limit: plan.lesson_count,
     stripe_session_id: session.id,
   })
+
+  // Track reforço-specific purchase
+  if (planType === 'lesson') {
+    trackProductEvent('reforco_purchase_completed', userId, {
+      plan_slug: planSlug,
+      plan_name: plan.name,
+      lessons_limit: plan.lesson_count,
+    })
+  }
 
   console.log(
     `[webhook] Subscription activated — user: ${userId} | plan: ${planSlug} | stripe_sub: ${stripeSubscriptionId} | session: ${session.id} | total: ${Date.now() - t0}ms`

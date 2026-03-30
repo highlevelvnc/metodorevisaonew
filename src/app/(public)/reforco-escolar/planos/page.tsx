@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { trackProductEvent } from '@/lib/analytics'
 
 export const metadata: Metadata = {
   title: 'Planos de Reforço Escolar | Método Revisão',
@@ -28,6 +29,7 @@ const PLAN_LABELS: Record<string, string> = {
 type Plan = { id: string; name: string; slug: string; price_brl: number; lesson_count: number }
 
 export default async function PlanosPublicosPage() {
+  trackProductEvent('reforco_plans_viewed', null, { source: 'public' })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = createAdminClient() as any
 

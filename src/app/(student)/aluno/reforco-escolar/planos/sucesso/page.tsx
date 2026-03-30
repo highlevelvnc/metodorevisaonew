@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import { AutoRedirect } from './AutoRedirect'
+import { TrackPageView } from '@/components/TrackPageView'
 
 export const metadata = { title: 'Aulas ativadas | Método Revisão' }
 export const dynamic  = 'force-dynamic'
@@ -57,6 +58,7 @@ export default async function SucessoAulasPage({
 
   return (
     <div className="max-w-lg mx-auto mt-12 px-4">
+      <TrackPageView event="reforco_success_viewed" userId={user.id} metadata={{ plan: sub?.plans?.name ?? planName, credits: creditsTotal }} />
       <div className="card-dark rounded-2xl p-8 text-center">
 
         {/* Status icon */}

@@ -191,7 +191,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Track checkout_started for authenticated upgrade flow
-  trackProductEvent('checkout_started', user.id, { plan_slug: planSlug, source: 'upgrade_page' })
+  const isLessonPlan = planSlug.startsWith('reforco-')
+  trackProductEvent('checkout_started', user.id, { plan_slug: planSlug, source: isLessonPlan ? 'reforco_plans' : 'upgrade_page', plan_type: isLessonPlan ? 'lesson' : 'essay' })
+  if (isLessonPlan) {
+    trackProductEvent('reforco_checkout_started', user.id, { plan_slug: planSlug })
+  }
 
   console.log(`${tag} ✓ Stripe URL ready`)
   return NextResponse.json({ url: stripeUrl })
