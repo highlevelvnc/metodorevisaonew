@@ -138,8 +138,13 @@ export default async function ReforcoEscolarPage() {
     lessons_used: number; lessons_limit: number
     plans: { name: string; slug: string } | null
   } | null
-  const hasCredits    = lessonSub ? (lessonSub.lessons_used < lessonSub.lessons_limit) : false
+
+  // Open lessons = requested + scheduled (not yet completed/cancelled)
+  const openLessonsCount = upcoming.length
+  // Available slots = limit - used (confirmed) - open (pending confirm)
   const creditsLeft   = lessonSub ? Math.max(0, lessonSub.lessons_limit - lessonSub.lessons_used) : 0
+  const availableSlots = lessonSub ? Math.max(0, lessonSub.lessons_limit - lessonSub.lessons_used - openLessonsCount) : 0
+  const hasCredits     = availableSlots > 0
   const completedCount = history.filter(l => l.status === 'completed').length
 
   return (
@@ -164,7 +169,8 @@ export default async function ReforcoEscolarPage() {
               {lessonSub.plans?.name ?? 'Plano de aulas'}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {creditsLeft} de {lessonSub.lessons_limit} aulas disponíveis neste ciclo
+              {creditsLeft} de {lessonSub.lessons_limit} aulas disponíveis
+              {openLessonsCount > 0 && ` · ${openLessonsCount} em andamento`}
             </p>
           </div>
           <div className="flex items-center gap-3">

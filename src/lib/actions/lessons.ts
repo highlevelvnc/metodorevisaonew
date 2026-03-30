@@ -128,7 +128,7 @@ export async function requestLessonAction(params: {
       return { error: 'Você precisa de um plano de aulas ativo para solicitar aulas.' }
     }
     if (msg.includes('LESSON_CREDIT_LIMIT_REACHED')) {
-      return { error: 'Seus créditos de aula acabaram. Faça upgrade do seu plano para continuar.' }
+      return { error: 'Você já atingiu o limite de aulas do seu plano (incluindo solicitações em andamento). Conclua ou cancele aulas abertas, ou faça upgrade.' }
     }
     if (msg.includes('AUTH_MISMATCH')) {
       return { error: 'Erro de autenticação.' }

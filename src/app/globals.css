@@ -227,6 +227,63 @@ html.dark, .dark {
 }
 
 /* ─── Blog / Prose ───────────────────────────── */
+/* ─── Light mode adaptations ───────────────
+   These rules fix text contrast and border/bg visibility for the entire app
+   when the html element does NOT have the 'dark' class.
+   The .dark wrapper on public/auth layouts opts those sections out. */
+
+/* Headings: always use theme-primary in light mode */
+html:not(.dark) h1, html:not(.dark) h2,
+html:not(.dark) h3, html:not(.dark) h4 {
+  color: var(--text-primary);
+}
+
+/* Tables */
+html:not(.dark) th { color: var(--text-muted); }
+html:not(.dark) td { color: var(--text-secondary); }
+
+/* Gray text tiers — boost contrast for light backgrounds */
+html:not(.dark) .text-gray-400 { color: #64748b; }
+html:not(.dark) .text-gray-500 { color: #64748b; }
+html:not(.dark) .text-gray-600 { color: #475569; }
+html:not(.dark) .text-gray-700 { color: #334155; }
+
+/* text-white → theme-aware primary. Exceptions: elements inside colored
+   backgrounds (buttons, badges, alerts) retain white via higher specificity. */
+html:not(.dark) .text-white { color: var(--text-primary); }
+
+/* Restore white text inside colored containers */
+html:not(.dark) .btn-primary,
+html:not(.dark) .btn-primary-lg,
+html:not(.dark) [class*="bg-purple-"] .text-white,
+html:not(.dark) [class*="bg-green-"] .text-white,
+html:not(.dark) [class*="bg-red-"] .text-white,
+html:not(.dark) [class*="bg-blue-"] .text-white,
+html:not(.dark) [class*="bg-amber-"] .text-white,
+html:not(.dark) .badge-purple,
+html:not(.dark) .badge-green { color: #ffffff !important; }
+
+/* border-white/[x] becomes invisible on light bg → use theme border */
+html:not(.dark) .border-white\/\[0\.04\],
+html:not(.dark) .border-white\/\[0\.05\],
+html:not(.dark) .border-white\/\[0\.06\],
+html:not(.dark) .border-white\/\[0\.07\],
+html:not(.dark) .border-white\/\[0\.08\],
+html:not(.dark) .border-white\/\[0\.10\],
+html:not(.dark) .border-white\/\[0\.12\] {
+  border-color: var(--border);
+}
+
+/* bg-white/[x] overlays invisible on light → subtle gray */
+html:not(.dark) .bg-white\/\[0\.02\],
+html:not(.dark) .bg-white\/\[0\.03\],
+html:not(.dark) .bg-white\/\[0\.04\],
+html:not(.dark) .bg-white\/\[0\.05\],
+html:not(.dark) .bg-white\/\[0\.06\],
+html:not(.dark) .bg-white\/\[0\.10\] {
+  background-color: rgba(0,0,0,0.02);
+}
+
 .prose h1  { @apply text-3xl font-bold mb-4 mt-8; color: var(--prose-heading); }
 .prose h2  { @apply text-2xl font-bold mb-3 mt-8; color: var(--prose-heading); }
 .prose h3  { @apply text-xl font-semibold mb-2 mt-6; color: var(--prose-heading); }
