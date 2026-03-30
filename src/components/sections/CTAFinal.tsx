@@ -46,49 +46,71 @@ export default function CTAFinal() {
           </div>
         </div>
 
-        {/* Headline + CTAs */}
+        {/* Headline + Two product paths */}
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-5">
-            Sua próxima redação pode ser{' '}
-            <span className="gradient-text">a primeira com direção de verdade.</span>
+            Pronto para{' '}
+            <span className="gradient-text">evoluir de verdade?</span>
           </h2>
-          <p className="text-base sm:text-lg text-gray-400 mb-8 leading-relaxed">
-            Envie uma redação e receba uma devolutiva completa: nota por competência, anotações no texto e orientação para a próxima. Tudo por uma especialista real, em até 24h. A primeira correção é gratuita.
+          <p className="text-base sm:text-lg text-gray-400 mb-10 leading-relaxed">
+            Correção de redação com devolutiva por competência ou aulas particulares com acompanhamento individual. Escolha o caminho que faz sentido para você.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
-            <Link
-              href="/cadastro"
-              className="btn-primary-lg"
-              onClick={() => { trackEvent('landing_cta_clicked', { source: 'cta_final', target: 'cadastro' }); trackEvent('cta_click', { source: 'cta_final' }) }}
-            >
-              Enviar redação e receber correção grátis
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <a
-              href={`${WHATSAPP_URL}?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20ainda%20tenho%20d%C3%BAvidas%20sobre%20o%20M%C3%A9todo%20Revis%C3%A3o.`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary-lg sm:whitespace-nowrap"
-              onClick={() => trackEvent('cta_click', { source: 'cta_final_whatsapp' })}
-            >
-              Tem dúvidas? Fale no WhatsApp
-            </a>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-xl mx-auto mb-8">
+            {/* Redação path */}
+            <div className="card-dark rounded-2xl p-5 text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-bold text-white">Correção de Redação</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                Devolutiva C1–C5 por especialista humana. Sua nota subindo, redação a redação.
+              </p>
+              <Link
+                href="/cadastro"
+                className="btn-primary w-full text-xs justify-center"
+                onClick={() => { trackEvent('landing_cta_clicked', { source: 'cta_final', target: 'cadastro' }); trackEvent('cta_click', { source: 'cta_final_redacao' }) }}
+              >
+                Correção grátis →
+              </Link>
+              <p className="text-[10px] text-gray-700 mt-2 text-center">1 correção gratuita · Sem cartão</p>
+            </div>
+
+            {/* Reforço path */}
+            <div className="card-dark rounded-2xl p-5 text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M4.26 10.147a60.436 60.436 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.905 59.905 0 0 1 12 3.493a59.902 59.902 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-bold text-white">Reforço Escolar</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                Aulas individuais de Português, Inglês, Redação e Literatura via Google Meet.
+              </p>
+              <Link
+                href="/reforco-escolar/planos"
+                className="btn-secondary w-full text-xs justify-center border-blue-500/20 hover:border-blue-400/40 hover:bg-blue-500/10 text-blue-300 hover:text-blue-200"
+                onClick={() => { trackEvent('reforco_cta_clicked', { source: 'cta_final' }); trackEvent('cta_click', { source: 'cta_final_reforco' }) }}
+              >
+                Ver planos de aula →
+              </Link>
+              <p className="text-[10px] text-gray-700 mt-2 text-center">A partir de R$ 65/aula · Sem fidelidade</p>
+            </div>
           </div>
-
-          <p className="text-xs text-gray-600 mb-6">
-            Sem cartão &nbsp;·&nbsp; Sem compromisso &nbsp;·&nbsp; Depois, escolha um plano para continuar
-          </p>
 
           {/* Micro trust */}
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-gray-700">
-            <span>Diagnóstico C1–C5 completo</span>
+            <span>Acompanhamento individual</span>
             <span className="text-gray-800">·</span>
-            <span>Devolutiva em até 24h</span>
+            <span>Sem fidelidade</span>
             <span className="text-gray-800">·</span>
-            <span>100% correção humana</span>
+            <span>100% online</span>
           </div>
         </div>
       </div>

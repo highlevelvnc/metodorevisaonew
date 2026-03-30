@@ -2,9 +2,10 @@ const paraVoce = [
   'Está se preparando para o ENEM e quer subir sua nota de redação',
   'Já escreveu várias redações mas não vê evolução clara',
   'Quer feedback real, não nota genérica',
-  'Precisa de reforço escolar em Português, Inglês, Redação ou Literatura',
-  'Quer acompanhamento que entenda onde você está e te leve adiante',
-  'Valoriza correção humana e estratégica, não robô',
+  'Precisa de reforço em Português, Inglês, Redação ou Literatura com acompanhamento individual',
+  'Tem notas caindo e precisa de uma professora que entenda exatamente onde está a dificuldade',
+  'Quer acompanhamento contínuo — não aula avulsa sem contexto',
+  'Valoriza correção humana e aula ao vivo, não robô nem vídeo gravado',
 ]
 
 const naoParaVoce = [

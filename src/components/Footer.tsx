@@ -24,7 +24,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
-              Correção estratégica de redação para o ENEM. Acompanhamento real, devolutiva por competência e evolução visível a cada redação.
+              Correção de redação ENEM e reforço escolar individual. Acompanhamento real, evolução visível e resultado comprovado.
             </p>
             <div className="flex gap-4 mt-6">
               <a
@@ -55,7 +55,8 @@ export default function Footer() {
             <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Navegação</h3>
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/#como-funciona" className="text-gray-500 hover:text-purple-400 transition-colors">Como funciona</Link></li>
-              <li><Link href="/#planos" className="text-gray-500 hover:text-purple-400 transition-colors">Planos</Link></li>
+              <li><Link href="/#planos" className="text-gray-500 hover:text-purple-400 transition-colors">Planos de Redação</Link></li>
+              <li><Link href="/reforco-escolar/planos" className="text-gray-500 hover:text-purple-400 transition-colors">Planos de Reforço</Link></li>
               <li><Link href="/#depoimentos" className="text-gray-500 hover:text-purple-400 transition-colors">Resultados</Link></li>
               <li><Link href="/#faq" className="text-gray-500 hover:text-purple-400 transition-colors">FAQ</Link></li>
             </ul>
@@ -73,7 +74,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800/60 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600">
           <p>&copy; {new Date().getFullYear()} Método Revisão. Todos os direitos reservados.</p>
-          <p className="text-gray-700">Correção estratégica de redação para o ENEM</p>
+          <p className="text-gray-700">Correção de Redação ENEM · Reforço Escolar Individual</p>
         </div>
       </div>
     </footer>

@@ -55,6 +55,19 @@ const faqs = [
     q: 'A sessão ao vivo é obrigatória?',
     a: 'Não. Ela está disponível nos planos Estratégia e Intensivo para quem quer tirar dúvidas, revisar a evolução e alinhar o foco das próximas redações. O núcleo do método é a correção escrita.',
   },
+  // Reforço Escolar
+  {
+    q: 'Como funciona o reforço escolar?',
+    a: 'Você escolhe um plano com a quantidade de aulas que precisa, solicita aulas pelo painel escolhendo data, horário e matéria, e a professora confirma e envia o link do Google Meet. As aulas são individuais, ao vivo, adaptadas ao conteúdo e às provas do aluno.',
+  },
+  {
+    q: 'Quais matérias o reforço cobre?',
+    a: 'Português, Inglês, Redação e Literatura. Do 6º ano ao vestibular. Cada aula é preparada individualmente com base no material do aluno — sem apostila genérica.',
+  },
+  {
+    q: 'Posso combinar correção de redação com reforço?',
+    a: 'Sim. São produtos independentes que funcionam juntos na mesma plataforma. Você pode assinar um plano de correção de redação e um plano de reforço ao mesmo tempo, cada um com seus próprios créditos.',
+  },
 ]
 
 const jsonLdFAQ = {
