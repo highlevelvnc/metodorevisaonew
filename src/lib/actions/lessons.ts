@@ -133,6 +133,10 @@ export async function requestLessonAction(params: {
     if (msg.includes('AUTH_MISMATCH')) {
       return { error: 'Erro de autenticação.' }
     }
+    // Unique index violation = duplicate lesson request
+    if (msg.includes('idx_lesson_no_duplicate_open') || msg.includes('23505') || msg.includes('duplicate key')) {
+      return { error: 'Você já tem uma aula solicitada para esta data, horário e matéria.' }
+    }
     return { error: 'Erro ao solicitar aula. Tente novamente.' }
   }
 
@@ -186,18 +190,20 @@ export async function confirmLessonAction(params: {
   if (fetchErr || !lesson) return { error: 'Aula não encontrada' }
   if (lesson.status !== 'requested') return { error: 'Apenas aulas solicitadas podem ser confirmadas' }
 
-  // Debit lesson credit from student (atomic, non-fatal — confirm proceeds even if debit fails)
+  // Debit lesson credit from student — FATAL: if debit fails, lesson is NOT confirmed.
+  // This prevents revenue leakage from silent debit failures.
   if (lesson.student_id) {
-    try {
-      const { error: debitErr } = await db.rpc('confirm_lesson_debit', {
-        p_lesson_id: params.lessonId,
-        p_professor_id: userId,
-      })
-      if (debitErr) {
-        console.warn('[confirmLessonAction] Credit debit warning (non-fatal):', debitErr.message)
+    const { error: debitErr } = await db.rpc('confirm_lesson_debit', {
+      p_lesson_id: params.lessonId,
+      p_professor_id: userId,
+    })
+    if (debitErr) {
+      const msg = debitErr.message ?? ''
+      console.error('[confirmLessonAction] Credit debit FAILED — lesson NOT confirmed:', msg)
+      if (msg.includes('LESSON_NOT_FOUND_OR_NOT_REQUESTED')) {
+        return { error: 'Aula não encontrada ou já foi confirmada por outro professor.' }
       }
-    } catch (e) {
-      console.warn('[confirmLessonAction] Credit debit threw (non-fatal):', e)
+      return { error: 'Não foi possível debitar o crédito do aluno. A aula não foi confirmada. Tente novamente.' }
     }
   }
 

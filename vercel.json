@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/inactivity",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/lesson-reminders",
+      "schedule": "15 * * * *"
+    }
+  ]
+}

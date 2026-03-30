@@ -106,7 +106,7 @@ export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boo
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-3 gap-3" aria-disabled={saving}>
         {/* Date */}
         <div>
           <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Data preferida *</label>

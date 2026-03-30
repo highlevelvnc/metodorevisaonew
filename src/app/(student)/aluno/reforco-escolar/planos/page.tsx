@@ -217,7 +217,7 @@ export default async function PlanosReforcoPage({
           </div>
           <div>
             <p className="text-sm font-semibold text-white">Sem fidelidade, sem multa</p>
-            <p className="text-xs text-gray-500">Cancele ou troque de plano a qualquer momento. Seus créditos continuam válidos até o fim do ciclo.</p>
+            <p className="text-xs text-gray-500">Cancele ou troque de plano a qualquer momento. Aulas já confirmadas continuam garantidas mesmo após o cancelamento.</p>
           </div>
         </div>
       </div>
