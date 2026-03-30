@@ -7,10 +7,11 @@ import { trackEvent } from './Analytics'
 import { ThemeToggle } from './ThemeToggle'
 
 const navLinks: { label: string; href: string; highlight?: boolean }[] = [
-  { label: 'Como funciona', href: '/#como-funciona' },
-  { label: 'Planos',        href: '/#planos' },
-  { label: 'Resultados',    href: '/#depoimentos' },
-  { label: 'Blog',          href: '/blog' },
+  { label: 'Como funciona',    href: '/#como-funciona' },
+  { label: 'Planos',           href: '/#planos' },
+  { label: 'Reforço Escolar',  href: '/reforco-escolar' },
+  { label: 'Resultados',       href: '/#depoimentos' },
+  { label: 'Blog',             href: '/blog' },
 ]
 
 // Separate entry — different audience (B2B), deserves visual distinction

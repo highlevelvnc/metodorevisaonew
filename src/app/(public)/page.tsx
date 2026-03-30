@@ -8,6 +8,7 @@ import Diferenciais from '@/components/sections/Diferenciais'
 import Transformacao from '@/components/sections/Transformacao'
 import ParaEscolasTeaser from '@/components/sections/ParaEscolasTeaser'
 import Planos from '@/components/sections/Planos'
+import ReforcoEscolarTeaser from '@/components/sections/ReforcoEscolarTeaser'
 import Garantia from '@/components/sections/Garantia'
 import Depoimentos from '@/components/sections/Depoimentos'
 import ParaQuem from '@/components/sections/ParaQuem'
@@ -28,6 +29,7 @@ export default function Home() {
       <Transformacao />
       <ParaEscolasTeaser />
       <Planos />
+      <ReforcoEscolarTeaser />
       <Garantia />
       <Depoimentos />
       <ParaQuem />
