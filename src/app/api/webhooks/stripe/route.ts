@@ -2,6 +2,7 @@ import type Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { trackProductEvent } from '@/lib/analytics'
+import { notifyLessonCreditsRenewed } from '@/lib/notifications'
 
 /**
  * POST /api/webhooks/stripe
@@ -303,6 +304,35 @@ async function handleRenewal(invoice: Stripe.Invoice) {
   console.log(
     `[webhook] Credits reset — sub=${sub.id} user=${sub.user_id} limit=${sub.essays_limit} | total: ${Date.now() - t0}ms`
   )
+
+  // Send renewal notification for lesson plans (non-fatal)
+  try {
+    const { data: plan } = await db
+      .from('plans')
+      .select('name, plan_type, lesson_count')
+      .eq('id', sub.plan_id)
+      .single()
+
+    if (plan?.plan_type === 'lesson' && plan.lesson_count > 0) {
+      const { data: user } = await db
+        .from('users')
+        .select('email, full_name')
+        .eq('id', sub.user_id)
+        .single()
+
+      if (user?.email) {
+        await notifyLessonCreditsRenewed({
+          studentEmail: user.email,
+          studentName:  user.full_name,
+          creditsTotal: plan.lesson_count,
+          planName:     plan.name,
+        })
+        console.log(`[webhook] Lesson renewal email sent to ${user.email}`)
+      }
+    }
+  } catch (emailErr) {
+    console.error('[webhook] Renewal notification failed (non-fatal):', emailErr)
+  }
 }
 
 /* ── Subscription cancelled ──────────────────────────────────────────────── */

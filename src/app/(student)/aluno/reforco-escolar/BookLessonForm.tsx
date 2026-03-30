@@ -80,6 +80,16 @@ export default function BookLessonForm({ hasCredits = true }: { hasCredits?: boo
             <X size={14} />
           </button>
         </div>
+        <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-3">
+          <button
+            onClick={() => setDone(false)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+          >
+            <CalendarPlus size={12} />
+            Agendar mais uma aula
+          </button>
+          <span className="text-[10px] text-gray-700">Enquanto aguarda a confirmação</span>
+        </div>
       </div>
     )
   }
