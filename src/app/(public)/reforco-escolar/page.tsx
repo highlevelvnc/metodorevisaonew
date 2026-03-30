@@ -1,21 +1,17 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { WHATSAPP_URL } from '@/lib/contact'
-
-const WA_LINK =
-  `${WHATSAPP_URL}?text=Ol%C3%A1%2C%20Beatriz!%20Vim%20pelo%20site%20e%20quero%20saber%20sobre%20o%20refor%C3%A7o%20escolar.`
 
 export const metadata: Metadata = {
   title: 'Reforço Escolar de Português, Inglês, Redação e Literatura | Método Revisão',
   description:
-    'Aulas particulares online de Português, Inglês, Redação e Literatura. Do 6º ano ao vestibular. Acompanhamento individualizado via Google Meet com a professora Beatriz Dias.',
+    'Aulas particulares online de Português, Inglês, Redação e Literatura. Do 6o ano ao vestibular. Acompanhamento individualizado via Google Meet com a professora Beatriz Dias.',
 }
 
 const subjects = [
   {
     emoji: '📘',
     title: 'Português',
-    desc: 'Gramática, interpretação de texto e produção textual. Do 6º ano ao Ensino Médio. Cada aula adaptada ao material e às provas do aluno.',
+    desc: 'Gramática, interpretação de texto e produção textual. Do 6o ano ao Ensino Médio. Cada aula adaptada ao material e às provas do aluno.',
     tags: ['Gramática', 'Interpretação', 'Ensino Médio'],
   },
   {
@@ -41,23 +37,23 @@ const subjects = [
 const steps = [
   {
     n: '01',
-    title: 'Diagnóstico rápido',
-    desc: 'Antes da primeira aula, entendemos onde o aluno está: qual o colégio, quais as notas, o que está caindo nas provas.',
+    title: 'Escolha seu plano',
+    desc: 'Selecione a quantidade de aulas que melhor se encaixa na rotina de estudos — de 4 a 34 aulas por mês.',
   },
   {
     n: '02',
-    title: 'Plano personalizado',
-    desc: 'Cada aluno tem um plano diferente. Sem apostila genérica — trabalhamos exatamente o conteúdo que vai ser cobrado.',
+    title: 'Solicite suas aulas',
+    desc: 'Escolha data, horário e matéria diretamente pelo painel. A professora recebe e confirma em até 24 horas.',
   },
   {
     n: '03',
-    title: 'Aulas via Google Meet',
-    desc: 'Aulas ao vivo, com tela compartilhada, exercícios em tempo real e devolutiva na hora. Gravação disponível para revisão.',
+    title: 'Aula ao vivo via Google Meet',
+    desc: 'Aula individual com tela compartilhada, exercícios em tempo real e devolutiva na hora. Link enviado por e-mail.',
   },
   {
     n: '04',
     title: 'Acompanhamento contínuo',
-    desc: 'Entre aulas, o aluno pode tirar dúvidas via WhatsApp. Ajustamos o ritmo conforme o progresso.',
+    desc: 'A professora conhece o histórico do aluno e adapta o plano conforme a evolução. Sem aula genérica.',
   },
 ]
 
@@ -79,8 +75,8 @@ const faqs = [
     a: 'Sim. Nas aulas de redação o aluno escreve, recebe feedback ao vivo e aprende a corrigir os próprios erros. Para correção ENEM avulsa (sem aula), temos os planos de assinatura.',
   },
   {
-    q: 'Como funciona a cobrança?',
-    a: 'O valor é combinado individualmente conforme frequência e matéria. Fale no WhatsApp para receber uma proposta.',
+    q: 'Como funciona o pagamento?',
+    a: 'Você escolhe um plano com a quantidade de aulas que precisa e paga online via cartão. Tudo pelo site, sem burocracia.',
   },
 ]
 
@@ -100,17 +96,18 @@ export default function ReforcoEscolarPage() {
             <span className="text-purple-400"> Português, Inglês, Redação e Literatura</span>
           </h1>
           <p className="text-lg text-gray-400 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Acompanhamento individualizado ao vivo via Google Meet. Do 6º ano ao vestibular — com plano adaptado ao conteúdo e às provas de cada aluno.
+            Notas caindo ou conteúdo travado? A professora encontra o ponto exato da dificuldade e trabalha até destravar — com plano adaptado às provas do aluno.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href={WA_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/aluno/reforco-escolar/planos"
               className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-7 py-3.5 rounded-xl transition-colors text-sm"
             >
-              Falar no WhatsApp
-            </a>
+              Ver planos e preços
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
             <Link
               href="/cadastro"
               className="inline-flex items-center gap-2 bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.10] text-gray-200 font-semibold px-7 py-3.5 rounded-xl transition-colors text-sm"
@@ -118,6 +115,9 @@ export default function ReforcoEscolarPage() {
               Criar conta grátis
             </Link>
           </div>
+          <p className="text-xs text-gray-600 mt-4">
+            Planos a partir de R$ 65/aula · Comece quando quiser
+          </p>
         </div>
       </section>
 
@@ -155,7 +155,7 @@ export default function ReforcoEscolarPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 mb-3">Como funciona</p>
-            <h2 className="text-2xl md:text-3xl font-bold">Do diagnóstico à evolução</h2>
+            <h2 className="text-2xl md:text-3xl font-bold">Do plano à evolução</h2>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             {steps.map(step => (
@@ -177,8 +177,8 @@ export default function ReforcoEscolarPage() {
       <section className="py-14 px-4 sm:px-6 lg:px-8 bg-white/[0.02]">
         <div className="max-w-4xl mx-auto grid sm:grid-cols-3 gap-6 text-center">
           {[
-            { stat: '6º ano → EM', label: 'Atendemos todos os níveis escolares' },
-            { stat: '1–2×/semana', label: 'Frequência recomendada para evolução clara' },
+            { stat: '6o ano → EM', label: 'Atendemos todos os níveis escolares' },
+            { stat: '1-2x/semana', label: 'Frequência recomendada para evolução clara' },
             { stat: '100% online', label: 'Aulas ao vivo via Google Meet' },
           ].map(item => (
             <div key={item.stat}>
@@ -212,24 +212,28 @@ export default function ReforcoEscolarPage() {
         <div className="max-w-2xl mx-auto rounded-3xl border border-purple-500/20 bg-purple-500/[0.06] p-10 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-3">Pronto para começar?</h2>
           <p className="text-gray-400 mb-7 text-sm leading-relaxed max-w-md mx-auto">
-            Fale com a Beatriz, explique a situação do aluno e receba uma proposta personalizada. Atendimento rápido no WhatsApp.
+            Escolha seu plano, solicite sua primeira aula e comece a evoluir com acompanhamento individual.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href={WA_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/aluno/reforco-escolar/planos"
               className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-7 py-3.5 rounded-xl transition-colors text-sm"
             >
-              Falar no WhatsApp
-            </a>
+              Ver planos e preços
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
             <Link
               href="/cadastro"
               className="text-sm text-gray-400 hover:text-white transition-colors font-medium"
             >
-              Criar conta e ver planos →
+              Criar conta grátis →
             </Link>
           </div>
+          <p className="text-xs text-gray-600 mt-4">
+            Planos a partir de R$ 65/aula · Pagamento online via cartão
+          </p>
         </div>
       </section>
     </div>

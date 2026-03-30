@@ -70,13 +70,11 @@ export default function ReforcoEscolarTeaser() {
             <span className="gradient-text">acompanhamento individual</span>
           </h2>
 
-          <p className="section-subtitle max-w-2xl mx-auto mb-3">
-            Seu filho travado em Português? Notas caindo em Inglês? A professora identifica
-            exatamente onde está a dificuldade e trabalha até destravar — com plano adaptado
-            ao conteúdo e às provas do colégio.
+          <p className="section-subtitle max-w-xl mx-auto mb-3">
+            Notas caindo ou conteúdo travado? A professora encontra o ponto exato da dificuldade e trabalha até destravar.
           </p>
           <p className="text-xs text-gray-500 mb-6">
-            Alunos acompanhados individualmente · Do 6o ano ao vestibular · 100% online via Google Meet
+            Acompanhamento individual · Do 6o ano ao vestibular · 100% via Google Meet
           </p>
 
           {/* Subject pills */}
@@ -126,7 +124,7 @@ export default function ReforcoEscolarTeaser() {
         {/* CTA */}
         <div className="text-center">
           <Link
-            href="/reforco-escolar"
+            href="/aluno/reforco-escolar/planos"
             className="btn-primary-lg"
             onClick={() => trackEvent('cta_click', { source: 'reforco_teaser' })}
           >
@@ -136,7 +134,7 @@ export default function ReforcoEscolarTeaser() {
             </svg>
           </Link>
           <p className="text-xs text-gray-600 mt-3">
-            A partir de R$ 65/aula · Planos de 4 a 34 aulas por mês
+            Planos a partir de R$ 65/aula · Comece quando quiser
           </p>
         </div>
       </div>

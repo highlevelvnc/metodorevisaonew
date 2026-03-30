@@ -2,7 +2,7 @@
 
 import { motion, MotionConfig } from 'framer-motion'
 import Link from 'next/link'
-import { WHATSAPP_URL } from '@/lib/contact'
+import { SUPPORT_EMAIL } from '@/lib/contact'
 
 // ─── Animation tokens ──────────────────────────────────────────────────────────
 
@@ -183,9 +183,14 @@ function WaIcon() {
   )
 }
 
-const WA_GENERAL = `${WHATSAPP_URL}?text=Ol%C3%A1%2C+tenho+interesse+em+levar+o+M%C3%A9todo+Revis%C3%A3o+para+minha+escola.+Gostaria+de+entender+como+funciona.`
-const WA_PILOT   = `${WHATSAPP_URL}?text=Ol%C3%A1%2C+gostaria+de+entender+como+seria+um+piloto+do+M%C3%A9todo+Revis%C3%A3o+na+minha+escola.`
-const WA_PROPOSTA = `${WHATSAPP_URL}?text=Ol%C3%A1%2C+gostaria+de+receber+uma+proposta+do+M%C3%A9todo+Revis%C3%A3o+para+minha+escola.`
+const MAILTO_GENERAL  = `mailto:${SUPPORT_EMAIL}?subject=Interesse%20em%20levar%20o%20M%C3%A9todo%20Revis%C3%A3o%20para%20minha%20escola`
+const MAILTO_PILOT    = `mailto:${SUPPORT_EMAIL}?subject=Solicita%C3%A7%C3%A3o%20de%20piloto%20do%20M%C3%A9todo%20Revis%C3%A3o`
+const MAILTO_PROPOSTA = `mailto:${SUPPORT_EMAIL}?subject=Solicita%C3%A7%C3%A3o%20de%20proposta%20do%20M%C3%A9todo%20Revis%C3%A3o%20para%20escola`
+
+// Legacy aliases — keep the same variable names to avoid touching 100+ lines of JSX
+const WA_GENERAL  = MAILTO_GENERAL
+const WA_PILOT    = MAILTO_PILOT
+const WA_PROPOSTA = MAILTO_PROPOSTA
 
 // ─── Page component ────────────────────────────────────────────────────────────
 
@@ -891,7 +896,7 @@ export default function ParaEscolasContent() {
                 </motion.button>
 
                 <p className="text-center text-xs text-gray-700">
-                  Ou, se preferir: <a href={WA_GENERAL} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline underline-offset-2 transition-colors">fale pelo WhatsApp</a>
+                  Ou, se preferir: <a href={WA_GENERAL} className="text-purple-400 hover:text-purple-300 underline underline-offset-2 transition-colors">envie um e-mail</a>
                 </p>
               </form>
             </motion.div>
