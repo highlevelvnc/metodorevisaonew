@@ -70,9 +70,13 @@ export default function ReforcoEscolarTeaser() {
             <span className="gradient-text">acompanhamento individual</span>
           </h2>
 
-          <p className="section-subtitle max-w-2xl mx-auto mb-6">
-            Português, Inglês, Literatura e Redação com professora dedicada.
-            Do 6o ano ao vestibular, via Google Meet.
+          <p className="section-subtitle max-w-2xl mx-auto mb-3">
+            Seu filho travado em Português? Notas caindo em Inglês? A professora identifica
+            exatamente onde está a dificuldade e trabalha até destravar — com plano adaptado
+            ao conteúdo e às provas do colégio.
+          </p>
+          <p className="text-xs text-gray-500 mb-6">
+            Alunos acompanhados individualmente · Do 6o ano ao vestibular · 100% online via Google Meet
           </p>
 
           {/* Subject pills */}
@@ -126,7 +130,7 @@ export default function ReforcoEscolarTeaser() {
             className="btn-primary-lg"
             onClick={() => trackEvent('cta_click', { source: 'reforco_teaser' })}
           >
-            Começar minhas aulas
+            Escolher meu plano
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
