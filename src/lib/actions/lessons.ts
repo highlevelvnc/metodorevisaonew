@@ -186,15 +186,34 @@ export async function confirmLessonAction(params: {
   const { error: authErr, db, userId } = await requireProfessor()
   if (authErr) return { error: authErr }
 
-  // Fetch lesson — match own lessons OR unassigned (professor_id IS NULL)
-  const { data: lesson, error: fetchErr } = await db
-    .from('lesson_sessions')
-    .select('id, status, professor_id, student_id, student_name, session_date, session_time, subject, topic, duration_min, meet_link')
-    .eq('id', params.lessonId)
-    .or(`professor_id.eq.${userId},professor_id.is.null`)
-    .single()
+  // Fetch lesson — try own first, then unassigned
+  // Two explicit queries instead of .or() string interpolation (security: no SQL injection risk)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let lesson: any = null
+  const selectFields = 'id, status, professor_id, student_id, student_name, session_date, session_time, subject, topic, duration_min, meet_link'
 
-  if (fetchErr || !lesson) return { error: 'Aula não encontrada' }
+  // 1. Check if this professor owns the lesson
+  const { data: ownLesson } = await db
+    .from('lesson_sessions')
+    .select(selectFields)
+    .eq('id', params.lessonId)
+    .eq('professor_id', userId)
+    .maybeSingle()
+
+  if (ownLesson) {
+    lesson = ownLesson
+  } else {
+    // 2. Check if lesson is unassigned (professor_id IS NULL)
+    const { data: unassigned } = await db
+      .from('lesson_sessions')
+      .select(selectFields)
+      .eq('id', params.lessonId)
+      .is('professor_id', null)
+      .maybeSingle()
+    lesson = unassigned
+  }
+
+  if (!lesson) return { error: 'Aula não encontrada' }
   if (lesson.status !== 'requested') return { error: 'Apenas aulas solicitadas podem ser confirmadas' }
 
   // Debit lesson credit from student — FATAL: if debit fails, lesson is NOT confirmed.
@@ -344,13 +363,28 @@ export async function cancelLessonAction(lessonId: string): Promise<{ error?: st
   const { error: authErr, db, userId } = await requireProfessor()
   if (authErr) return { error: authErr }
 
-  // Match own lessons OR unassigned (professor_id IS NULL)
-  const { data: lesson } = await db
+  // Match own lessons OR unassigned — two explicit queries (no string interpolation)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let lesson: any = null
+
+  const { data: own } = await db
     .from('lesson_sessions')
     .select('id, status, student_id')
     .eq('id', lessonId)
-    .or(`professor_id.eq.${userId},professor_id.is.null`)
-    .single()
+    .eq('professor_id', userId)
+    .maybeSingle()
+
+  if (own) {
+    lesson = own
+  } else {
+    const { data: unassigned } = await db
+      .from('lesson_sessions')
+      .select('id, status, student_id')
+      .eq('id', lessonId)
+      .is('professor_id', null)
+      .maybeSingle()
+    lesson = unassigned
+  }
 
   if (!lesson) return { error: 'Aula não encontrada' }
   if (lesson.status === 'completed') return { error: 'Aulas concluídas não podem ser canceladas' }

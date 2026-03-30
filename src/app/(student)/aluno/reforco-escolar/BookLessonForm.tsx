@@ -114,8 +114,9 @@ export default function BookLessonForm({ hasCredits = true, creditsLeft, credits
       <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-3 gap-3" aria-disabled={saving}>
         {/* Date */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Data preferida *</label>
+          <label htmlFor="bf_date" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Data preferida *</label>
           <input
+            id="bf_date"
             type="date"
             name="session_date"
             required
@@ -126,8 +127,9 @@ export default function BookLessonForm({ hasCredits = true, creditsLeft, credits
 
         {/* Time */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Horário preferido</label>
+          <label htmlFor="bf_time" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Horário preferido</label>
           <input
+            id="bf_time"
             type="time"
             name="session_time"
             className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50"
@@ -136,8 +138,9 @@ export default function BookLessonForm({ hasCredits = true, creditsLeft, credits
 
         {/* Subject */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Matéria *</label>
+          <label htmlFor="bf_subject" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Matéria *</label>
           <select
+            id="bf_subject"
             name="subject"
             required
             defaultValue=""
@@ -150,8 +153,9 @@ export default function BookLessonForm({ hasCredits = true, creditsLeft, credits
 
         {/* Notes */}
         <div className="col-span-2 sm:col-span-3">
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">O que você quer trabalhar? (opcional)</label>
+          <label htmlFor="bf_notes" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">O que você quer trabalhar? (opcional)</label>
           <textarea
+            id="bf_notes"
             name="notes"
             rows={2}
             placeholder="Ex: Tenho prova de verbos irregulares na sexta, quero revisar esse conteúdo."
@@ -175,7 +179,7 @@ export default function BookLessonForm({ hasCredits = true, creditsLeft, credits
           >
             Cancelar
           </button>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
         </div>
       </form>
     </div>

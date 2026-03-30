@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import { zeroEssay, ZERO_REASON_LABELS, type ZeroReason } from '@/lib/actions/correction-tools'
 
@@ -47,16 +47,33 @@ export function ZeroEssayModal({ essayId, studentName, themeTitle, reviewerName,
     })
   }
 
+  // Focus trap + Escape key
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleEscape)
+    // Focus the modal on mount
+    modalRef.current?.focus()
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onClose])
+
   return (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
         onClick={onClose}
+        aria-hidden="true"
       >
         {/* Modal */}
         <div
-          className="w-full max-w-md bg-[#121212] border border-red-500/30 rounded-2xl shadow-2xl overflow-hidden"
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Zerar redação"
+          tabIndex={-1}
+          className="w-full max-w-md bg-[#121212] border border-red-500/30 rounded-2xl shadow-2xl overflow-hidden focus:outline-none"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}

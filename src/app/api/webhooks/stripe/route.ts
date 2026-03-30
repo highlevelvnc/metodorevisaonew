@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       // Monthly renewal — reset essay credits for the billing cycle
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
-        await handleRenewal(invoice)
+        await handleRenewal(invoice, event.id)
         break
       }
 
@@ -283,12 +283,27 @@ async function activateSubscription(session: Stripe.Checkout.Session) {
 }
 
 /* ── Monthly renewal — reset credits ─────────────────────────────────────── */
-async function handleRenewal(invoice: Stripe.Invoice) {
+async function handleRenewal(invoice: Stripe.Invoice, eventId: string) {
   const t0 = Date.now()
 
   // Skip the first invoice (handled by activateSubscription via checkout.session.completed)
   if (invoice.billing_reason === 'subscription_create') {
     console.log(`[webhook] Skipping initial invoice ${invoice.id} (handled by checkout.session.completed)`)
+    return
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const idempotencyDb = createAdminClient() as any
+
+  // ── Idempotency check: prevent replay/retry from resetting credits twice ──
+  const { data: alreadyProcessed } = await idempotencyDb
+    .from('processed_webhooks')
+    .select('id')
+    .eq('event_id', eventId)
+    .maybeSingle()
+
+  if (alreadyProcessed) {
+    console.log(`[webhook] Renewal event ${eventId} already processed — skipping (+${Date.now() - t0}ms)`)
     return
   }
 
@@ -333,6 +348,12 @@ async function handleRenewal(invoice: Stripe.Invoice) {
     console.error(`[webhook] Failed to reset credits for sub=${sub.id}:`, updateErr)
     throw updateErr
   }
+
+  // Record event as processed (idempotency)
+  await idempotencyDb.from('processed_webhooks').insert({
+    event_id: eventId,
+    event_type: 'invoice.payment_succeeded',
+  })
 
   console.log(
     `[webhook] Credits reset — sub=${sub.id} user=${sub.user_id} limit=${sub.essays_limit} | total: ${Date.now() - t0}ms`

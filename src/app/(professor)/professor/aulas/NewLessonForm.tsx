@@ -210,8 +210,9 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
       <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {/* Date */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Data *</label>
+          <label htmlFor="nl_date" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Data *</label>
           <input
+            id="nl_date"
             type="date"
             name="session_date"
             required
@@ -222,8 +223,9 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
 
         {/* Time */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Horário</label>
+          <label htmlFor="nl_time" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Horário</label>
           <input
+            id="nl_time"
             type="time"
             name="session_time"
             className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50"
@@ -232,8 +234,9 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
 
         {/* Subject */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Matéria</label>
+          <label htmlFor="nl_subject" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Matéria</label>
           <select
+            id="nl_subject"
             name="subject"
             className="w-full bg-white/[0.04] border border-white/[0.10] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50"
           >
@@ -249,8 +252,9 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
 
         {/* Meet link */}
         <div className="col-span-2 sm:col-span-2">
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Link Google Meet</label>
+          <label htmlFor="nl_meet" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Link Google Meet</label>
           <input
+            id="nl_meet"
             type="url"
             name="meet_link"
             placeholder="https://meet.google.com/..."
@@ -260,8 +264,9 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
 
         {/* Topic */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Tópico</label>
+          <label htmlFor="nl_topic" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Tópico</label>
           <input
+            id="nl_topic"
             type="text"
             name="topic"
             placeholder="Ex: Verbos irregulares"
@@ -271,8 +276,9 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
 
         {/* Duration */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Duração (min)</label>
+          <label htmlFor="nl_duration" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Duração (min)</label>
           <input
+            id="nl_duration"
             type="number"
             name="duration_min"
             defaultValue={60}
@@ -284,8 +290,9 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
 
         {/* Price */}
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Valor (R$)</label>
+          <label htmlFor="nl_price" className="block text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-1">Valor (R$)</label>
           <input
+            id="nl_price"
             type="number"
             name="price_brl"
             defaultValue={20}
@@ -311,7 +318,7 @@ export default function NewLessonForm({ professorId: _ }: { professorId: string 
           >
             Cancelar
           </button>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
         </div>
       </form>
     </div>

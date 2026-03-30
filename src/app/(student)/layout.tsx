@@ -224,7 +224,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                         ${active
-                          ? 'bg-purple-700/20 text-purple-300 border border-purple-600/25 shadow-[inset_3px_0_0_0_rgba(168,85,247,0.7)]'
+                          ? 'bg-purple-700/25 text-white border border-purple-600/30 shadow-[inset_3px_0_0_0_rgba(168,85,247,0.7)]'
                           : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.04] border border-transparent'}
                       `}
                     >

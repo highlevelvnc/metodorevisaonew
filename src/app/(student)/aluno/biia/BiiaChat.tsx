@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Send, RotateCcw, ChevronRight } from 'lucide-react'
 
 interface Message {
@@ -134,8 +135,7 @@ function MessageBubble({ message }: { message: Message }) {
           className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden border border-purple-500/35 self-end mb-0.5"
           style={{ boxShadow: '0 0 7px rgba(124,58,237,0.30)' }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/biia.webp" alt="Biia" className="w-full h-full object-cover" />
+          <Image src="/biia.webp" alt="Biia" width={40} height={40} className="w-full h-full object-cover" />
         </div>
       )}
 

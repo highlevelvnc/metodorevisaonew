@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, BookOpen, Target, MessageCircle, FileText, Flame, PenLine, Clock } from 'lucide-react'
 
 interface BiiaCardProps {
@@ -195,8 +196,7 @@ export function BiiaCard({
         <div className="flex gap-2.5">
           <div className="w-7 h-7 rounded-full overflow-hidden border border-purple-500/35 flex-shrink-0 mt-0.5"
                style={{ boxShadow: '0 0 8px rgba(124,58,237,0.30)' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/biia.webp" alt="Biia" className="w-full h-full object-cover" />
+            <Image src="/biia.webp" alt="Biia" width={28} height={28} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1">
             <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl rounded-tl-sm px-4 py-3">

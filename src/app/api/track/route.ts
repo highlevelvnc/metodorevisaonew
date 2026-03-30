@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server'
 import { trackProductEvent, type ProductEventName } from '@/lib/analytics'
+import { rateLimit } from '@/lib/rate-limit'
 
 /**
  * POST /api/track
  *
  * Lightweight endpoint for persisting public funnel events from client-side code.
  * Only accepts events from a strict allowlist — prevents arbitrary event injection.
+ * Rate limited to 30 requests per minute per IP.
  *
  * Body: { event: string, metadata?: Record<string, unknown> }
- *
- * No auth required (public funnel events are anonymous by definition).
- * Rate limiting should be handled at the infrastructure layer (Vercel, Cloudflare, etc.).
  */
 
 // Events allowed from public/client-side code
@@ -25,6 +24,12 @@ const ALLOWED_PUBLIC_EVENTS = new Set<ProductEventName>([
 ])
 
 export async function POST(req: Request) {
+  // Rate limit: 30 requests per minute per IP
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!rateLimit(`track:${ip}`, 30, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   try {
     const body = await req.json() as { event?: string; metadata?: Record<string, unknown> }
 

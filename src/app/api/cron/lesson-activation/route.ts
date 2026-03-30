@@ -1,16 +1,13 @@
 /**
  * GET /api/cron/lesson-activation
  *
- * Sends activation nudge emails to students who:
- * - Have an active lesson subscription (plan_type='lesson')
- * - Subscription was created 24-48h ago
- * - Have ZERO lesson_sessions (requested, scheduled, or completed)
+ * Three automated email flows for lesson retention:
+ * 1. Activation nudge (24-48h after purchase, no lessons booked)
+ * 2. Post-lesson re-booking (2-4h after lesson completed)
+ * 3. Reactivation (5+ days inactive with credits remaining)
  *
- * Also sends post-lesson re-booking emails to students whose lesson
- * was marked 'completed' 2-4h ago.
- *
+ * Optimized: uses batch queries with JOINs instead of N+1 loops.
  * Called every 2 hours by Vercel Cron.
- * Protected by CRON_SECRET.
  */
 
 export const runtime = 'nodejs'
@@ -31,179 +28,179 @@ export async function GET(req: Request) {
   const now = Date.now()
   let activationSent = 0
   let rebookingSent = 0
+  let reactivationSent = 0
   let errors = 0
 
-  // ── 1. Activation nudge: 24-48h after purchase, no lessons ─────────────
-  const since24h = new Date(now - 48 * 3600_000).toISOString()
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 1. ACTIVATION NUDGE — 24-48h after purchase, zero lessons ever
+  // Single query: subscriptions + user data joined, then filter in JS
+  // ═══════════════════════════════════════════════════════════════════════════
+  const since48h = new Date(now - 48 * 3600_000).toISOString()
   const until24h = new Date(now - 24 * 3600_000).toISOString()
 
-  const { data: inactiveSubs } = await db
+  const { data: recentLessonSubs } = await db
     .from('subscriptions')
-    .select('user_id, lessons_limit, plans!inner(name, plan_type)')
+    .select('user_id, lessons_limit, plans!inner(name, plan_type), user:users!subscriptions_user_id_fkey(email, full_name)')
     .eq('status', 'active')
     .eq('plans.plan_type', 'lesson')
-    .gte('created_at', since24h)
+    .gte('created_at', since48h)
     .lte('created_at', until24h)
 
-  for (const sub of (inactiveSubs ?? [])) {
-    // Check if user has ANY lesson_sessions
-    const { count } = await db
+  if (recentLessonSubs && recentLessonSubs.length > 0) {
+    // Batch: get all user_ids that have ANY lesson_sessions
+    const userIds = recentLessonSubs.map((s: any) => s.user_id) // eslint-disable-line @typescript-eslint/no-explicit-any
+    const { data: usersWithLessons } = await db
       .from('lesson_sessions')
-      .select('id', { count: 'exact', head: true })
-      .eq('student_id', sub.user_id)
+      .select('student_id')
+      .in('student_id', userIds)
 
-    if ((count ?? 0) > 0) continue // already booked at least once
+    const hasLessonSet = new Set((usersWithLessons ?? []).map((l: any) => l.student_id)) // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    // Get student info
-    const { data: user } = await db
-      .from('users')
-      .select('email, full_name')
-      .eq('id', sub.user_id)
-      .single()
+    for (const sub of recentLessonSubs) {
+      if (hasLessonSet.has(sub.user_id)) continue
+      if (!sub.user?.email) continue
 
-    if (!user?.email) continue
-
-    try {
-      await notifyNoLessonBooked({
-        studentEmail: user.email,
-        studentName: user.full_name,
-        creditsTotal: sub.lessons_limit,
-        planName: sub.plans?.name ?? 'Reforço',
-      })
-      activationSent++
-      console.log(`[lesson-activation] Nudge sent to ${user.email}`)
-    } catch (err) {
-      errors++
-      console.error(`[lesson-activation] Nudge failed for ${sub.user_id}:`, err)
+      try {
+        await notifyNoLessonBooked({
+          studentEmail: sub.user.email,
+          studentName: sub.user.full_name,
+          creditsTotal: sub.lessons_limit,
+          planName: sub.plans?.name ?? 'Reforço',
+        })
+        activationSent++
+      } catch (err) {
+        errors++
+        console.error(`[lesson-activation] Nudge failed for ${sub.user_id}:`, err)
+      }
     }
   }
 
-  // ── 2. Post-lesson re-booking: 2-4h after lesson completed ─────────────
-  const since2h = new Date(now - 4 * 3600_000).toISOString()
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 2. POST-LESSON RE-BOOKING — 2-4h after lesson completed
+  // Single query: lessons + student + subscription joined
+  // ═══════════════════════════════════════════════════════════════════════════
+  const since4h = new Date(now - 4 * 3600_000).toISOString()
   const until2h = new Date(now - 2 * 3600_000).toISOString()
 
-  const { data: recentCompleted } = await db
+  const { data: completedLessons } = await db
     .from('lesson_sessions')
-    .select('id, student_id, subject, updated_at')
+    .select('id, student_id, subject, student:users!lesson_sessions_student_id_fkey(email, full_name)')
     .eq('status', 'completed')
-    .gte('updated_at', since2h)
-    .lte('updated_at', until2h)
     .not('student_id', 'is', null)
+    .gte('updated_at', since4h)
+    .lte('updated_at', until2h)
 
-  for (const lesson of (recentCompleted ?? [])) {
-    // Get student info + remaining credits
-    const { data: user } = await db
-      .from('users')
-      .select('email, full_name')
-      .eq('id', lesson.student_id)
-      .single()
-
-    if (!user?.email) continue
-
-    const { data: sub } = await db
+  if (completedLessons && completedLessons.length > 0) {
+    // Batch: get all active lesson subscriptions for these students
+    const studentIds = Array.from(new Set(completedLessons.map((l: any) => l.student_id))) // eslint-disable-line @typescript-eslint/no-explicit-any
+    const { data: studentSubs } = await db
       .from('subscriptions')
-      .select('lessons_used, lessons_limit')
-      .eq('user_id', lesson.student_id)
+      .select('user_id, lessons_used, lessons_limit, plans!inner(plan_type)')
+      .in('user_id', studentIds)
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .eq('plans.plan_type', 'lesson')
 
-    const creditsLeft = sub ? Math.max(0, sub.lessons_limit - sub.lessons_used) : 0
+    const subByUser = new Map<string, { lessons_used: number; lessons_limit: number }>()
+    for (const s of (studentSubs ?? [])) {
+      subByUser.set(s.user_id, s)
+    }
 
-    try {
-      await notifyLessonCompleted({
-        studentEmail: user.email,
-        studentName: user.full_name,
-        subject: lesson.subject,
-        creditsLeft,
-        lessonId: lesson.id,
-      })
-      rebookingSent++
-      console.log(`[lesson-activation] Re-booking sent to ${user.email}`)
-    } catch (err) {
-      errors++
-      console.error(`[lesson-activation] Re-booking failed for ${lesson.student_id}:`, err)
+    for (const lesson of completedLessons) {
+      if (!lesson.student?.email) continue
+      const sub = subByUser.get(lesson.student_id)
+      const creditsLeft = sub ? Math.max(0, sub.lessons_limit - sub.lessons_used) : 0
+
+      try {
+        await notifyLessonCompleted({
+          studentEmail: lesson.student.email,
+          studentName: lesson.student.full_name,
+          subject: lesson.subject,
+          creditsLeft,
+          lessonId: lesson.id,
+        })
+        rebookingSent++
+      } catch (err) {
+        errors++
+        console.error(`[lesson-activation] Re-booking failed for ${lesson.student_id}:`, err)
+      }
     }
   }
 
-  // ── 3. Reactivation: active sub with credits but no recent lesson activity ──
-  // Targets students who have credits remaining but haven't had ANY lesson
-  // activity (requested/scheduled/completed) in the last 5 days.
-  // Deduplication: uses product_events to ensure max 1 email per 7-day window.
-  let reactivationSent = 0
-
-  const { data: activeLessonSubs } = await db
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 3. REACTIVATION — 5+ days inactive, has credits, max 1 email per 7 days
+  // Batch: subscriptions + users joined, then batch lesson + dedup checks
+  // ═══════════════════════════════════════════════════════════════════════════
+  const { data: allLessonSubs } = await db
     .from('subscriptions')
-    .select('user_id, lessons_used, lessons_limit, current_period_start, plans!inner(name, plan_type)')
+    .select('user_id, lessons_used, lessons_limit, plans!inner(name, plan_type), user:users!subscriptions_user_id_fkey(email, full_name)')
     .eq('status', 'active')
     .eq('plans.plan_type', 'lesson')
 
-  const fiveDaysAgo = new Date(now - 5 * 24 * 3600_000).toISOString()
+  const eligibleSubs = (allLessonSubs ?? []).filter((s: any) => // eslint-disable-line @typescript-eslint/no-explicit-any
+    s.lessons_limit - s.lessons_used > 0 && s.user?.email
+  )
 
-  for (const sub of (activeLessonSubs ?? [])) {
-    const remaining = sub.lessons_limit - sub.lessons_used
-    if (remaining <= 0) continue // no credits left, nothing to reactivate
+  if (eligibleSubs.length > 0) {
+    const eligibleUserIds = eligibleSubs.map((s: any) => s.user_id) // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    // Check last lesson activity (any status)
-    const { data: lastLesson } = await db
+    // Batch: last lesson per student (most recent updated_at)
+    const { data: lastLessons } = await db
       .from('lesson_sessions')
-      .select('session_date, subject, status, updated_at')
-      .eq('student_id', sub.user_id)
+      .select('student_id, subject, updated_at')
+      .in('student_id', eligibleUserIds)
       .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
 
-    // Skip if recent activity (within 5 days)
-    if (lastLesson?.updated_at && lastLesson.updated_at > fiveDaysAgo) continue
-    // Skip if never had a lesson (handled by activation nudge above)
-    if (!lastLesson) continue
+    // Build map: user_id → most recent lesson
+    const lastLessonByUser = new Map<string, { subject: string | null; updated_at: string }>()
+    for (const l of (lastLessons ?? [])) {
+      if (!lastLessonByUser.has(l.student_id)) {
+        lastLessonByUser.set(l.student_id, l)
+      }
+    }
 
-    // Deduplication: check if we already sent a reactivation in the last 7 days
+    // Batch: recent reactivation nudges (dedup check)
     const sevenDaysAgo = new Date(now - 7 * 24 * 3600_000).toISOString()
-    const { count: recentNudges } = await db
+    const { data: recentNudges } = await db
       .from('product_events')
-      .select('id', { count: 'exact', head: true })
+      .select('user_id')
       .eq('event_name', 'lesson_reactivation_sent')
-      .eq('user_id', sub.user_id)
+      .in('user_id', eligibleUserIds)
       .gte('created_at', sevenDaysAgo)
 
-    if ((recentNudges ?? 0) > 0) continue // already nudged this week
+    const nudgedRecently = new Set((recentNudges ?? []).map((n: any) => n.user_id)) // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    // Get student info
-    const { data: user } = await db
-      .from('users')
-      .select('email, full_name')
-      .eq('id', sub.user_id)
-      .single()
+    const fiveDaysAgo = new Date(now - 5 * 24 * 3600_000).toISOString()
 
-    if (!user?.email) continue
+    for (const sub of eligibleSubs) {
+      if (nudgedRecently.has(sub.user_id)) continue
 
-    const daysSince = lastLesson.updated_at
-      ? Math.floor((now - new Date(lastLesson.updated_at).getTime()) / (24 * 3600_000))
-      : 7
+      const lastLesson = lastLessonByUser.get(sub.user_id)
+      if (!lastLesson) continue // never had a lesson → handled by activation nudge
+      if (lastLesson.updated_at > fiveDaysAgo) continue // recent activity
 
-    try {
-      await notifyLessonInactive({
-        studentEmail: user.email,
-        studentName: user.full_name,
-        creditsLeft: remaining,
-        daysSinceLastLesson: daysSince,
-        lastSubject: lastLesson.subject ?? null,
-      })
+      const remaining = sub.lessons_limit - sub.lessons_used
+      const daysSince = Math.floor((now - new Date(lastLesson.updated_at).getTime()) / (24 * 3600_000))
 
-      // Record send for deduplication
-      await db.from('product_events').insert({
-        event_name: 'lesson_reactivation_sent',
-        user_id: sub.user_id,
-        metadata: { credits_left: remaining, days_since: daysSince },
-      })
+      try {
+        await notifyLessonInactive({
+          studentEmail: sub.user.email,
+          studentName: sub.user.full_name,
+          creditsLeft: remaining,
+          daysSinceLastLesson: daysSince,
+          lastSubject: lastLesson.subject ?? null,
+        })
 
-      reactivationSent++
-      console.log(`[lesson-activation] Reactivation sent to ${user.email} (${daysSince}d inactive, ${remaining} credits)`)
-    } catch (err) {
-      errors++
-      console.error(`[lesson-activation] Reactivation failed for ${sub.user_id}:`, err)
+        await db.from('product_events').insert({
+          event_name: 'lesson_reactivation_sent',
+          user_id: sub.user_id,
+          metadata: { credits_left: remaining, days_since: daysSince },
+        })
+
+        reactivationSent++
+      } catch (err) {
+        errors++
+        console.error(`[lesson-activation] Reactivation failed for ${sub.user_id}:`, err)
+      }
     }
   }
 

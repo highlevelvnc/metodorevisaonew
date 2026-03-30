@@ -57,6 +57,12 @@ export async function signUpAndCheckout(
   const tag = `[signUpAndCheckout email=${email} plan=${planSlug}]`
   console.log(`${tag} form submitted`)
 
+  // Rate limit: 5 signup attempts per email per 10 minutes
+  const { rateLimit } = await import('@/lib/rate-limit')
+  if (!rateLimit(`signup:${email}`, 5, 10 * 60_000)) {
+    return { error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' }
+  }
+
   // ── Input validation ────────────────────────────────────────────────────────
   if (!fullName || fullName.length < 2) {
     return { error: 'Informe seu nome completo (mínimo 2 caracteres).' }
